@@ -8,7 +8,7 @@ var circleWidth = 200;
 var circleHeight = 300;
 function setCircleShape()
 {
-    var x = 4.0;
+    var x = 12.0;
     circleWidth = canvas.width/x;
     circleHeight = canvas.height/x;
 }
@@ -43,6 +43,7 @@ function rgbToHex(r, g, b) {
 var fftSize = 512;
 var num_bars = 120;
 var width=4;
+var topSize= 0.075;
 function freqAnalyser() 
 {
     window.requestAnimationFrame(freqAnalyser);
@@ -67,10 +68,10 @@ function freqAnalyser()
             sum += data[(i * bin_size) + j];
         }
         var scaled_average_c = sum /7.5;
-        var scaled_average_v = sum /400.0;
+        var scaled_average_v = sum /150.0;
         ctx.fillStyle=rgbToHex(scaled_average_c, 0, 0);
-        var s = i*bar_width-offset;
-        var s2 = (i+0.5)*bar_width-offset;
+        var s = (i-topSize*scaled_average_v)*bar_width-offset;
+        var s2 = (i+topSize*scaled_average_v)*bar_width-offset;
         var x = (Math.sin(s)*circleWidth)+widthInHalf;
         var y = (Math.cos(s)*circleHeight)+heightInHalf;
         var x1 = (Math.sin(s)*circleWidth*scaled_average_v)+widthInHalf;
