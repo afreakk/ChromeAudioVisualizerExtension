@@ -57,7 +57,8 @@ function freqAnalyser()
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     var bin_size = Math.floor(data.length / num_bars);
     var widthInHalf = canvas.width/2;
-    var heightInHalf= canvas.height/1.75;
+    var heightInHalf= canvas.height/2;
+    var offset = Math.PI/4.0
     for (var i = 0; i < num_bars; i += 1) 
     {
         sum = 0;
@@ -67,11 +68,11 @@ function freqAnalyser()
         }
         average = sum / bin_size;
         scaled_average = (average /512 ) * canvas.height;
-        var scaled_average_c = scaled_average /2.0;
+        var scaled_average_c = scaled_average /2.5;
         var scaled_average_v = scaled_average /100.0;
         ctx.fillStyle=rgbToHex(scaled_average_c, scaled_average_c, 0);
-        var s = i*bar_width;
-        var s2 = (i+0.5)*bar_width;
+        var s = i*bar_width-offset;
+        var s2 = (i+0.5)*bar_width-offset;
         var x = (Math.sin(s)*circleWidth)+widthInHalf;
         var y = (Math.cos(s)*circleHeight)+heightInHalf;
         var x1 = (Math.sin(s)*circleWidth*scaled_average_v)+widthInHalf;
