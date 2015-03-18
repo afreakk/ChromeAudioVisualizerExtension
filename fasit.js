@@ -40,7 +40,7 @@ function rgbToHex(r, g, b) {
     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 } 
  
-var fftSize = 2048;
+var fftSize = 512;
 var num_bars = 120;
 var width=4;
 function freqAnalyser() 
