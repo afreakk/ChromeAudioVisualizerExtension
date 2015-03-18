@@ -1,14 +1,14 @@
 var analyzer = null;
 var canvas = null;
 var audio = null;
-var canvas_context = null;
+var ctx = null;
 var context = null;
 var sourceNode = null;
 var circleWidth = 200;
 var circleHeight = 300;
 function setCircleShape()
 {
-    var x = 3.0;
+    var x = 4.0;
     circleWidth = canvas.width/x;
     circleHeight = canvas.height/x;
 }
@@ -16,7 +16,7 @@ function setCircleShape()
 function init(stream)
 {
     canvas = document.getElementById('c');
-    canvas_context = canvas.getContext('2d');
+    ctx = canvas.getContext('2d');
     setCircleShape();
 
     context = new AudioContext();
@@ -53,10 +53,8 @@ function freqAnalyser()
     var bar_width = (Math.PI*4)/num_bars;
     var data = new Uint8Array(fftSize);
     analyzer.getByteFrequencyData(data);
-    var actbarwidth = bar_width -4;
-
             
-    canvas_context.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     var bin_size = Math.floor(data.length / num_bars);
     var widthInHalf = canvas.width/2;
     var heightInHalf= canvas.height/1.75;
@@ -68,12 +66,26 @@ function freqAnalyser()
             sum += data[(i * bin_size) + j];
         }
         average = sum / bin_size;
-        scaled_average = (average / 512) * canvas.height;
-        canvas_context.fillStyle=rgbToHex(scaled_average, scaled_average, 0);
-        var s = i*bar_width-Math.PI/4.0;
-        var x = Math.sin(s)*circleWidth+widthInHalf;
-        var y = Math.cos(s)*circleHeight+heightInHalf;
-        canvas_context.fillRect(x, y, actbarwidth, - scaled_average);
+        scaled_average = (average /512 ) * canvas.height;
+        var scaled_average_c = scaled_average /2.0;
+        var scaled_average_v = scaled_average /100.0;
+        ctx.fillStyle=rgbToHex(scaled_average_c, scaled_average_c, 0);
+        var s = i*bar_width;
+        var s2 = (i+0.5)*bar_width;
+        var x = (Math.sin(s)*circleWidth)+widthInHalf;
+        var y = (Math.cos(s)*circleHeight)+heightInHalf;
+        var x1 = (Math.sin(s)*circleWidth*scaled_average_v)+widthInHalf;
+        var y1 = (Math.cos(s)*circleHeight*scaled_average_v)+heightInHalf;
+        var x2 = (Math.sin(s2)*circleWidth*scaled_average_v)+widthInHalf;
+        var y2 = (Math.cos(s2)*circleHeight*scaled_average_v)+heightInHalf;
+        var x3 = (Math.sin(s2)*circleWidth)+widthInHalf;
+        var y3 = (Math.cos(s2)*circleHeight)+heightInHalf;
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x1,y1);
+        ctx.lineTo(x2,y2);
+        ctx.lineTo(x3,y3);
+        ctx.fill();
     }
 }
 function main()
