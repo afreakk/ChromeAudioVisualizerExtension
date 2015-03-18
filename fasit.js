@@ -8,7 +8,7 @@ var circleWidth = 200;
 var circleHeight = 300;
 function setCircleShape()
 {
-    var x = 12.0;
+    var x = 4.0;
     circleWidth = canvas.width/x;
     circleHeight = canvas.height/x;
 }
@@ -41,9 +41,12 @@ function rgbToHex(r, g, b) {
 } 
  
 var fftSize = 512;
-var num_bars = 120;
+var num_bars = 64;
 var width=4;
-var topSize= 0.075;
+var topSize= 0.25;
+var height=0.001;
+var offset = Math.PI/4.0;
+var speedReduction = 450000;
 function freqAnalyser() 
 {
     window.requestAnimationFrame(freqAnalyser);
@@ -59,7 +62,7 @@ function freqAnalyser()
     var bin_size = Math.floor(data.length / num_bars);
     var widthInHalf = canvas.width/2;
     var heightInHalf= canvas.height/2;
-    var offset = Math.PI/4.0
+    var sumx = 0;
     for (var i = 0; i < num_bars; i += 1) 
     {
         sum = 0;
@@ -67,26 +70,32 @@ function freqAnalyser()
         {
             sum += data[(i * bin_size) + j];
         }
+        sumx += sum;
         var scaled_average_c = sum /7.5;
-        var scaled_average_v = sum /150.0;
+        var scaled_average_v = sum*height;
         ctx.fillStyle=rgbToHex(scaled_average_c, 0, 0);
-        var s = (i-topSize*scaled_average_v)*bar_width-offset;
+        var cwa = Math.max(circleWidth* scaled_average_v,0.0);
+        var cha = Math.max(circleHeight*scaled_average_v,0.0);
+        var s0 = (i)*bar_width-offset;
+        var s1 = (i-topSize*scaled_average_v)*bar_width-offset;
         var s2 = (i+topSize*scaled_average_v)*bar_width-offset;
-        var x = (Math.sin(s)*circleWidth)+widthInHalf;
-        var y = (Math.cos(s)*circleHeight)+heightInHalf;
-        var x1 = (Math.sin(s)*circleWidth*scaled_average_v)+widthInHalf;
-        var y1 = (Math.cos(s)*circleHeight*scaled_average_v)+heightInHalf;
-        var x2 = (Math.sin(s2)*circleWidth*scaled_average_v)+widthInHalf;
-        var y2 = (Math.cos(s2)*circleHeight*scaled_average_v)+heightInHalf;
-        var x3 = (Math.sin(s2)*circleWidth)+widthInHalf;
-        var y3 = (Math.cos(s2)*circleHeight)+heightInHalf;
+        var s3 = (i+1)*bar_width-offset;
+        var x0 = (Math.sin(s0)*circleWidth)+widthInHalf;
+        var y0 = (Math.cos(s0)*circleHeight)+heightInHalf;
+        var x1 = (Math.sin(s1)*cwa)+widthInHalf;
+        var y1 = (Math.cos(s1)*cha)+heightInHalf;
+        var x2 = (Math.sin(s2)*cwa)+widthInHalf;
+        var y2 = (Math.cos(s2)*cha)+heightInHalf;
+        var x3 = (Math.sin(s3)*circleWidth)+widthInHalf;
+        var y3 = (Math.cos(s3)*circleHeight)+heightInHalf;
         ctx.beginPath();
-        ctx.moveTo(x,y);
+        ctx.moveTo(x0,y0);
         ctx.lineTo(x1,y1);
         ctx.lineTo(x2,y2);
         ctx.lineTo(x3,y3);
         ctx.fill();
     }
+    offset += sumx/speedReduction;
 }
 function main()
 {
