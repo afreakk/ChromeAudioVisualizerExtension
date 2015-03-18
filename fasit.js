@@ -66,11 +66,9 @@ function freqAnalyser()
         {
             sum += data[(i * bin_size) + j];
         }
-        average = sum / bin_size;
-        scaled_average = (average /512 ) * canvas.height;
-        var scaled_average_c = scaled_average /2.5;
-        var scaled_average_v = scaled_average /100.0;
-        ctx.fillStyle=rgbToHex(scaled_average_c, scaled_average_c, 0);
+        var scaled_average_c = sum /7.5;
+        var scaled_average_v = sum /400.0;
+        ctx.fillStyle=rgbToHex(scaled_average_c, 0, 0);
         var s = i*bar_width-offset;
         var s2 = (i+0.5)*bar_width-offset;
         var x = (Math.sin(s)*circleWidth)+widthInHalf;
