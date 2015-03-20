@@ -11,7 +11,7 @@ var width=4;
 var topSize= 0.25;
 var height=0.001;
 var offset = Math.PI/4.0;
-var speedReduction = 450000;
+var speedReduction = 1050000;
 function sceneUpdate() 
 {
     window.requestAnimationFrame(sceneUpdate);
@@ -35,9 +35,8 @@ function sceneUpdate()
             sum += data[(i * bin_size) + j];
         }
         sumx += sum;
-        var scaled_average_c = sum /7.5;
+        var scaled_average_c = sum /25.0;
         var scaled_average_v = sum*height;
-        ctx.fillStyle=rgbToHex(scaled_average_c, 0, 0);
         var cwa = Math.max(circleWidth* scaled_average_v,0.0);
         var cha = Math.max(circleHeight*scaled_average_v,0.0);
         var s0 = (i)*bar_width-offset;
@@ -52,6 +51,11 @@ function sceneUpdate()
         var y2 = (Math.cos(s2)*cha)+heightInHalf;
         var x3 = (Math.sin(s3)*circleWidth)+widthInHalf;
         var y3 = (Math.cos(s3)*circleHeight)+heightInHalf;
+        var rgbS = i/5.0+offset;
+        ctx.fillStyle=rgbToHex((Math.sin(rgbS)/2.0+0.5)*scaled_average_c, 
+                                (Math.cos(rgbS)/2.0+0.5)*scaled_average_c, 
+                                (Math.cos(rgbS+Math.PI/4.0)/2.0+0.5)*scaled_average_c
+                                );
         ctx.beginPath();
         ctx.moveTo(x0,y0);
         ctx.lineTo(x1,y1);
