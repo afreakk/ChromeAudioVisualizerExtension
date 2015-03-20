@@ -4,8 +4,6 @@ var audio = null;
 var ctx = null;
 var context = null;
 var sourceNode = null;
-var circleWidth = 200;
-var circleHeight = 300;
 function init(stream)
 {
     canvas = document.getElementById('c');
@@ -15,7 +13,7 @@ function init(stream)
     sourceNode = context.createMediaStreamSource(stream);
 
     analyzer = context.createAnalyser();
-    analyzer.fftSize = fftSize;
+    analyzer.fftSize = 512;
 
     sourceNode.connect(analyzer);
     sourceNode.connect(context.destination);
