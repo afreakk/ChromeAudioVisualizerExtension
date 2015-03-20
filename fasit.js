@@ -1,45 +1,10 @@
-var analyzer = null;
-var canvas = null;
-var audio = null;
-var ctx = null;
-var context = null;
-var sourceNode = null;
-var circleWidth = 200;
-var circleHeight = 300;
-function setCircleShape()
+function sceneInit()
 {
     var x = 4.0;
     circleWidth = canvas.width/x;
     circleHeight = canvas.height/x;
 }
 
-function init(stream)
-{
-    canvas = document.getElementById('c');
-    ctx = canvas.getContext('2d');
-    setCircleShape();
-
-    context = new AudioContext();
-    sourceNode = context.createMediaStreamSource(stream);
-
-    analyzer = context.createAnalyser();
-    analyzer.fftSize = fftSize;
-
-    sourceNode.connect(analyzer);
-    sourceNode.connect(context.destination);
-
-    freqAnalyser();
-}
-
-function componentToHex(c) {
-    var hex = Math.min(Math.round(c),255).toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbToHex(r, g, b) {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-} 
- 
 var fftSize = 512;
 var num_bars = 64;
 var width=4;
@@ -47,13 +12,12 @@ var topSize= 0.25;
 var height=0.001;
 var offset = Math.PI/4.0;
 var speedReduction = 450000;
-function freqAnalyser() 
+function sceneUpdate() 
 {
-    window.requestAnimationFrame(freqAnalyser);
+    window.requestAnimationFrame(sceneUpdate);
     var sum;
     var average;
     var scaled_average;
-    //var bar_width = (canvas.width / num_bars)*width;
     var bar_width = (Math.PI*4)/num_bars;
     var data = new Uint8Array(fftSize);
     analyzer.getByteFrequencyData(data);
@@ -97,9 +61,3 @@ function freqAnalyser()
     }
     offset += sumx/speedReduction;
 }
-function main()
-{
-    var MediaStreamConstraint = { audio: true };
-    chrome.tabCapture.capture(MediaStreamConstraint, init);
-}
-main();
