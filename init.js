@@ -1,29 +1,45 @@
-var analyzer = null;
-var canvas = null;
-var audio = null;
-var ctx = null;
-var context = null;
-var sourceNode = null;
-function init(stream)
+var g = g || {};
+g.analyzer = null;
+g.canvas = null;
+g.ctx = null;
+
+var init = function(stream)
 {
-    canvas = document.getElementById('c');
-    ctx = canvas.getContext('2d');
+    g.canvas = document.getElementById('c');
+    g.ctx = g.canvas.getContext('2d');
 
-    context = new AudioContext();
-    sourceNode = context.createMediaStreamSource(stream);
+    var context = new AudioContext();
+    var sourceNode = context.createMediaStreamSource(stream);
 
-    analyzer = context.createAnalyser();
-    analyzer.fftSize = 512;
+    g.analyzer = context.createAnalyser();
+    g.analyzer.fftSize = 512;
 
-    sourceNode.connect(analyzer);
+    sourceNode.connect(g.analyzer);
     sourceNode.connect(context.destination);
 
-    sceneInit();
-    sceneUpdate();
-}
-function main()
+    var scenes = {};
+    var sceneNames = [];
+    for(var sceneName in AudioScenes)
+    {
+        var scene = new AudioScenes[sceneName];
+        sceneNames.push(scene.name);
+        scenes[scene.name] = scene;
+    }
+    var sceneSelector = new SceneSelector(sceneNames);
+    var datGUI = new dat.GUI();
+    datGUI.add(sceneSelector, "scene", sceneNames);
+    var sceneManager = new SceneManager(scenes, sceneSelector, new GUI(datGUI));
+    sceneManager.update();
+};
+
+var SceneSelector = function(sceneNames)
 {
-    var MediaStreamConstraint = { audio: true };
-    chrome.tabCapture.capture(MediaStreamConstraint, init);
+    //this.scene = "Worm";
+    var i = Math.round(Math.random()*(sceneNames.length-1));
+    this.scene = sceneNames[i];
 }
-main();
+
+var main = function()
+{
+    chrome.tabCapture.capture({audio: true}, init);
+}.call();
