@@ -28,16 +28,10 @@ var init = function(stream)
     var sceneSelector = new SceneSelector(sceneNames);
     var datGUI = new dat.GUI();
     datGUI.add(sceneSelector, "scene", sceneNames);
+    datGUI.closed = true;
     var sceneManager = new SceneManager(scenes, sceneSelector, new GUI(datGUI));
     sceneManager.update();
 };
-
-var SceneSelector = function(sceneNames)
-{
-    //this.scene = "Worm";
-    var i = Math.round(Math.random()*(sceneNames.length-1));
-    this.scene = sceneNames[i];
-}
 
 var main = function()
 {

@@ -45,13 +45,10 @@ AudioScenes.SceneWorm.prototype.update = function()
         var sum = 0;
         for (var j = 0; j < bin_size; j += 1)
             sum += data[(i * bin_size) + j];
-        sumtotal += sum;
         var scaled_average_c = sum*xs.colorStrength;
         var scaled_average_v = sum*xs.circleSize;
         var scaled_average_m = sum*xs.moveLength;
         var s0 = i*circleSpread-s.rotationOffset;
-        var sccx = Math.sin(s0)*circleWidth*scaled_average_m;
-        var sccy = Math.cos(s0)*circleHeight*scaled_average_m;
         var x0 = Math.sin(s0)*circleWidth*scaled_average_m+s.widthInHalf;
         var y0 = Math.cos(s0)*circleHeight*scaled_average_m+s.heightInHalf;
         var rgbS = i/xs.colorWidth+s.clrOffset;
@@ -63,6 +60,7 @@ AudioScenes.SceneWorm.prototype.update = function()
         g.ctx.lineWidth = 5;
         g.ctx.strokeStyle = '#003300';
         g.ctx.stroke();
+        sumtotal += sum;
     }
     sumtotal /= 10000000;
     s.rotationOffset += sumtotal*xs.rotationSpeed;
