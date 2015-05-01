@@ -1,21 +1,41 @@
-var g = g || {};
-g.analyzer = null;
-g.canvas = null;
-g.ctx = null;
-
-var init = function(stream)
+if(typeof g === 'undefined')
 {
-    g.canvas = document.getElementById('c');
+	var g = {};
+	g.analyzer = null;
+	g.canvas = null;
+	g.ctx = null;
+	g.byteFrequency = null;
+	g.port = null;
+	g.canvasZIndex = 2147483646;
+	g.pause = false;
+	g.init = false;
+	g.sceneManager = null;
+}
+
+chrome.runtime.onConnect.addListener(function(port) {
+	g.port = port;
+	port.onMessage.addListener(function(msg) {
+		if(msg.msg == 'data')
+			g.byteFrequency = msg.data;
+		else if(msg.msg == 'toggle')
+		{
+			g.pause = !g.pause;
+			handlePause();
+		}
+	});
+});
+var init = function()
+{
+	console.log("begin init");
+	g.port.postMessage("xxx");
+	g.canvas = document.createElement('canvas');
+	g.canvas.id = "lerret";
+	g.canvas.style.zIndex = g.canvasZIndex;
+	g.canvas.style.position = "absolute";
+	g.canvas.style.border = "0px";
+	document.body.appendChild(g.canvas);
+
     g.ctx = g.canvas.getContext('2d');
-
-    var context = new AudioContext();
-    var sourceNode = context.createMediaStreamSource(stream);
-
-    g.analyzer = context.createAnalyser();
-    g.analyzer.fftSize = 512;
-
-    sourceNode.connect(g.analyzer);
-    sourceNode.connect(context.destination);
 
     var scenes = {};
     var sceneNames = [];
@@ -27,13 +47,13 @@ var init = function(stream)
     }
     var sceneSelector = new SceneSelector(sceneNames);
     var datGUI = new dat.GUI();
+	document.getElementsByClassName("dg ac")[0].style.zIndex = g.canvasZIndex+1;
     datGUI.add(sceneSelector, "scene", sceneNames);
-    datGUI.closed = true;
-    var sceneManager = new SceneManager(scenes, sceneSelector, new GUI(datGUI));
-    sceneManager.update();
+    g.sceneManager = new SceneManager(scenes, sceneSelector, new GUI(datGUI));
+	datGUI.closed = true;
+	console.log("begin sceneManager update");
+	g.init = true;
+    g.sceneManager.update();
 };
 
-var main = function()
-{
-    chrome.tabCapture.capture({audio: true}, init);
-}.call();
+console.log("INITFILE INJECTED");

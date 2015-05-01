@@ -36,8 +36,7 @@ AudioScenes.SceneCircle.prototype.update = function()
     var circleWidth = g.canvas.width*xs.circleSize;
     var circleHeight = g.canvas.height*xs.circleSize;
     var bar_width = (Math.PI*4)/xs.numBars;
-    var data = new Uint8Array(g.analyzer.fftSize);
-    g.analyzer.getByteFrequencyData(data);
+	var data = g.byteFrequency;
     var bin_size = Math.floor(data.length / xs.numBars);
     var sumtotal = 0;
     g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);

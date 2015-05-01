@@ -1,3 +1,23 @@
+function handlePause()
+{
+	console.log("handlgin pause");
+	if(g.pause)
+	{
+		g.canvas.style.visibility = "hidden";
+	}
+	else
+	{
+		g.canvas.style.visibility = "visible";
+		g.sceneManager.update();
+	}
+}
+function canvasResize()
+{
+	g.canvas.width = window.innerWidth;
+	g.canvas.height = window.innerHeight;
+	g.canvas.style.top = window.scrollY.toString()+"px";
+	g.canvas.style.left = window.scrollX.toString()+"px";
+}
 var SceneManager = function(scenes, sceneSelector, gui)
 {
     this.sceneSelector = sceneSelector;
@@ -9,10 +29,17 @@ var SceneManager = function(scenes, sceneSelector, gui)
 
 SceneManager.prototype.update = function()
 {
-    window.requestAnimationFrame(this.update.bind(this));
-    this.currentScene.update();
-    if(this.sceneSelector.scene != this.currentScene.name)
-        this.initNewScene();
+	if(!g.pause)
+	{
+		window.requestAnimationFrame(this.update.bind(this));
+		canvasResize();
+		if(!g.byteFrequency)
+			return;
+		g.port.postMessage("r");
+		this.currentScene.update();
+		if(this.sceneSelector.scene != this.currentScene.name)
+			this.initNewScene();
+	}
 };
 
 SceneManager.prototype.initNewScene = function()

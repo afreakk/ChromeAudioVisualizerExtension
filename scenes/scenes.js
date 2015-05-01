@@ -8,7 +8,7 @@ var AudioScenes = AudioScenes || {}
 
 var SceneSelector = function(sceneNames)
 {
-    //this.scene = "Wart";
     var i = Math.round(Math.random()*(sceneNames.length-1));
     this.scene = sceneNames[i];
+    this.scene = "Wart";
 }
