@@ -21,7 +21,7 @@ chrome.runtime.onConnect.addListener(function(port) {
 });
 var init = function()
 {
-	console.log("begin init");
+	aLog("init begun");
 	g.port.postMessage("xxx");
 	g.canvas = document.createElement('canvas');
 	g.canvas.id = "lerret";
@@ -54,7 +54,8 @@ var init = function()
 
 	initStatsLibrary();
 
-	console.log("begin sceneManager update");
+	canvasResize();
+	aLog("init finished, beginning sceneManager.update");
     g.sceneManager.update();
 };
 
@@ -63,11 +64,8 @@ function initStatsLibrary()
 	g.stats = new Stats();
 	g.stats.setMode(0); // 0: fps, 1: ms
 
-	// align top-left
 	g.stats.domElement.style.position = 'absolute';
-	g.stats.domElement.style.left = '0px';
-	g.stats.domElement.style.top = '0px';
 	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
 	document.body.appendChild( g.stats.domElement );
 }
-console.log("INITFILE INJECTED");
+aLog("INITFILE INJECTED");

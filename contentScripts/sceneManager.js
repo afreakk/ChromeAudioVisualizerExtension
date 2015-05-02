@@ -1,37 +1,44 @@
+var System = function(gui)
+{
+	this.gui = gui;
+};
+System.prototype.update = function(scene)
+{
+	g.stats.begin();
+	//canvasResize();
+	if(g.byteFrequency)
+		scene.update();
+	g.port.postMessage("r");
+	g.stats.end();
+};
+System.prototype.refreshGUI = function(scene)
+{
+    this.gui.refresh(scene.settings);
+};
+
 var SceneManager = function(scenes, sceneSelector, gui)
 {
     this.scenes = scenes;
     this.sceneSelector = sceneSelector;
-    this.gui = gui;
-    this.currentScene = null;
+	this.system = new System(gui);
     this.initNewScene();
 };
-
+SceneManager.prototype.initNewScene = function()
+{
+    aLog("init scene: " + this.sceneSelector.scene);
+    this.currentScene = this.scenes[this.sceneSelector.scene];
+    this.currentScene.init();
+	this.system.refreshGUI(this.currentScene);
+};
 SceneManager.prototype.update = function()
 {
 	if(!g.pause)
 	{
-		g.stats.begin();
-
-		canvasResize();
-
-		if(g.byteFrequency)
-			this.currentScene.update();
-
+		this.system.update(this.currentScene);
 		if(this.sceneSelector.scene != this.currentScene.name)
 			this.initNewScene();
-
-		g.port.postMessage("r");
-
-		g.stats.end();
 		window.requestAnimationFrame(this.update.bind(this));
 	}
-};
-
-SceneManager.prototype.initNewScene = function()
-{
-    console.log("init scene: " + this.sceneSelector.scene);
-    this.currentScene = this.scenes[this.sceneSelector.scene];
-    this.gui.refresh(this.currentScene.settings);
-    this.currentScene.init();
+	else
+		aLog("scene paused");
 };

@@ -1,13 +1,13 @@
-function componentToHex(c) 
+function componentToHex(c)
 {
     var hex = Math.min(Math.round(c),255).toString(16);
     return hex.length == 1 ? "0" + hex : hex;
 }
 
-function rgbToHex(r, g, b) 
+function rgbToHex(r, g, b)
 {
     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-} 
+}
 
 function togglePause()
 {
@@ -26,6 +26,7 @@ function togglePause()
 		g.canvas.style.pointerEvents = "auto";
 		g.datStyle.visibility = "visible";
 		g.stats.domElement.style.visibility = 'visible';
+		canvasResize();
 		g.sceneManager.update();
 	}
 }
@@ -55,3 +56,7 @@ GUI.prototype.refresh = function(elements)
         if(elements.hasOwnProperty(elem))
             this.guiElements.push(this.gui.add(elements, elem));
 };
+function aLog(msg)
+{
+	console.log(msg);
+}

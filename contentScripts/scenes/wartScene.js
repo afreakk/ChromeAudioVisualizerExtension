@@ -1,4 +1,4 @@
-console.log("WARTSCENE INJECTED");
+aLog("WARTSCENE INJECTED");
 WartSceneSettings = function()
 {
     this.heightCount=10;

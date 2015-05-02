@@ -17,36 +17,42 @@ ExtensionFrontEnd.prototype.togglePauseTab = function(tabId)
 ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 {
 	console.log("MainKey triggered on tabid: "+tab.id);
-	if(!(tab.id in this.injectedTabs))
-		this.injectedTabs[tab.id] = new TabInfo();
-	if(this.injectedTabs[tab.id].injected==false)
-	{
-		var scriptInjector = new ScriptInjector(tab.id);
-		scriptInjector.injectScripts([
-			"lib/dat.gui.js",
-			"lib/stats.min.js",
-			"contentScripts/scenes/scenes.js",
-			"contentScripts/scenes/circleScene.js",
-			"contentScripts/scenes/wormScene.js",
-			"contentScripts/scenes/wartScene.js",
-			"contentScripts/sceneManager.js",
-			"contentScripts/tools.js",
-			"contentScripts/init.js"
-		],
-			function()
+    chrome.tabs.executeScript(tab.id,
+		{code: "chrome.extension.sendMessage({ loaded: typeof g !== 'undefined'});"},
+		function()
+		{
+			if(!(tab.id in this.injectedTabs))
+				this.injectedTabs[tab.id] = new TabInfo();
+			if(this.injectedTabs[tab.id].injected==false)
 			{
-				this.injectedTabs[tab.id].injected = true;
-				chrome.tabCapture.capture({audio: true},
-					function(stream)
+				var scriptInjector = new ScriptInjector(tab.id);
+				scriptInjector.injectScripts([
+					"lib/dat.gui.js",
+					"lib/stats.min.js",
+					"contentScripts/tools.js",
+					"contentScripts/scenes/scenes.js",
+					"contentScripts/scenes/circleScene.js",
+					"contentScripts/scenes/wormScene.js",
+					"contentScripts/scenes/wartScene.js",
+					"contentScripts/sceneManager.js",
+					"contentScripts/init.js"
+				],
+					function()
 					{
-						this.initTab(stream, tab.id);
+						this.injectedTabs[tab.id].injected = true;
+						chrome.tabCapture.capture({audio: true},
+							function(stream)
+							{
+								this.initTab(stream, tab.id);
+							}.bind(this)
+						);
 					}.bind(this)
 				);
-			}.bind(this)
-		);
-	}
-	else
-		this.togglePauseTab(tab.id);
+			}
+			else
+				this.togglePauseTab(tab.id);
+		}.bind(this)
+	);
 };
 ExtensionFrontEnd.prototype.initTab = function(stream, tabId)
 {
