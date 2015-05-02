@@ -1,26 +1,21 @@
 {
-  "manifest_version": 2,
-
-  "name": "AudioVisualizer Drop-Down",
-  "description": "dropDoWNVISUALIZER",
-  "version": "1.0",
-
- "permissions": [
-    "tabCapture",
-    "activeTab",
-	"tabs",
-	"http://*/",
-	"https://*/"
-  ],
-  "browser_action": {
-    "default_icon": "gfx/icon.png",
-    "default_title": "dropDownAudio"
-  },
-  "background": {
-    "scripts": [
-				"backgroundScripts/extensionFrontEnd.js",
-				"backgroundScripts/main.js"
-				],
-    "persistent": false
-  }
+	"manifest_version": 2,
+	"name": "AudioVisualizer",
+	"description": "turn on some music and turn your browser into a party browser.",
+	"version": "2.0",
+	"permissions": [
+		"tabCapture",
+		"activeTab"
+	],
+	"browser_action": {
+		"default_icon": "gfx/icon.png",
+		"default_title": "AudioVisualizer"
+	},
+	"background": {
+		"scripts": [
+					"backgroundScripts/extensionFrontEnd.js",
+					"backgroundScripts/main.js"
+		],
+		"persistent": false
+	}
 }
