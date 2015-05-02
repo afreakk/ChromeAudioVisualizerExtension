@@ -5,7 +5,10 @@
 	"version": "2.0",
 	"permissions": [
 		"tabCapture",
-		"activeTab"
+		"tabs",
+		"activeTab",
+		"http://*/",
+		"https://*/"
 	],
 	"browser_action": {
 		"default_icon": "gfx/icon.png",
@@ -13,8 +16,8 @@
 	},
 	"background": {
 		"scripts": [
-					"backgroundScripts/extensionFrontEnd.js",
-					"backgroundScripts/main.js"
+			"backgroundScripts/extensionFrontEnd.js",
+			"backgroundScripts/main.js"
 		],
 		"persistent": false
 	}
