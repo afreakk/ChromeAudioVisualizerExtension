@@ -1,14 +1,15 @@
 SceneWormSettings = function()
 {
-    this.moveLength=0.006;
+    this.moveLength=0.01;
     this.numBars=24;
-    this.circleSize=0.2;
-    this.rotationSpeed = 10.0;
-    this.colorSpeed = 40.0;
-    this.colorStrength = 0.005;
+    this.circleSize=0.1;
+    this.rotationSpeed = 85.0;
+    this.colorSpeed = 150.0;
+    this.colorStrength = 0.85;
     this.colorWidth = 2.5;
-    this.colorOffset = Math.PI/2.0
+    this.colorOffset = Math.PI;
 	this.zoom = 10.0;
+	this.innSnevring = 0.001;
 };
 
 AudioScenes.SceneWorm = function()
@@ -30,8 +31,6 @@ AudioScenes.SceneWorm.prototype.init = function()
 
 AudioScenes.SceneWorm.prototype.update = function()
 {
-    s.widthInHalf = g.canvas.width/2;
-    s.heightInHalf= g.canvas.height/2;
     var xs = this.settings;
     var circleWidth = g.canvas.width*xs.circleSize;
     var circleHeight = g.canvas.height*xs.circleSize;
@@ -42,10 +41,10 @@ AudioScenes.SceneWorm.prototype.update = function()
     g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
 	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 	var z = 0;
+	var yy = 0;
     for (var i = 0; i < xs.numBars; i += 1)
     {
-		var idx = spin(z+= xs.zoom, data.length)
-        var sum = data[idx];
+		var sum = Math.max(spin(z+= xs.zoom, data) - (yy += xs.innSnevring),0);
         var scaled_average_c = sum*xs.colorStrength;
         var scaled_average_v = sum*xs.circleSize;
         var scaled_average_m = sum*xs.moveLength;

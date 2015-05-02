@@ -1,19 +1,18 @@
-aLog("WARTSCENE INJECTED");
 WartSceneSettings = function()
 {
-    this.heightCount=10;
-	this.widthCount = 10;
-    this.circleSize=0.25;
+    this.heightCount=5;
+	this.widthCount =5;
+    this.circleSize=0.5;
     this.colorSpeed = 0.0000001;
     this.colorStrength = 0.75;
-    this.colorWidth = 0.0001;
+    this.colorWidth = 0.003;
     this.colorOffset = Math.PI/2.0;
     this.rotationSpeed = 0.00002;
 	this.maxSize = 100;
 	this.minSize = 3;
-	this.padding = 75;
-	this.test = 0.85;
-	this.zoom = 2.0;
+	this.padding = 175;
+	this.test = 0.75;
+	this.zoom = 10;
 };
 AudioScenes.WartScene = function()
 {
@@ -42,8 +41,7 @@ AudioScenes.WartScene.prototype.update = function()
     {
         for (var j = 0; j < xs.widthCount; j += 1)
         {
-			var idx = spin(z+= xs.zoom, data.length)
-            var sum = data[idx];
+			var sum = spin(z+= xs.zoom, data);
             var scaled_average_c = sum*xs.colorStrength;
             var scaled_average_v = sum*xs.circleSize;
 			if(scaled_average_v<xs.minSize)
@@ -66,11 +64,3 @@ AudioScenes.WartScene.prototype.update = function()
     }
 };
 
-function spin(i, max)
-{
-    while(i > max)
-		i -= max;
-    while(i < 0)
-		i += max;
-	return i;
-};

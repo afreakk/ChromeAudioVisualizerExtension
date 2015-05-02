@@ -1,13 +1,13 @@
 SceneCircleSettings = function()
 {
     this.circleSize = 0.09;
-    this.topSize= 0.15;
-    this.numBars=78;
-    this.barHeight=0.024;
+    this.topSize= 0.12;
+    this.numBars=40;
+    this.barHeight=0.02;
     this.rotationSpeed = 20;
     this.colorSpeed = -80;
-    this.colorStrength = 0.175;
-    this.colorWidth = 2.5;
+    this.colorStrength = 0.2;
+    this.colorWidth = Math.PI;
     this.colorOffset = Math.PI;
 	this.zoom = 1.0;
 };
@@ -31,8 +31,6 @@ AudioScenes.SceneCircle.prototype.init = function()
 
 AudioScenes.SceneCircle.prototype.update = function()
 {
-    s.widthInHalf = g.canvas.width/2;
-    s.heightInHalf= g.canvas.height/2;
     var xs = this.settings;
     var circleWidth = g.canvas.width*xs.circleSize;
     var circleHeight = g.canvas.height*xs.circleSize;
@@ -42,11 +40,11 @@ AudioScenes.SceneCircle.prototype.update = function()
     var sumtotal = 0;
     g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
 	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	g.ctx.fill();
 	var z = 0;
     for (var i = 0; i < xs.numBars; i += 1)
     {
-		var idx = spin(z+= xs.zoom, data.length)
-		var sum = data[idx];
+		var sum = spin(z+= xs.zoom, data);
         sumtotal += sum;
         var scaled_average_c = sum*xs.colorStrength;
         var scaled_average_v = sum*xs.barHeight;
@@ -72,6 +70,9 @@ AudioScenes.SceneCircle.prototype.update = function()
         g.ctx.lineTo(x2,y2);
         g.ctx.lineTo(x3,y3);
         g.ctx.fill();
+		g.ctx.lineWidth = 5;
+		g.ctx.strokeStyle = '#000000';
+		g.ctx.stroke();
     }
     sumtotal /= 10000000;
     s.rotationOffset += sumtotal*xs.rotationSpeed;

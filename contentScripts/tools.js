@@ -11,8 +11,8 @@ function rgbToHex(r, g, b)
 
 function togglePause()
 {
-	console.log("toggling pause");
 	g.pause = !g.pause;
+	console.log("toggling pause: "+g.pause);
 	if(g.pause)
 	{
 		g.canvas.style.visibility = "hidden";
@@ -41,6 +41,10 @@ function canvasResize()
 	g.canvas.style.left = left;
 	g.stats.domElement.style.top = top;
 	g.stats.domElement.style.left = left;
+
+	//calculations
+    s.widthInHalf = g.canvas.width/2;
+    s.heightInHalf= g.canvas.height/2;
 }
 
 var GUI = function(datGUI)

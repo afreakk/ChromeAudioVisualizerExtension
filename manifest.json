@@ -17,7 +17,8 @@
 	"background": {
 		"scripts": [
 			"backgroundScripts/extensionFrontEnd.js",
-			"backgroundScripts/main.js"
+			"backgroundScripts/main.js",
+			"settings/setting.js"
 		],
 		"persistent": false
 	}

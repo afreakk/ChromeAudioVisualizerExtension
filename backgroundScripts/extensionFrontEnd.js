@@ -29,6 +29,7 @@ ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 				scriptInjector.injectScripts([
 					"lib/dat.gui.js",
 					"lib/stats.min.js",
+					"settings/setting.js",
 					"contentScripts/tools.js",
 					"contentScripts/scenes/scenes.js",
 					"contentScripts/scenes/circleScene.js",
@@ -85,7 +86,7 @@ ExtensionFrontEnd.prototype.updateHandler = function(tabId, changeinfo, tab)
 };
 ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 {
-	var byteFrequency = new Uint8Array(512);
+	var byteFrequency = new Uint8Array(AV.fftSize);
 	this.injectedTabs[port.name].analyzer.getByteFrequencyData(byteFrequency);
 	this.injectedTabs[port.name].port.postMessage(byteFrequency);
 };
@@ -94,7 +95,7 @@ ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 	var context = new AudioContext();
 	var sourceNode = context.createMediaStreamSource(stream);
 	this.injectedTabs[id].analyzer = context.createAnalyser();
-	this.injectedTabs[id].analyzer.fftSize = 512;
+	this.injectedTabs[id].analyzer.fftSize = AV.fftSize;
 	sourceNode.connect(this.injectedTabs[id].analyzer);
 	sourceNode.connect(context.destination);
 }
