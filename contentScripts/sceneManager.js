@@ -1,13 +1,20 @@
-function handlePause()
+function togglePause()
 {
-	console.log("handlgin pause");
+	console.log("toggling pause");
+	g.pause = !g.pause;
 	if(g.pause)
 	{
 		g.canvas.style.visibility = "hidden";
+		g.canvas.style.pointerEvents = "none";
+		g.datStyle.visibility = "hidden";
+		g.stats.domElement.style.visibility = 'hidden';
 	}
 	else
 	{
 		g.canvas.style.visibility = "visible";
+		g.canvas.style.pointerEvents = "auto";
+		g.datStyle.visibility = "visible";
+		g.stats.domElement.style.visibility = 'visible';
 		g.sceneManager.update();
 	}
 }
@@ -15,8 +22,12 @@ function canvasResize()
 {
 	g.canvas.width = window.innerWidth;
 	g.canvas.height = window.innerHeight;
-	g.canvas.style.top = window.scrollY.toString()+"px";
-	g.canvas.style.left = window.scrollX.toString()+"px";
+	var top = window.scrollY.toString()+"px";
+	var left = window.scrollX.toString()+"px";
+	g.canvas.style.top = top;
+	g.canvas.style.left = left;
+	g.stats.domElement.style.top = top;
+	g.stats.domElement.style.left = left;
 }
 var SceneManager = function(scenes, sceneSelector, gui)
 {
@@ -31,14 +42,17 @@ SceneManager.prototype.update = function()
 {
 	if(!g.pause)
 	{
-		window.requestAnimationFrame(this.update.bind(this));
+		g.stats.begin();
+
 		canvasResize();
-		if(!g.byteFrequency)
-			return;
-		g.port.postMessage("r");
-		this.currentScene.update();
+		if(g.byteFrequency)
+			this.currentScene.update();
 		if(this.sceneSelector.scene != this.currentScene.name)
 			this.initNewScene();
+		g.port.postMessage("r");
+
+		g.stats.end();
+		window.requestAnimationFrame(this.update.bind(this));
 	}
 };
 

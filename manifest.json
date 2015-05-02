@@ -8,14 +8,19 @@
  "permissions": [
     "tabCapture",
     "activeTab",
-	"tabs"
+	"tabs",
+	"http://*/",
+	"https://*/"
   ],
   "browser_action": {
-    "default_icon": "icon.png",
+    "default_icon": "gfx/icon.png",
     "default_title": "dropDownAudio"
   },
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+				"backgroundScripts/extensionFrontEnd.js",
+				"backgroundScripts/main.js"
+				],
     "persistent": false
   }
 }

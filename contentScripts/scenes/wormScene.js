@@ -1,13 +1,14 @@
 SceneWormSettings = function()
 {
     this.moveLength=0.006;
-    this.numBars=64;
-    this.circleSize=0.025;
+    this.numBars=24;
+    this.circleSize=0.2;
     this.rotationSpeed = 10.0;
     this.colorSpeed = 40.0;
-    this.colorStrength = 0.05;
+    this.colorStrength = 0.005;
     this.colorWidth = 2.5;
     this.colorOffset = Math.PI/2.0
+	this.zoom = 10.0;
 };
 
 AudioScenes.SceneWorm = function()
@@ -25,12 +26,12 @@ AudioScenes.SceneWorm.prototype.getClr = function(rgbS,scaled_average_c)
 }
 AudioScenes.SceneWorm.prototype.init = function()
 {
-    s.widthInHalf = g.canvas.width/2;
-    s.heightInHalf= g.canvas.height/2;
 };
 
 AudioScenes.SceneWorm.prototype.update = function()
 {
+    s.widthInHalf = g.canvas.width/2;
+    s.heightInHalf= g.canvas.height/2;
     var xs = this.settings;
     var circleWidth = g.canvas.width*xs.circleSize;
     var circleHeight = g.canvas.height*xs.circleSize;
@@ -39,11 +40,12 @@ AudioScenes.SceneWorm.prototype.update = function()
     var bin_size = Math.floor(data.length / xs.numBars);
     var sumtotal = 0;
     g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	var z = 0;
     for (var i = 0; i < xs.numBars; i += 1)
     {
-        var sum = 0;
-        for (var j = 0; j < bin_size; j += 1)
-            sum += data[(i * bin_size) + j];
+		var idx = spin(z+= xs.zoom, data.length)
+        var sum = data[idx];
         var scaled_average_c = sum*xs.colorStrength;
         var scaled_average_v = sum*xs.circleSize;
         var scaled_average_m = sum*xs.moveLength;

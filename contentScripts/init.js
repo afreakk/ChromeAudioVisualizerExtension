@@ -8,20 +8,15 @@ if(typeof g === 'undefined')
 	g.port = null;
 	g.canvasZIndex = 2147483646;
 	g.pause = false;
-	g.init = false;
 	g.sceneManager = null;
+	g.datStyle = null;
+	g.sceneSelector = null;
 }
 
 chrome.runtime.onConnect.addListener(function(port) {
 	g.port = port;
 	port.onMessage.addListener(function(msg) {
-		if(msg.msg == 'data')
-			g.byteFrequency = msg.data;
-		else if(msg.msg == 'toggle')
-		{
-			g.pause = !g.pause;
-			handlePause();
-		}
+		g.byteFrequency = msg;
 	});
 });
 var init = function()
@@ -45,15 +40,34 @@ var init = function()
         sceneNames.push(scene.name);
         scenes[scene.name] = scene;
     }
-    var sceneSelector = new SceneSelector(sceneNames);
+
+    g.sceneSelector = new SceneSelector(sceneNames);
+	g.sceneSelector.setRandomScene();
+
     var datGUI = new dat.GUI();
-	document.getElementsByClassName("dg ac")[0].style.zIndex = g.canvasZIndex+1;
-    datGUI.add(sceneSelector, "scene", sceneNames);
-    g.sceneManager = new SceneManager(scenes, sceneSelector, new GUI(datGUI));
+    datGUI.add(g.sceneSelector, "scene", sceneNames);
 	datGUI.closed = true;
+    g.sceneManager = new SceneManager(scenes, g.sceneSelector, new GUI(datGUI));
+
+	g.datStyle = document.getElementsByClassName("dg ac")[0].style;
+	g.datStyle.zIndex = g.canvasZIndex+1;
+
+	initStatsLibrary();
+
 	console.log("begin sceneManager update");
-	g.init = true;
     g.sceneManager.update();
 };
 
+function initStatsLibrary()
+{
+	g.stats = new Stats();
+	g.stats.setMode(0); // 0: fps, 1: ms
+
+	// align top-left
+	g.stats.domElement.style.position = 'absolute';
+	g.stats.domElement.style.left = '0px';
+	g.stats.domElement.style.top = '0px';
+	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
+	document.body.appendChild( g.stats.domElement );
+}
 console.log("INITFILE INJECTED");
