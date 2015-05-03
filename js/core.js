@@ -27,7 +27,8 @@ GUI.prototype.refresh = function(elements)
 {
     while(this.guiElements.length>0)
         this.gui.remove(this.guiElements.pop());
-    for(var elem in elements){
+    for(var elem in elements)
+	{
         if(elements.hasOwnProperty(elem))
 		{
 			aLog("adding gui setting: "+elem);
@@ -79,6 +80,7 @@ function togglePause()
 		g.datStyle.visibility = "visible";
 		g.stats.domElement.style.visibility = 'visible';
 		canvasResize();
+		g.sceneManager.initCurrentScene();
 		g.sceneManager.update();
 	}
 }

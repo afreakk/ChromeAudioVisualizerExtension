@@ -10,7 +10,6 @@ GenericSceneSettings = function()
 AudioScenes.GenericScene = function()
 {
     this.name = "SpectrumAnalyziz";
-    this.settings = new GenericSceneSettings();
 };
 AudioScenes.GenericScene.prototype.getClr = function(rgbS,scaled_average_c)
 {
@@ -22,6 +21,8 @@ AudioScenes.GenericScene.prototype.getClr = function(rgbS,scaled_average_c)
 }
 AudioScenes.GenericScene.prototype.init = function()
 {
+	if(!this.settings||hasAnyBrokenValues(this.settings))
+		this.settings = new GenericSceneSettings();
 };
 AudioScenes.GenericScene.prototype.update = function()
 {
@@ -46,4 +47,3 @@ AudioScenes.GenericScene.prototype.update = function()
 		s.clrOffset += xs.colorWidth-specValue/xs.musicColorInfluenceReducer;
 	}
 };
-

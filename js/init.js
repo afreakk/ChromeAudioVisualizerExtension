@@ -42,14 +42,14 @@ var init = function()
 
     g.sceneSelector = new SceneSelector(sceneNames);
 	g.sceneSelector.setRandomScene();
+	initStatsLibrary();
 
 	var datGUI = initDatGUI();
     datGUI.add(g.sceneSelector, "scene", sceneNames);
 
+	canvasResize();
     g.sceneManager = new SceneManager(scenes, g.sceneSelector, new GUI(datGUI));
 
-	initStatsLibrary();
-	canvasResize();
 	aLog("init finished, beginning sceneManager.update");
     g.sceneManager.update();
 };

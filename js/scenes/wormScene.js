@@ -8,7 +8,7 @@ SceneWormSettings = function()
     this.colorStrength = 0.85;
     this.colorWidth = 2.5;
     this.colorOffset = Math.PI;
-	this.zoom = 10.0;
+	this.spectrumJumps = 10.0;
 	this.innSnevring = 0.001;
 };
 
@@ -27,6 +27,8 @@ AudioScenes.SceneWorm.prototype.getClr = function(rgbS,scaled_average_c)
 }
 AudioScenes.SceneWorm.prototype.init = function()
 {
+	if(!this.settings||hasAnyBrokenValues(this.settings))
+		this.settings = new SceneWormSettings();
 };
 
 AudioScenes.SceneWorm.prototype.update = function()
@@ -44,7 +46,7 @@ AudioScenes.SceneWorm.prototype.update = function()
 	var yy = 0;
     for (var i = 0; i < xs.numBars; i += 1)
     {
-		var sum = Math.max(spin(z+= xs.zoom, data) - (yy += xs.innSnevring),0);
+		var sum = Math.max(spin(z+= xs.spectrumJumps, data) - (yy += xs.innSnevring),0);
         var scaled_average_c = sum*xs.colorStrength;
         var scaled_average_v = sum*xs.circleSize;
         var scaled_average_m = sum*xs.moveLength;
@@ -57,9 +59,6 @@ AudioScenes.SceneWorm.prototype.update = function()
         g.ctx.arc(x0, y0, scaled_average_v, 0, 2 * Math.PI, false);
         g.ctx.fillStyle=this.getClr(rgbS,scaled_average_c);
         g.ctx.fill();
-        g.ctx.lineWidth = 5;
-        g.ctx.strokeStyle = '#003300';
-        g.ctx.stroke();
         sumtotal += sum;
     }
     sumtotal /= 10000000;

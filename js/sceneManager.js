@@ -3,11 +3,12 @@ var SceneManager = function(scenes, sceneSelector, gui)
     this.scenes = scenes;
     this.sceneSelector = sceneSelector;
 	this.system = new System(gui);
-    this.initNewScene();
+    this.initCurrentScene();
 };
-SceneManager.prototype.initNewScene = function()
+SceneManager.prototype.initCurrentScene = function()
 {
     aLog("init scene: " + this.sceneSelector.scene);
+	resetBrokenGlobalSceneValues();
     this.currentScene = this.scenes[this.sceneSelector.scene];
     this.currentScene.init();
 	this.system.refreshGUI(this.currentScene);
@@ -18,7 +19,7 @@ SceneManager.prototype.update = function()
 	{
 		this.system.update(this.currentScene);
 		if(this.sceneSelector.scene != this.currentScene.name)
-			this.initNewScene();
+			this.initCurrentScene();
 		window.requestAnimationFrame(this.update.bind(this));
 	}
 	else

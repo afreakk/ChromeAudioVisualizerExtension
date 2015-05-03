@@ -12,12 +12,11 @@ WartSceneSettings = function()
 	this.minSize = 3;
 	this.padding = 175;
 	this.test = 0.75;
-	this.zoom = 10;
+	this.spectrumJumps = 10;
 };
 AudioScenes.WartScene = function()
 {
     this.name = "Wart";
-    this.settings = new WartSceneSettings();
 };
 AudioScenes.WartScene.prototype.getClr = function(rgbS,scaled_average_c)
 {
@@ -29,6 +28,8 @@ AudioScenes.WartScene.prototype.getClr = function(rgbS,scaled_average_c)
 }
 AudioScenes.WartScene.prototype.init = function()
 {
+	if(!this.settings||hasAnyBrokenValues(this.settings))
+		this.settings = new WartSceneSettings();
 };
 AudioScenes.WartScene.prototype.update = function()
 {
@@ -41,7 +42,7 @@ AudioScenes.WartScene.prototype.update = function()
     {
         for (var j = 0; j < xs.widthCount; j += 1)
         {
-			var sum = spin(z+= xs.zoom, data);
+			var sum = spin(z+= xs.spectrumJumps, data);
             var scaled_average_c = sum*xs.colorStrength;
             var scaled_average_v = sum*xs.circleSize;
 			if(scaled_average_v<xs.minSize)

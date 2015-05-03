@@ -5,17 +5,16 @@ SceneCircleSettings = function()
     this.numBars=40;
     this.barHeight=0.02;
     this.rotationSpeed = 20;
-    this.colorSpeed = -80;
+    this.colorSpeed = 80.5;
     this.colorStrength = 0.2;
     this.colorWidth = Math.PI;
     this.colorOffset = Math.PI;
-	this.zoom = 1.0;
+	this.spectrumJumps = 1.0;
 };
 
 AudioScenes.SceneCircle = function()
 {
     this.name = "Circle";
-    this.settings = new SceneCircleSettings();
 };
 AudioScenes.SceneCircle.prototype.getClr = function(rgbS,scaled_average_c)
 {
@@ -27,6 +26,8 @@ AudioScenes.SceneCircle.prototype.getClr = function(rgbS,scaled_average_c)
 }
 AudioScenes.SceneCircle.prototype.init = function()
 {
+	if(!this.settings||hasAnyBrokenValues(this.settings))
+		this.settings = new SceneCircleSettings();
 };
 
 AudioScenes.SceneCircle.prototype.update = function()
@@ -44,7 +45,7 @@ AudioScenes.SceneCircle.prototype.update = function()
 	var z = 0;
     for (var i = 0; i < xs.numBars; i += 1)
     {
-		var sum = spin(z+= xs.zoom, data);
+		var sum = spin(z+= xs.spectrumJumps, data);
         sumtotal += sum;
         var scaled_average_c = sum*xs.colorStrength;
         var scaled_average_v = sum*xs.barHeight;

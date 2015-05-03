@@ -9,6 +9,16 @@ function rgbToHex(r, g, b)
     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 
+function hasAnyBrokenValues(settings)
+{
+	for(var i in settings)
+	{
+		if(settings[i]===null||isNaN(settings[i]))
+			return true;
+	}
+	return false;
+}
+
 function deleteDomClass(className)
 {
 	deleteDom(document.body.getElementsByClassName(className));

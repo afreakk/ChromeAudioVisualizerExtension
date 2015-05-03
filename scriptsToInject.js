@@ -1,8 +1,8 @@
 AV.scriptsToInject = [
 	"settings/setting.js",
 
-	"js/lib/dat.gui.js",
-	"js/lib/stats.min.js",
+	"lib/dat.gui.js",
+	"lib/stats.min.js",
 
 	"js/tools.js",
 	"js/scenes/scenes.js",
@@ -10,6 +10,7 @@ AV.scriptsToInject = [
 	"js/scenes/wormScene.js",
 	"js/scenes/wartScene.js",
 	"js/scenes/genericScene.js",
+	"js/scenes/roundSpectrum.js",
 	"js/sceneManager.js",
 	"js/core.js",
 	"js/init.js"

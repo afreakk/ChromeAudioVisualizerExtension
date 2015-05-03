@@ -6,6 +6,20 @@ s.rotationOffset = Math.PI/4.0;
 s.clrOffset = 0.0;
 var AudioScenes = AudioScenes || {}
 
+function resetBrokenGlobalSceneValues()
+{
+	s.widthInHalf=defaultIfBroken(s.widthInHalf, 0.0);
+	s.heightInHalf=defaultIfBroken(s.heightInHalf, 0.0);
+	s.rotationOffset=defaultIfBroken(s.rotationOffset, Math.PI/4.0);
+	s.clrOffset=defaultIfBroken(s.clrOffset, 0.0);
+}
+function defaultIfBroken(num, defaultValue)
+{
+	if(num != null && !isNaN(num))
+		return num;
+	return defaultValue;
+}
+
 var SceneSelector = function(sceneNames)
 {
 	this.sceneNames = sceneNames;
@@ -15,7 +29,7 @@ SceneSelector.prototype.setRandomScene = function()
 {
     var i = Math.round(Math.random()*(this.sceneNames.length-1));
     this.scene = this.sceneNames[i];
-	this.scene = "SpectrumAnalyziz";
+	this.scene = "RoundSpectrum";
 };
 
 function spin(i, data)
