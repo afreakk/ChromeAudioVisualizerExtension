@@ -80,6 +80,7 @@ function togglePause()
 		g.datStyle.visibility = "visible";
 		g.stats.domElement.style.visibility = 'visible';
 		canvasResize();
+		g.sceneManager.sceneSelector.setRandomScene();
 		g.sceneManager.initCurrentScene();
 		g.sceneManager.update();
 	}

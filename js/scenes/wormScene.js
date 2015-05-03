@@ -1,7 +1,7 @@
 SceneWormSettings = function()
 {
     this.moveLength=0.01;
-    this.numBars=24;
+    this.numBars=48;
     this.circleSize=0.1;
     this.rotationSpeed = 85.0;
     this.colorSpeed = 150.0;
