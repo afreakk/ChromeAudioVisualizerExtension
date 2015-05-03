@@ -18,7 +18,7 @@ ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 {
 	console.log("MainKey triggered on tabid: "+tab.id);
     chrome.tabs.executeScript(tab.id,
-		{code: "chrome.extension.sendMessage({ loaded: typeof g !== 'undefined'});"},
+		{code: jsInjectedQuery},
 		function()
 		{
 			if(!(tab.id in this.injectedTabs))
@@ -26,18 +26,7 @@ ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 			if(this.injectedTabs[tab.id].injected==false)
 			{
 				var scriptInjector = new ScriptInjector(tab.id);
-				scriptInjector.injectScripts([
-					"lib/dat.gui.js",
-					"lib/stats.min.js",
-					"settings/setting.js",
-					"contentScripts/tools.js",
-					"contentScripts/scenes/scenes.js",
-					"contentScripts/scenes/circleScene.js",
-					"contentScripts/scenes/wormScene.js",
-					"contentScripts/scenes/wartScene.js",
-					"contentScripts/sceneManager.js",
-					"contentScripts/init.js"
-				],
+				scriptInjector.injectScripts(AV.scriptsToInject,
 					function()
 					{
 						this.injectedTabs[tab.id].injected = true;
@@ -81,7 +70,7 @@ ExtensionFrontEnd.prototype.messageHandler = function(req, sender, sendResponse)
 ExtensionFrontEnd.prototype.updateHandler = function(tabId, changeinfo, tab)
 {
     chrome.tabs.executeScript(tabId, {
-        code: "chrome.extension.sendMessage({ loaded: typeof g !== 'undefined'});"
+        code: jsInjectedQuery
 	});
 };
 ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
@@ -140,3 +129,5 @@ var TabInfo = function()
 	this.injected = false;
 	this.analyzer = null;
 };
+
+var jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof g !== 'undefined'});";

@@ -16,9 +16,10 @@
 	},
 	"background": {
 		"scripts": [
+			"settings/setting.js",
 			"backgroundScripts/extensionFrontEnd.js",
 			"backgroundScripts/main.js",
-			"settings/setting.js"
+			"scriptsToInject.js"
 		],
 		"persistent": false
 	}

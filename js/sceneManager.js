@@ -1,21 +1,3 @@
-var System = function(gui)
-{
-	this.gui = gui;
-};
-System.prototype.update = function(scene)
-{
-	g.stats.begin();
-	//canvasResize();
-	if(g.byteFrequency)
-		scene.update();
-	g.port.postMessage("r");
-	g.stats.end();
-};
-System.prototype.refreshGUI = function(scene)
-{
-    this.gui.refresh(scene.settings);
-};
-
 var SceneManager = function(scenes, sceneSelector, gui)
 {
     this.scenes = scenes;
