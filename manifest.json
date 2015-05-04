@@ -1,8 +1,8 @@
 {
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
-	"description": "put on some music and turn your browsing session into a party.(by pressing the icon or hotkey)",
-	"version": "2.1",
+	"description": "♬♫♪◖(●。●)◗♪♫♬ Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the icon or main-hotkey: 'Ctrl+Q')",
+	"version": "2.2",
 	"permissions": [
 		"tabCapture",
 		"tabs",
@@ -10,6 +10,9 @@
 		"http://*/",
 		"https://*/"
 	],
+	"icons": {
+		"128": "gfx/icon.png"
+	},
 	"browser_action": {
 		"default_icon": "gfx/icon.png",
 		"default_title": "AudioVisualizer"
@@ -19,7 +22,7 @@
 			"suggested_key": {
 				"default": "Ctrl+Q"
 			}
-		}	
+		}
 	},
 	"background": {
 		"scripts": [

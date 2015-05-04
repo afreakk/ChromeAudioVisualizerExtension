@@ -63,7 +63,7 @@ ExtensionFrontEnd.prototype.messageHandler = function(req, sender, sendResponse)
 			this.injectedTabs[sender.tab.id].injected=false;
 		else
 			this.injectedTabs[sender.tab.id].injected=true;
-		console.log("tab with id: "+sender.tab.id+" injected status: "+
+		console.log("got reply from tab with id: "+sender.tab.id+", injected status: "+
 			this.injectedTabs[sender.tab.id].injected);
 	}
 };
