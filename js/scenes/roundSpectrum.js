@@ -2,13 +2,13 @@ RoundSpectrumSettings = function()
 {
     this.colorStrength = 0.75;
     this.colorOffset = Math.PI;
-	this.spectrumJumps = 100.0;
+	this.spectrumJumps = 4.0;
 	this.colorWidth = 0.1;
 	this.musicColorInfluenceReducer =33000;
 	this.innerWidth = g.canvas.width/10;
 	this.staticWidth = 0;
 	this.musicHeightPower = 0.01;
-	this.circleMax = Math.PI*2;
+	this.circleMax = 30;
 };
 AudioScenes.RoundSpectrum = function()
 {
@@ -22,18 +22,25 @@ AudioScenes.RoundSpectrum.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.RoundSpectrum.prototype.init = function()
+AudioScenes.RoundSpectrum.prototype.parseSettings = function()
 {
 	if(!this.settings||hasAnyBrokenValues(this.settings))
 		this.settings = new RoundSpectrumSettings();
 };
+AudioScenes.RoundSpectrum.prototype.clearBg = function(clearColored)
+{
+	if(clearColored)
+		g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
+	else
+	{
+		g.ctx.fillStyle = '#000000';
+		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	}
+}
 AudioScenes.RoundSpectrum.prototype.update = function()
 {
     var xs = this.settings;
     var data = g.byteFrequency;
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	g.ctx.fillStyle = '#000000';
-	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 
 	var z = 0;
 	var circleMax = xs.circleMax;

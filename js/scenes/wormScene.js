@@ -25,12 +25,22 @@ AudioScenes.SceneWorm.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.SceneWorm.prototype.init = function()
+AudioScenes.SceneWorm.prototype.parseSettings = function()
 {
 	if(!this.settings||hasAnyBrokenValues(this.settings))
 		this.settings = new SceneWormSettings();
 };
 
+AudioScenes.SceneWorm.prototype.clearBg = function(clearColored)
+{
+	if(clearColored)
+		g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
+	else
+	{
+		g.ctx.fillStyle = '#000000';
+		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	}
+}
 AudioScenes.SceneWorm.prototype.update = function()
 {
     var xs = this.settings;
@@ -40,8 +50,6 @@ AudioScenes.SceneWorm.prototype.update = function()
 	var data = g.byteFrequency;
     var bin_size = Math.floor(data.length / xs.numBars);
     var sumtotal = 0;
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 	var z = 0;
 	var yy = 0;
     for (var i = 0; i < xs.numBars; i += 1)

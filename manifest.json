@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
-	"description": "♬♫♪◖(●。●)◗♪♫♬ Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the icon or main-hotkey: 'Ctrl+Q')",
+	"description": "♬♫♪◖(●。●)◗♪♫♬ Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the icon or default-hotkey: 'Ctrl+Q')",
 	"version": "2.2",
 	"permissions": [
 		"tabCapture",

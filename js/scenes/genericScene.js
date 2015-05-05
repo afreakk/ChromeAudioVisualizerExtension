@@ -19,18 +19,24 @@ AudioScenes.GenericScene.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.GenericScene.prototype.init = function()
+AudioScenes.GenericScene.prototype.parseSettings = function()
 {
 	if(!this.settings||hasAnyBrokenValues(this.settings))
 		this.settings = new GenericSceneSettings();
+};
+AudioScenes.GenericScene.prototype.clearBg = function(clearColored)
+{
+    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
+	if(!clearColored)
+	{
+		g.ctx.fillStyle = '#000000';
+		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	}
 };
 AudioScenes.GenericScene.prototype.update = function()
 {
     var xs = this.settings;
     var data = g.byteFrequency;
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	g.ctx.fillStyle = '#000000';
-	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 	var z = 0;
 	var boxWidth = (g.canvas.width*2)/AV.fftSize;
 	for(var i=0; i<AV.fftSize; i++)

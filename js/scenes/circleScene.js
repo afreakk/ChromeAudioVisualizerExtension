@@ -6,7 +6,7 @@ SceneCircleSettings = function()
     this.barHeight=0.02;
     this.rotationSpeed = 20;
     this.colorSpeed = 80.5;
-    this.colorStrength = 0.2;
+    this.colorStrength = 0.9;
     this.colorWidth = Math.PI;
     this.colorOffset = Math.PI;
 	this.spectrumJumps = 1.0;
@@ -24,10 +24,16 @@ AudioScenes.SceneCircle.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.SceneCircle.prototype.init = function()
+AudioScenes.SceneCircle.prototype.parseSettings = function()
 {
 	if(!this.settings||hasAnyBrokenValues(this.settings))
 		this.settings = new SceneCircleSettings();
+};
+AudioScenes.SceneCircle.prototype.clearBg = function(clearColored)
+{
+    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
+	if(!clearColored)
+		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 };
 
 AudioScenes.SceneCircle.prototype.update = function()
@@ -39,8 +45,6 @@ AudioScenes.SceneCircle.prototype.update = function()
 	var data = g.byteFrequency;
     var bin_size = Math.floor(data.length / xs.numBars);
     var sumtotal = 0;
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 	g.ctx.fill();
 	var z = 0;
     for (var i = 0; i < xs.numBars; i += 1)

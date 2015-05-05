@@ -6,13 +6,14 @@ if(typeof g === 'undefined')
 	g.analyzer = null;
 	g.canvas = null;
 	g.ctx = null;
-	g.byteFrequency = null;
+	g.byteFrequency = [0];
 	g.port = null;
 	g.canvasZIndex = 2147483646;
 	g.pause = false;
 	g.sceneManager = null;
 	g.datStyle = null;
 	g.sceneSelector = null;
+	g.transparentBackground = false;
 }
 aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
 									"undefined :) fresh inject."
@@ -48,7 +49,7 @@ var init = function()
     datGUI.add(g.sceneSelector, "scene", sceneNames);
 
 	canvasResize();
-    g.sceneManager = new SceneManager(scenes, g.sceneSelector, new GUI(datGUI));
+    g.sceneManager = new SceneManager(scenes, g.sceneSelector, datGUI);
 
 	aLog("init finished, beginning sceneManager.update");
     g.sceneManager.update();
@@ -59,6 +60,7 @@ function initCanvas()
 	g.canvas.style.zIndex = g.canvasZIndex;
 	g.canvas.style.position = "absolute";
 	g.canvas.style.border = "0px";
+	g.canvas.style.pointerEvents = "none";
 	g.canvas.className = "lerret";
 	deleteDomClass(g.canvas.className);
 	document.body.appendChild(g.canvas);

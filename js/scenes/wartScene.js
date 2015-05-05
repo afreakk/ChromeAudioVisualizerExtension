@@ -26,17 +26,21 @@ AudioScenes.WartScene.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.WartScene.prototype.init = function()
+AudioScenes.WartScene.prototype.parseSettings = function()
 {
 	if(!this.settings||hasAnyBrokenValues(this.settings))
 		this.settings = new WartSceneSettings();
 };
+AudioScenes.WartScene.prototype.clearBg = function(clearColored)
+{
+    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
+	if(!clearColored)
+		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+}
 AudioScenes.WartScene.prototype.update = function()
 {
     var xs = this.settings;
     var data = g.byteFrequency;
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 	var z = 0;
     for (var i = 0; i < xs.heightCount; i += 1)
     {

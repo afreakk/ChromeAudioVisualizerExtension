@@ -1,14 +1,18 @@
 //System class
-var System = function(gui)
+var System = function(datGUI)
 {
-	this.gui = gui;
+	this.gui = new GUI(datGUI)
+    datGUI.add(g, "transparentBackground");
 };
 System.prototype.update = function(scene)
 {
 	g.stats.begin();
 	//canvasResize();
 	if(g.byteFrequency)
+	{
+		scene.clearBg(g.transparentBackground);
 		scene.update();
+	}
 	g.port.postMessage("r");
 	g.stats.end();
 };
@@ -56,10 +60,19 @@ function canvasResize()
     s.widthInHalf = g.canvas.width/2;
     s.heightInHalf= g.canvas.height/2;
 }
-
-function aLog(msg)
+function copyCanvasDim(canvas)
 {
-	console.log(msg);
+	canvas.width = g.canvas.width;
+	canvas.height = g.canvas.height;
+	canvas.style.top = g.canvas.style.top;
+	canvas.style.left = g.canvas.style.left;
+	canvas.style.pointerEvents = g.canvas.style.pointerEvents;
+}
+
+function aLog(msg, layer)
+{
+	if(typeof layer != 'undefined')
+		console.log(msg);
 }
 
 function togglePause()
@@ -69,14 +82,12 @@ function togglePause()
 	if(g.pause)
 	{
 		g.canvas.style.visibility = "hidden";
-		g.canvas.style.pointerEvents = "none";
 		g.datStyle.visibility = "hidden";
 		g.stats.domElement.style.visibility = 'hidden';
 	}
 	else
 	{
 		g.canvas.style.visibility = "visible";
-		g.canvas.style.pointerEvents = "auto";
 		g.datStyle.visibility = "visible";
 		g.stats.domElement.style.visibility = 'visible';
 		canvasResize();
