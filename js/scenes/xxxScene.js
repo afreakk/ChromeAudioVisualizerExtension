@@ -1,6 +1,10 @@
 /**
  * Created by Michael on 31/12/13.
+ *
+ * source:	https://github.com/michaelbromley/soundcloud-visualizer/
+ *
  */
+
 function getVolume(){
 	var total = 0;
 	if(!g.byteFrequency)
@@ -322,10 +326,8 @@ AudioScenes.Hexagon = function() {
          fgCtx.fillText("maxMental:" + maxMental, 10, 40);*/
     };
 	this.intervals = [];
-	var once = false;
 	this.init = function()
 	{
-		once = true;
 		initOnce();
 		this.resizeCanvas();
 		var vbgctx = vbgCanvas.getContext("2d");

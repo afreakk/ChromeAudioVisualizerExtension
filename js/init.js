@@ -13,7 +13,7 @@ if(typeof g === 'undefined')
 	g.sceneManager = null;
 	g.datStyle = null;
 	g.sceneSelector = null;
-	g.transparentBackground = false;
+	g.transparentBackground = true;
 }
 aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
 									"undefined :) fresh inject."
