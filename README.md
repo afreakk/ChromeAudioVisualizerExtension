@@ -1,3 +1,4 @@
-# Audio Visualizeeeeeeerrr extension for chrome
-
-Press the icon and get cool visualz while listening to sound in your browser.
+# AudioVisualizer
+♬♫♪◖(●。●)◗♪♫♬ Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪  
+By pressing the AV icon or default-hotkey: 'Ctrl+Q'  
+([how to install unpacked extension](http://superuser.com/a/247654))
