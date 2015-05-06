@@ -6,14 +6,14 @@ var SceneManager = function(scenes, sceneSelector, gui)
 	this.currentScene = null;
     this.initCurrentScene();
 };
+SceneManager.prototype.cleanUpCurrentScene = function()
+{
+	if('cleanUp' in this.currentScene)
+		this.currentScene.cleanUp();
+}
 SceneManager.prototype.initCurrentScene = function()
 {
     aLog("init scene: " + this.sceneSelector.scene);
-	if(this.currentScene)
-	{
-		if('cleanUp' in this.currentScene)
-			this.currentScene.cleanUp();
-	}
 	resetBrokenGlobalSceneValues();
     this.currentScene = this.scenes[this.sceneSelector.scene];
     this.currentScene.parseSettings();
@@ -27,7 +27,10 @@ SceneManager.prototype.update = function()
 	{
 		this.system.update(this.currentScene);
 		if(this.sceneSelector.scene != this.currentScene.name)
+		{
+			this.cleanUpCurrentScene();
 			this.initCurrentScene();
+		}
 		window.requestAnimationFrame(this.update.bind(this));
 	}
 	else

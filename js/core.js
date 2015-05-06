@@ -19,6 +19,7 @@ System.prototype.update = function(scene)
 System.prototype.refreshGUI = function(scene)
 {
     this.gui.refresh(scene.settings);
+	this.gui.reCheckValuesInternally();
 };
 
 //GUI class
@@ -42,6 +43,11 @@ GUI.prototype.refresh = function(elements)
 				this.guiElements.push(this.gui.add(elements, elem));
 		}
 	}
+};
+GUI.prototype.reCheckValuesInternally = function()
+{
+	for (var i=0; i<this.gui.__controllers.length; i++) 
+		this.gui.__controllers[i].updateDisplay();
 };
 
 //core functions
@@ -84,13 +90,14 @@ function togglePause()
 		g.canvas.style.visibility = "hidden";
 		g.datStyle.visibility = "hidden";
 		g.stats.domElement.style.visibility = 'hidden';
+		g.sceneManager.cleanUpCurrentScene();
 	}
 	else
 	{
+		canvasResize();
 		g.canvas.style.visibility = "visible";
 		g.datStyle.visibility = "visible";
 		g.stats.domElement.style.visibility = 'visible';
-		canvasResize();
 		g.sceneManager.sceneSelector.setRandomScene();
 		g.sceneManager.initCurrentScene();
 		g.sceneManager.update();

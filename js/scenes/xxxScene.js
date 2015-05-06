@@ -342,7 +342,7 @@ AudioScenes.Hexagon = function() {
 	this.parseSettings = function()
 	{
 		if(!this.settings||hasAnyBrokenValues(this.settings))
-			this.settings = new SceneCircleSettings();
+			this.settings = new FccSettings();
 	};
 	var container;
 	var transparentBackground = g.transparentBackground;
@@ -386,7 +386,7 @@ AudioScenes.Hexagon = function() {
 		container.removeChild(sfCanvas);
 		if(!transparentBackground)
 			container.removeChild(vbgCanvas);
-		fgCtx.translate(-fgCanvas.width/2,-fgCanvas.height/2);
+		fgCtx.resetTransform();
 	}
 	this.clearBg = function(clearColored)
 	{
