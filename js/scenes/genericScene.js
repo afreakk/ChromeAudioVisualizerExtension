@@ -21,8 +21,7 @@ AudioScenes.GenericScene.prototype.getClr = function(rgbS,scaled_average_c)
 }
 AudioScenes.GenericScene.prototype.parseSettings = function()
 {
-	if(!this.settings||hasAnyBrokenValues(this.settings))
-		this.settings = new GenericSceneSettings();
+	this.settings = new GenericSceneSettings();
 };
 AudioScenes.GenericScene.prototype.clearBg = function(clearColored)
 {
@@ -42,7 +41,7 @@ AudioScenes.GenericScene.prototype.update = function()
 	for(var i=0; i<AV.fftSize; i++)
 	{
 		z = indexSpinner(z, xs.spectrumJumps);
-		var specValue = data[z];
+		var specValue = data[z] ? data[z] : 0 ;
 		var boxHeight = specValue*xs.barHeight;
 		g.ctx.fillStyle=this.getClr(s.clrOffset,xs.colorStrength*specValue);
 		g.ctx.fillRect(

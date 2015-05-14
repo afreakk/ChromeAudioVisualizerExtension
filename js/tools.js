@@ -18,7 +18,19 @@ function hasAnyBrokenValues(settings)
 	}
 	return false;
 }
-
+function setFps(visible)
+{
+	if(!visible&&!g.stats.isHidden)
+	{
+		g.stats.domElement.style.visibility = 'hidden';
+		g.stats.isHidden = true;
+	}
+	else if(visible&&g.stats.isHidden)
+	{
+		g.stats.domElement.style.visibility = 'visible';
+		g.stats.isHidden = false;
+	}
+}
 function deleteDomClass(className)
 {
 	deleteDom(document.body.getElementsByClassName(className));

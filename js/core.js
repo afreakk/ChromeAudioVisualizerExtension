@@ -2,20 +2,30 @@
 var System = function(datGUI)
 {
 	this.gui = new GUI(datGUI)
-    datGUI.add(g, "transparentBackground");
 };
 System.prototype.update = function(scene)
 {
-	g.stats.begin();
-	//canvasResize();
-	if(g.byteFrequency)
+	if(g.debugFps)
 	{
-		scene.clearBg(g.transparentBackground);
-		scene.update();
+		setFps(true);
+		g.stats.begin();
+		this.updateScene(scene);
+		g.stats.end();
+	}
+	else
+	{
+		setFps(false);
+		this.updateScene(scene);
 	}
 	g.port.postMessage("r");
-	g.stats.end();
 };
+System.prototype.updateScene = function(scene)
+{
+	if(!g.byteFrequency)
+		return
+	scene.clearBg(g.transparentBackground);
+	scene.update();
+}
 System.prototype.refreshGUI = function(scene)
 {
     this.gui.refresh(scene.settings);

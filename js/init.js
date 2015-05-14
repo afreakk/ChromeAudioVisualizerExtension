@@ -14,6 +14,7 @@ if(typeof g === 'undefined')
 	g.datStyle = null;
 	g.sceneSelector = null;
 	g.transparentBackground = true;
+	g.debugFps = true;
 }
 aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
 									"undefined :) fresh inject."
@@ -47,6 +48,8 @@ var init = function()
 
 	var datGUI = initDatGUI();
     datGUI.add(g.sceneSelector, "scene", sceneNames);
+    datGUI.add(g, "debugFps");
+    datGUI.add(g, "transparentBackground");
 
 	canvasResize();
     g.sceneManager = new SceneManager(scenes, g.sceneSelector, datGUI);
@@ -71,7 +74,7 @@ function initDatGUI()
 {
 	deleteDomClass("dg ac");
     var datGUI = new dat.GUI();
-	datGUI.closed = true;
+	g.stats.isHidden = !g.debugFps;
 
 	g.datStyle = document.getElementsByClassName("dg ac")[0].style;
 	g.datStyle.zIndex = g.canvasZIndex+1;

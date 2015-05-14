@@ -12,6 +12,7 @@ AV.scriptsToInject = [
 	"js/scenes/genericScene.js",
 	"js/scenes/roundSpectrum.js",
 	"js/scenes/xxxScene.js",
+	"js/scenes/seventiesScene.js",
 	"js/sceneManager.js",
 	"js/core.js",
 	"js/init.js"

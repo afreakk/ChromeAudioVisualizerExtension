@@ -25,13 +25,13 @@ SceneManager.prototype.update = function()
 {
 	if(!g.pause)
 	{
+		window.requestAnimationFrame(this.update.bind(this));
 		this.system.update(this.currentScene);
 		if(this.sceneSelector.scene != this.currentScene.name)
 		{
 			this.cleanUpCurrentScene();
 			this.initCurrentScene();
 		}
-		window.requestAnimationFrame(this.update.bind(this));
 	}
 	else
 		aLog("scene paused");
