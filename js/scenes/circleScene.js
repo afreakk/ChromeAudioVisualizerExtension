@@ -24,10 +24,9 @@ AudioScenes.SceneCircle.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.SceneCircle.prototype.parseSettings = function()
+AudioScenes.SceneCircle.prototype.parseSettings = function(preset)
 {
-	if(!this.settings||hasAnyBrokenValues(this.settings))
-		this.settings = new SceneCircleSettings();
+	parseSettings(this,SceneCircleSettings, preset);
 };
 AudioScenes.SceneCircle.prototype.clearBg = function(clearColored)
 {

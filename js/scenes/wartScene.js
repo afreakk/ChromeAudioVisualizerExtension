@@ -26,10 +26,9 @@ AudioScenes.WartScene.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.WartScene.prototype.parseSettings = function()
+AudioScenes.WartScene.prototype.parseSettings = function(preset)
 {
-	if(!this.settings||hasAnyBrokenValues(this.settings))
-		this.settings = new WartSceneSettings();
+	parseSettings(this,WartSceneSettings, preset);
 };
 AudioScenes.WartScene.prototype.clearBg = function(clearColored)
 {

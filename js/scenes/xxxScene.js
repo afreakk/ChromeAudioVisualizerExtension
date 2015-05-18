@@ -339,10 +339,9 @@ AudioScenes.Hexagon = function() {
 		makeStarArray();
 		draw();
 	}
-	this.parseSettings = function()
+	this.parseSettings = function(preset)
 	{
-		if(!this.settings||hasAnyBrokenValues(this.settings))
-			this.settings = new FccSettings();
+		parseSettings(this,FccSettings, preset);
 	};
 	var container;
 	var transparentBackground = g.transparentBackground;

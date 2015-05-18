@@ -1,7 +1,6 @@
 //System class
-var System = function(datGUI)
+var System = function()
 {
-	this.gui = new GUI(datGUI)
 };
 System.prototype.update = function(scene)
 {
@@ -26,18 +25,15 @@ System.prototype.updateScene = function(scene)
 	scene.clearBg(g.transparentBackground);
 	scene.update();
 }
-System.prototype.refreshGUI = function(scene)
-{
-    this.gui.refresh(scene.settings);
-	this.gui.reCheckValuesInternally();
-};
 
 //GUI class
 var GUI = function(datGUI)
 {
     this.gui = datGUI;
     this.guiElements = [];
+	this.sceneListElement = null;
 };
+
 GUI.prototype.refresh = function(elements)
 {
     while(this.guiElements.length>0)
@@ -53,6 +49,18 @@ GUI.prototype.refresh = function(elements)
 				this.guiElements.push(this.gui.add(elements, elem));
 		}
 	}
+};
+GUI.prototype.initSceneList = function(sceneSelector)
+{
+	this.sceneSelector = sceneSelector;
+	this.repopulateSceneList();
+	this.refresh(this.elements);
+};
+GUI.prototype.repopulateSceneList = function()
+{
+	if(this.sceneListElement)
+		this.gui.remove(this.sceneListElement);
+	this.sceneListElement = this.gui.add(this.sceneSelector, "scene", this.sceneSelector.sceneNames);
 };
 GUI.prototype.reCheckValuesInternally = function()
 {
@@ -94,7 +102,7 @@ function aLog(msg, layer)
 function togglePause()
 {
 	g.pause = !g.pause;
-	console.log("toggling pause: "+g.pause);
+	aLog("toggling pause: "+g.pause, 1);
 	if(g.pause)
 	{
 		g.canvas.style.visibility = "hidden";

@@ -25,10 +25,9 @@ AudioScenes.SceneWorm.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.SceneWorm.prototype.parseSettings = function()
+AudioScenes.SceneWorm.prototype.parseSettings = function(preset)
 {
-	if(!this.settings||hasAnyBrokenValues(this.settings))
-		this.settings = new SceneWormSettings();
+	parseSettings(this,SceneWormSettings, preset);
 };
 
 AudioScenes.SceneWorm.prototype.clearBg = function(clearColored)

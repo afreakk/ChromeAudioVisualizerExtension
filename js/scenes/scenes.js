@@ -19,11 +19,22 @@ function defaultIfBroken(num, defaultValue)
 		return num;
 	return defaultValue;
 }
-
-var SceneSelector = function(sceneNames)
+function parseSettings(scene, settings, preset)
 {
-	this.sceneNames = sceneNames;
-	this.setRandomScene();
+	scene.settings = new settings();
+	if(preset === "default")
+	{
+		scene.name = scene.originalName;
+		return;
+	}
+	for(var preSetSetting in preset)
+		scene.settings[preSetSetting] = preset[preSetSetting];
+}
+
+var SceneSelector = function()
+{
+	this.sceneNames = [];
+	this.scene = null;
 };
 SceneSelector.prototype.setRandomScene = function()
 {
@@ -31,6 +42,28 @@ SceneSelector.prototype.setRandomScene = function()
     this.scene = this.sceneNames[i];
 	//this.scene = "SpectrumAnalyziz";
 };
+SceneSelector.prototype.insertPresets = function(savedPresets, doNotSet)
+{
+	g.presets = savedPresets;
+	for(var preset in savedPresets)
+	{
+		var presetName = preset.split(g.strDelim)[1];
+		if(this.sceneNames.indexOf(presetName) === -1)
+		{
+			aLog("inserting presetScene: "+presetName,1);
+			this.sceneNames.push(presetName);
+		}
+	}
+	if(!doNotSet)
+		this.scene = this.sceneNames[this.sceneNames.length-1];
+	this.sceneNames = this.sceneNames.sort();
+	if(g.gui)
+		g.gui.repopulateSceneList();
+};
+SceneSelector.prototype.insertScene = function(scene)
+{
+	this.sceneNames.push(scene);
+}
 
 function spin(i, data)
 {

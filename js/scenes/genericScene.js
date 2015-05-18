@@ -19,9 +19,9 @@ AudioScenes.GenericScene.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.GenericScene.prototype.parseSettings = function()
+AudioScenes.GenericScene.prototype.parseSettings = function(preset)
 {
-	this.settings = new GenericSceneSettings();
+	parseSettings(this,GenericSceneSettings, preset);
 };
 AudioScenes.GenericScene.prototype.clearBg = function(clearColored)
 {

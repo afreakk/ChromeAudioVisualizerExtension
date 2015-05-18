@@ -15,6 +15,11 @@ if(typeof g === 'undefined')
 	g.sceneSelector = null;
 	g.transparentBackground = true;
 	g.debugFps = true;
+	g.saveSceneName = "trolol";
+	g.saveButton = null;
+	g.strDelim = ";";
+	g.presets = null;
+	g.gui = null;
 }
 aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
 									"undefined :) fresh inject."
@@ -26,36 +31,61 @@ chrome.runtime.onConnect.addListener(function(port) {
 		g.byteFrequency = msg;
 	});
 });
-var init = function()
+var startup = function(savedPresets)
 {
 	aLog("init begun");
 	g.port.postMessage("rofl");
 	initCanvas();
 
+	var scenes = initScenes(savedPresets);
+	g.sceneSelector.setRandomScene();
+	initGUI();
+	initSceneManager(scenes);
+	aLog("init finished, beginning sceneManager.update", 1);
+    g.sceneManager.update();
+};
+var initSceneManager = function(scenes)
+{
+    g.sceneManager = new SceneManager(scenes, g.sceneSelector);
+	canvasResize();
+	system = new System();
+	g.sceneManager.init(system);
+};
+var initScenes = function(savedPresets)
+{
+	g.sceneSelector = new SceneSelector();
+	g.sceneSelector.insertPresets(savedPresets, true);
     var scenes = {};
-    var sceneNames = [];
     for(var sceneName in AudioScenes)
     {
-		aLog("found scene: "+sceneName);
+		aLog("found scene: "+sceneName, 1);
         var scene = new AudioScenes[sceneName];
-        sceneNames.push(scene.name);
+		scene.originalName = scene.name;
+        g.sceneSelector.insertScene(scene.name);
         scenes[scene.name] = scene;
     }
-
-    g.sceneSelector = new SceneSelector(sceneNames);
-	g.sceneSelector.setRandomScene();
+	return scenes;
+};
+var initGUI = function()
+{
 	initStatsLibrary();
-
 	var datGUI = initDatGUI();
-    datGUI.add(g.sceneSelector, "scene", sceneNames);
     datGUI.add(g, "debugFps");
     datGUI.add(g, "transparentBackground");
-
-	canvasResize();
-    g.sceneManager = new SceneManager(scenes, g.sceneSelector, datGUI);
-
-	aLog("init finished, beginning sceneManager.update");
-    g.sceneManager.update();
+	datGUI.add(g, 'saveSceneName');
+	g.saveButton = {};
+	var label = '(->Save<-)';
+	g.saveButton[label] = function()
+		{
+			setSaveName(g.saveSceneName, g.sceneManager.savePreset.bind(g.sceneManager));
+		};
+	datGUI.add(g.saveButton, label);
+	g.gui = new GUI(datGUI);
+	g.gui.initSceneList(g.sceneSelector);
+};
+var init = function()
+{
+	chrome.storage.sync.get(null, startup);
 };
 function initCanvas()
 {

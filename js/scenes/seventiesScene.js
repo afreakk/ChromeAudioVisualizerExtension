@@ -12,10 +12,9 @@ AudioScenes.seventiesScene = function()
 {
 	this.name = "Seventies";
 };
-AudioScenes.seventiesScene.prototype.parseSettings = function()
+AudioScenes.seventiesScene.prototype.parseSettings = function(preset)
 {
-	if(!typeof this.settings != 'SeventieSceneSettings' ||hasAnyBrokenValues(this.settings))
-		this.settings = new SeventieSceneSettings();
+	parseSettings(this,SeventieSceneSettings, preset);
 };
 AudioScenes.seventiesScene.prototype.clearBg = function(clearColored)
 {

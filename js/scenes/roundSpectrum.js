@@ -22,10 +22,9 @@ AudioScenes.RoundSpectrum.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
 }
-AudioScenes.RoundSpectrum.prototype.parseSettings = function()
+AudioScenes.RoundSpectrum.prototype.parseSettings = function(preset)
 {
-	if(!this.settings||hasAnyBrokenValues(this.settings))
-		this.settings = new RoundSpectrumSettings();
+	parseSettings(this,RoundSpectrumSettings, preset);
 };
 AudioScenes.RoundSpectrum.prototype.clearBg = function(clearColored)
 {
