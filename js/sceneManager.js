@@ -32,36 +32,43 @@ SceneManager.prototype.initCurrentScene = function()
 	//level with custom settings
 	if('init' in this.currentScene)
 		this.currentScene.init();
-	aLog("setting save name for: "+this.currentScene.name, 1);
-	setSaveName(this.currentScene.name);
+	g.saveSceneName = this.currentScene.name;
+	setSaveName();
     g.gui.refresh(this.currentScene.settings);
 };
-function setSaveName(sceneName, callback)
+function setSaveName(callback)
 {
-	if(sceneName.indexOf("_custom") === -1)
-		g.saveSceneName = sceneName + "_custom";
-	else
-		g.saveSceneName = getIncrementalString(sceneName);
-
 	chrome.storage.sync.get(null,
 		function(savedPresets)
 		{
 			var occupado = false;
 			for(var preset in savedPresets)
 			{
-				var presetName = preset.split(g.strDelim)[1];
+				var presetName = preset.split(AV.strDelim)[1];
 				if(presetName == g.saveSceneName)
 					occupado = true;
 			}
+			for(var sceneNameKey in g.sceneManager.scenes)
+			{
+				if(g.saveSceneName == sceneNameKey)
+					occupado = true;
+			}
 			if(occupado)
-				setSaveName(g.saveSceneName, callback);
+			{
+				if(g.saveSceneName.indexOf("_custom") === -1)
+					g.saveSceneName = g.saveSceneName + "_custom";
+				else
+					g.saveSceneName = getIncrementalString(g.saveSceneName);
+				setSaveName(callback);
+			}
 			else
 			{
 				g.gui.reCheckValuesInternally();
 				if(callback)
 					callback();
 			}
-		});
+		}
+	);
 }
 
 function getIncrementalString(origStr)
@@ -97,7 +104,7 @@ SceneManager.prototype.update = function()
 };
 function saveToDisk(scene)
 {
-	var sceneName = scene.originalName + g.strDelim + g.saveSceneName;
+	var sceneName = scene.originalName + AV.strDelim + g.saveSceneName;
 	aLog("saving as :" + sceneName, 1);
 	var pkg = {};
 	pkg[sceneName] = scene.settings;
@@ -114,15 +121,11 @@ function saveToDisk(scene)
 function loadFromDisk(scMgr)
 {
 	var sceneName, preset;
-	aLog("trying to find: "+g.sceneSelector.scene+" in: ", 1);
-	aLog(g.presets.valueOf(), 1);
 	for(var i in g.presets)
 	{
-		var parts = i.split(g.strDelim);
+		var parts = i.split(AV.strDelim);
 		if(parts[1] == g.sceneSelector.scene)
 		{
-			aLog("found:",1);
-			aLog(i,1);
 			preset = g.presets[i];
 			sceneName = parts[0];
 		}

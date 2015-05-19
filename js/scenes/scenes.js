@@ -47,7 +47,7 @@ SceneSelector.prototype.insertPresets = function(savedPresets, doNotSet)
 	g.presets = savedPresets;
 	for(var preset in savedPresets)
 	{
-		var presetName = preset.split(g.strDelim)[1];
+		var presetName = preset.split(AV.strDelim)[1];
 		if(this.sceneNames.indexOf(presetName) === -1)
 		{
 			aLog("inserting presetScene: "+presetName,1);

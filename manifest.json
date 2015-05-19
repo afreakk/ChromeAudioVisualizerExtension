@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
 	"description": "Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the AV icon or default-hotkey: 'Ctrl+Q')",
-	"version": "2.30",
+	"version": "2.35",
 	"permissions": [
 		"tabCapture",
 		"tabs",
@@ -14,6 +14,7 @@
 	"icons": {
 		"128": "gfx/icon.png"
 	},
+	"options_page": "options/index.html",
 	"browser_action": {
 		"default_icon": "gfx/icon.png",
 		"default_title": "AudioVisualizer"

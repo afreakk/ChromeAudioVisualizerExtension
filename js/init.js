@@ -17,7 +17,6 @@ if(typeof g === 'undefined')
 	g.debugFps = true;
 	g.saveSceneName = "trolol";
 	g.saveButton = null;
-	g.strDelim = ";";
 	g.presets = null;
 	g.gui = null;
 }
@@ -75,14 +74,16 @@ var initGUI = function()
 	datGUI.add(g, 'saveSceneName');
 	g.saveButton = {};
 	var label = '(->Save<-)';
-	g.saveButton[label] = function()
-		{
-			setSaveName(g.saveSceneName, g.sceneManager.savePreset.bind(g.sceneManager));
-		};
+	g.saveButton[label] = saveButtonCallback;
 	datGUI.add(g.saveButton, label);
 	g.gui = new GUI(datGUI);
 	g.gui.initSceneList(g.sceneSelector);
 };
+var saveButtonCallback = function()
+{
+	var cBack = g.sceneManager.savePreset.bind(g.sceneManager);
+	setSaveName(cBack);
+}
 var init = function()
 {
 	chrome.storage.sync.get(null, startup);
