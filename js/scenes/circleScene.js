@@ -74,9 +74,11 @@ AudioScenes.SceneCircle.prototype.update = function()
         g.ctx.lineTo(x2,y2);
         g.ctx.lineTo(x3,y3);
         g.ctx.fill();
-		g.ctx.lineWidth = 5;
+/*		g.ctx.lineWidth = 5;
 		g.ctx.strokeStyle = '#000000';
 		g.ctx.stroke();
+		low fps
+		*/
     }
     sumtotal /= 10000000;
     s.rotationOffset += sumtotal*xs.rotationSpeed;

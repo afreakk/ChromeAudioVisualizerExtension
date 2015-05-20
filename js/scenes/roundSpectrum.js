@@ -1,3 +1,16 @@
+var roundExample =
+{
+"colorStrength": 0.75,
+"colorOffset": 3.1,
+"spectrumJumps":4,
+"colorWidth":0,
+"musicColorInfluenceReducer":1,
+"innerWidth":110,
+"staticWidth":1.1,
+"musicHeightPower":0.01,
+"circleMax":289
+}
+
 RoundSpectrumSettings = function()
 {
     this.colorStrength = 0.75;
@@ -6,7 +19,7 @@ RoundSpectrumSettings = function()
 	this.colorWidth = 0.1;
 	this.musicColorInfluenceReducer =33000;
 	this.innerWidth = g.canvas.width/10;
-	this.staticWidth = 0;
+	this.staticWidth = 1.1;
 	this.musicHeightPower = 0.01;
 	this.circleMax = 30;
 };

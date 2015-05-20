@@ -1,12 +1,12 @@
 SeventieSceneSettings = function()
 {
-	this.maxCircles = 40;
 	this.fadeSpeed = 0.5;
-	this.circleInCircleScale = 0.001;
-	this.circleSizeScale = 0.000001;
+	this.circleResolution = 15;
+	this.circleScale = 15;
 	this.spawnTreshold = 785000.0;
-	this.crowdSurpression = 1000;
-	this.speedMusicScale = 0.00075;
+	this.crowdSurpression = 0.0009;
+	this.speedMusicScale = 10;
+	this.speedReducer = 50000;
 };
 AudioScenes.seventiesScene = function()
 {
@@ -47,15 +47,15 @@ AudioScenes.seventiesScene.prototype.drawCircle=function(x, y, r) {
 
 
 AudioScenes.seventiesScene.prototype.startCircles=function(vol) {
-	if (this.circles.length < this.settings.maxCircles
-		&& vol/(this.circles.length/this.settings.crowdSurpression) > this.settings.spawnTreshold)
+	if (vol/(this.circles.length*this.settings.crowdSurpression)
+		> this.settings.spawnTreshold)
 	{
 		this.createCircle(vol);
 	}
 }
 
 AudioScenes.seventiesScene.prototype.updateCircles=function(vol) {
-	vol /= 10000;
+	vol /= this.settings.speedReducer;
 	for(var i = 0; i < this.circles.length; i++)
 	{
 		this.circles[i].x += this.circles[i].velX*vol;
@@ -87,14 +87,14 @@ AudioScenes.seventiesScene.prototype.drawCircles=function() {
 AudioScenes.seventiesScene.prototype.createCircle=function(vol) {
 	var x = Math.random() * this.width;
 	var y = Math.random() * this.height;
-	var speed = vol*this.settings.speedMusicScale;
+	var speed = this.settings.speedMusicScale;
 	var hue_start = Math.random() * 360;
 	var opacity_step = Math.PI / 20;
-	var target_size = this.width / Math.floor(((vol*this.settings.circleSizeScale) * 16) + 6);
+	var target_size = this.width / Math.floor((Math.random() * 16) + 6);
 	var velX = (Math.random() * 8) - 4;
 	var velY = (Math.random() * 8) - 4;
 	var z=0;
-	for (var i = 0; i < vol*this.settings.circleInCircleScale; i++)
+	for (var i = 0; i <this.settings.circleResolution; i++)
 	{
 		this.circles.push
 		(

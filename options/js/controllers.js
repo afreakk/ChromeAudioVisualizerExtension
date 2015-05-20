@@ -2,7 +2,7 @@ angular.module('AudioVisualizerOptions', []);
 
 function populateNameList($scope)
 {
-	chrome.storage.sync.get(null,
+	getScenes(
 		function(storageStuff)
 		{
 			var i=0;

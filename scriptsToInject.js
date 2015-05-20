@@ -5,6 +5,7 @@ AV.scriptsToInject = [
 	"lib/stats.min.js",
 
 	"js/tools.js",
+	"js/getScenes.js",
 	"js/scenes/scenes.js",
 	"js/scenes/circleScene.js",
 	"js/scenes/wormScene.js",

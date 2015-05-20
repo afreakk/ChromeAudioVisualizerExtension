@@ -38,7 +38,7 @@ SceneManager.prototype.initCurrentScene = function()
 };
 function setSaveName(callback)
 {
-	chrome.storage.sync.get(null,
+	getScenes(
 		function(savedPresets)
 		{
 			var occupado = false;
@@ -113,8 +113,7 @@ function saveToDisk(scene)
 		function() {
 			aLog('Settings saved', 1);
 			aLog(chrome.runtime.lastError, 1);
-			chrome.storage.sync.get(null,
-					g.sceneSelector.insertPresets.bind(g.sceneSelector));
+			getScenes(g.sceneSelector.insertPresets.bind(g.sceneSelector));
 		}
 	);
 }
