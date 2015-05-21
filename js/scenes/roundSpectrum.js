@@ -1,15 +1,3 @@
-var roundExample =
-{
-"colorStrength": 0.75,
-"colorOffset": 3.1,
-"spectrumJumps":4,
-"colorWidth":0,
-"musicColorInfluenceReducer":1,
-"innerWidth":110,
-"staticWidth":1.1,
-"musicHeightPower":0.01,
-"circleMax":289
-}
 
 RoundSpectrumSettings = function()
 {

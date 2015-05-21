@@ -1,34 +1,4 @@
 var gDefined = true;
-function insertExample(example, callback)
-{
-	aLog("inserting example",1);
-	chrome.storage.sync.get("options",
-		function(storage)
-		{
-			var pkg = {};
-			if(!("options" in storage))
-			{
-				var options =
-				{
-					"ExampleInserted": true
-				};
-				pkg["options"] = options;
-				pkg["RoundSpectrum"+AV.strDelim+"Custom_example"] = example;
-			}
-			else
-			{
-				if(!storage.options["ExampleInserted"])
-				{
-					pkg["Custom_example"] = roundExample;
-				}
-			}
-			if(Object.keys(pkg).length>0)
-				chrome.storage.sync.set(pkg);
-			if(callback)
-				callback();
-		}
-	);
-}
 if(typeof g === 'undefined')
 {
 	gDefined = false;
@@ -116,11 +86,7 @@ var saveButtonCallback = function()
 }
 var init = function()
 {
-	insertExample(roundExample,function()
-		{
-			getScenes(startup);
-		}
-	);
+	getScenes(startup);
 };
 function initCanvas()
 {

@@ -29,6 +29,7 @@
 	"background": {
 		"scripts": [
 			"settings/setting.js",
+			"backgroundScripts/onInstall.js",
 			"backgroundScripts/extensionFrontEnd.js",
 			"backgroundScripts/main.js",
 			"scriptsToInject.js"
