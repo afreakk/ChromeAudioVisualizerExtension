@@ -6,6 +6,14 @@ s.rotationOffset = Math.PI/4.0;
 s.clrOffset = 0.0;
 var AudioScenes = AudioScenes || {}
 
+function getVolume(){
+	var total = 0;
+	if(!g.byteFrequency)
+		return 0;
+	for (var i = 0; i < 80; i++)
+		total += g.byteFrequency[i];
+	return total;
+};
 function resetBrokenGlobalSceneValues()
 {
 	s.widthInHalf=defaultIfBroken(s.widthInHalf, 0.0);
@@ -40,7 +48,7 @@ SceneSelector.prototype.setRandomScene = function()
 {
     var i = Math.round(Math.random()*(this.sceneNames.length-1));
     this.scene = this.sceneNames[i];
-	//this.scene = "SpectrumAnalyziz";
+	this.scene = "Swipe";
 };
 SceneSelector.prototype.insertPresets = function(savedPresets, doNotSet)
 {

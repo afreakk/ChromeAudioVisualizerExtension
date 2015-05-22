@@ -4,7 +4,7 @@ var System = function()
 };
 System.prototype.update = function(scene)
 {
-	if(g.debugFps)
+	if(g.ShowFps)
 	{
 		setFps(true);
 		g.stats.begin();
@@ -25,48 +25,6 @@ System.prototype.updateScene = function(scene)
 	scene.clearBg(g.transparentBackground);
 	scene.update();
 }
-
-//GUI class
-var GUI = function(datGUI)
-{
-    this.gui = datGUI;
-    this.guiElements = [];
-	this.sceneListElement = null;
-};
-
-GUI.prototype.refresh = function(elements)
-{
-    while(this.guiElements.length>0)
-        this.gui.remove(this.guiElements.pop());
-    for(var elem in elements)
-	{
-        if(elements.hasOwnProperty(elem))
-		{
-			aLog("adding gui setting: "+elem);
-			if(elem == 'spectrumJumps')
-				this.guiElements.push(this.gui.add(elements, elem).step(1));
-			else
-				this.guiElements.push(this.gui.add(elements, elem));
-		}
-	}
-};
-GUI.prototype.initSceneList = function(sceneSelector)
-{
-	this.sceneSelector = sceneSelector;
-	this.repopulateSceneList();
-	this.refresh(this.elements);
-};
-GUI.prototype.repopulateSceneList = function()
-{
-	if(this.sceneListElement)
-		this.gui.remove(this.sceneListElement);
-	this.sceneListElement = this.gui.add(this.sceneSelector, "scene", this.sceneSelector.sceneNames);
-};
-GUI.prototype.reCheckValuesInternally = function()
-{
-	for (var i=0; i<this.gui.__controllers.length; i++) 
-		this.gui.__controllers[i].updateDisplay();
-};
 
 //core functions
 function canvasResize()
@@ -95,7 +53,8 @@ function copyCanvasDim(canvas)
 
 function aLog(msg, layer)
 {
-	if(typeof layer != 'undefined')
+	if(typeof layer != 'undefined'
+		&&layer == 3)
 		console.log(msg);
 }
 

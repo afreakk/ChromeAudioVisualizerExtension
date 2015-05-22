@@ -34,7 +34,7 @@ SceneManager.prototype.initCurrentScene = function()
 		this.currentScene.init();
 	g.saveSceneName = this.currentScene.name;
 	setSaveName();
-    g.gui.refresh(this.currentScene.settings);
+	g.gui.repopulateFolder(this.currentScene.settings, "Scene-Settings");
 };
 function setSaveName(callback)
 {

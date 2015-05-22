@@ -14,7 +14,7 @@ if(typeof g === 'undefined')
 	g.datStyle = null;
 	g.sceneSelector = null;
 	g.transparentBackground = true;
-	g.debugFps = true;
+	g.ShowFps = true;
 	g.saveSceneName = "trolol";
 	g.saveButton = null;
 	g.presets = null;
@@ -67,17 +67,31 @@ var initScenes = function(savedPresets)
 };
 var initGUI = function()
 {
+	//init
 	initStatsLibrary();
 	var datGUI = initDatGUI();
-    datGUI.add(g, "debugFps");
-    datGUI.add(g, "transparentBackground");
-	datGUI.add(g, 'saveSceneName');
+	var gui = new GUI(datGUI);
+
+	//adding Options Folder
+	var options = gui.appendFolder("Options");
+    options.addSetting(g, "ShowFps");
+    options.addSetting(g, "transparentBackground");
+
+	//adding Save Folder
+	var save = gui.appendFolder("Save");
+	save.addSetting(g, 'saveSceneName');
 	g.saveButton = {};
 	var label = '(->Save<-)';
 	g.saveButton[label] = saveButtonCallback;
-	datGUI.add(g.saveButton, label);
-	g.gui = new GUI(datGUI);
-	g.gui.initSceneList(g.sceneSelector);
+	save.addSetting(g.saveButton, label);
+
+	//adding Scene-Settings Folder
+	gui.appendFolder("Scene-Settings");
+
+	//adding scene selection drop down
+	gui.repopulateSceneList();
+
+	g.gui = gui;
 };
 var saveButtonCallback = function()
 {
@@ -105,7 +119,7 @@ function initDatGUI()
 {
 	deleteDomClass("dg ac");
     var datGUI = new dat.GUI();
-	g.stats.isHidden = !g.debugFps;
+	g.stats.isHidden = !g.ShowFps;
 
 	g.datStyle = document.getElementsByClassName("dg ac")[0].style;
 	g.datStyle.zIndex = g.canvasZIndex+1;
@@ -122,4 +136,5 @@ function initStatsLibrary()
 	g.stats.domElement.style.position = 'absolute';
 	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
 	document.body.appendChild( g.stats.domElement );
+	setFps(g.ShowFps);
 }

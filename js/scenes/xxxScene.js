@@ -5,14 +5,6 @@
  *
  */
 
-function getVolume(){
-	var total = 0;
-	if(!g.byteFrequency)
-		return 0;
-	for (var i = 0; i < 80; i++)
-		total += g.byteFrequency[i];
-	return total;
-};
 
 var FccSettings = function()
 {
