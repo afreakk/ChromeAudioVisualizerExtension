@@ -51,7 +51,7 @@ function copyCanvasDim(canvas)
 	canvas.style.pointerEvents = g.canvas.style.pointerEvents;
 }
 
-fullDebug=false;
+fullDebug=true;
 function aLog(msg, layer)
 {
 	if((typeof layer != 'undefined'
@@ -81,7 +81,7 @@ function togglePause()
 		g.datStyle.visibility = "visible";
 		setFps(g.showFps);
 		g.sceneManager.sceneSelector.setRandomScene();
-		g.sceneManager.initCurrentScene();
+		g.sceneManager.initCurrentlyChoosenScene();
 		g.sceneManager.update();
 	}
 }

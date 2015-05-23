@@ -8,7 +8,17 @@ function rgbToHex(r, g, b)
 {
     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
-
+function refreshCustomScenes()
+{
+	storage.scenes.get(	
+		function(scenes)
+		{
+			//also do hard refresh of values in scenelist
+			//(cuz ur deleting in options at the same time)
+			g.customSceneHandler.refreshCustomScenes(scenes)
+		}
+	);
+}
 function hasAnyBrokenValues(settings)
 {
 	for(var i in settings)

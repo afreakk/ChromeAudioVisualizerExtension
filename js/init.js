@@ -47,7 +47,15 @@ var initSceneManager = function(scenes)
     g.sceneManager = new SceneManager(scenes, g.sceneSelector);
 	canvasResize();
 	system = new System();
-	g.sceneManager.init(system);
+	try
+	{
+		g.sceneManager.init(system);
+	}
+	catch(e)
+	{
+		console.log("exception in initScenemgr");
+		console.error(e);
+	}
 };
 var initScenes = function(savedPresets)
 {
@@ -60,7 +68,7 @@ var initScenes = function(savedPresets)
 		aLog("found scene: "+sceneName, 1);
         var scene = new AudioScenes[sceneName];
 		scene.originalName = scene.name;
-        g.sceneSelector.insertScene(scene.name);
+        g.sceneSelector.insertActualScene(scene.name);
         scenes[scene.name] = scene;
     }
 	return scenes;

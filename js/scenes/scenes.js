@@ -42,6 +42,7 @@ function parseSettings(scene, settings, preset)
 var SceneSelector = function()
 {
 	this.sceneNames = [];
+	this.actualScenes = [];
 	this.scene = null;
 };
 SceneSelector.prototype.setRandomScene = function()
@@ -62,6 +63,7 @@ SceneSelector.prototype.setScene = function(name)
 };
 SceneSelector.prototype.insertPresets = function(savedPresets)
 {
+	this.sceneNames = this.actualScenes.slice();
 	for(var preset in savedPresets)
 	{
 		var presetName = preset.split(AV.strDelim)[1];
@@ -77,9 +79,10 @@ SceneSelector.prototype.insertPresets = function(savedPresets)
 		g.gui.repopulateSceneList();
 	return retVal;
 };
-SceneSelector.prototype.insertScene = function(scene)
+SceneSelector.prototype.insertActualScene = function(scene)
 {
 	this.sceneNames.push(scene);
+	this.actualScenes.push(scene);
 }
 
 function spin(i, data)

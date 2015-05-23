@@ -7,40 +7,77 @@ var SceneManager = function(scenes, sceneSelector, system)
 SceneManager.prototype.init = function(system)
 {
 	this.system = system
-    this.initCurrentScene();
+    this.initCurrentlyChoosenScene();
 };
 SceneManager.prototype.cleanUpCurrentScene = function()
 {
 	if('cleanUp' in this.currentScene)
 		this.currentScene.cleanUp();
 }
-SceneManager.prototype.initCurrentScene = function()
+SceneManager.prototype.initCurrentlyChoosenScene = function()
 {
-    aLog("init scene: " + this.sceneSelector.scene, 1);
-	resetBrokenGlobalSceneValues();
+	var oldScene;
+	if(this.currentScene)
+		oldScene = this.currentScene.name;
+	try
+	{
+		resetBrokenGlobalSceneValues();
+		var custom = this.initScene(g.sceneSelector.scene);
+		g.saveSceneName = this.currentScene.name;
+		setSaveName();
+		var errors = g.gui.repopulateFolder(this.currentScene.settings, "Scene-Settings");
+		if(custom&&errors.length>0)
+			handleSceneSettingError(errors, custom);
+	}
+	catch(e)
+	{
+		aError(e);
+		if(oldScene)
+		{
+			this.sceneSelector.setScene(oldScene);
+			this.initCurrentlyChoosenScene();
+		}
+		refreshCustomScenes();
+	}
+};
+function refreshCustomScenes()
+{
+	storage.scenes.get(	
+		function(scenes)
+		{
+			//also do hard refresh of values in scenelist
+			//(cuz ur deleting in options at the same time)
+			g.customSceneHandler.refreshCustomScenes(scenes)
+		}
+	);
+}
+SceneManager.prototype.initScene=function(newScene)
+{
+    aLog("init scene: " + newScene, 1);
 	var customScene = null;
-	if(this.sceneSelector.scene in this.scenes)
-	{
-		this.currentScene = this.scenes[this.sceneSelector.scene];
-		this.currentScene.parseSettings("default");
-	}
+	if(newScene in this.scenes)
+		this.initDefaultScene(newScene);
 	else
-	{
-		customScene = g.customSceneHandler.loadCustomScene(this.sceneSelector.scene);
-		aLog("loading custom settings for sceneName: "+customScene.name, 1);
-		this.currentScene = this.scenes[customScene.name];
-		this.currentScene.parseSettings(customScene.preset);
-		this.currentScene.name = this.sceneSelector.scene;
-	}
-	//level with custom settings
+		customScene = this.initCustomScene(newScene);
+		//level with custom settings
+
 	if('init' in this.currentScene)
 		this.currentScene.init();
-	g.saveSceneName = this.currentScene.name;
-	setSaveName();
-	errors = g.gui.repopulateFolder(this.currentScene.settings, "Scene-Settings");
-	if(customScene&&errors.length>0)
-		handleSceneSettingError(errors, customScene.keyName);
-
+	return customScene;
+};
+SceneManager.prototype.initDefaultScene = function(newScene)
+{
+	this.currentScene = this.scenes[newScene];
+	this.currentScene.parseSettings("default");
+};
+SceneManager.prototype.initCustomScene = function(newScene)
+{
+	var customScene = g.customSceneHandler.loadCustomScene(newScene);
+	aLog("loading custom settings for sceneName: "+customScene.name, 1);
+	this.currentScene = this.scenes[customScene.name];
+	this.currentScene.parseSettings(customScene.preset);
+	this.currentScene.name = newScene;
+	return customScene.keyName;
 };
 function handleSceneSettingError(errors, keyName)
 {
@@ -63,7 +100,7 @@ SceneManager.prototype.update = function()
 		if(this.sceneSelector.scene != this.currentScene.name)
 		{
 			this.cleanUpCurrentScene();
-			this.initCurrentScene();
+			this.initCurrentlyChoosenScene();
 		}
 	}
 	else

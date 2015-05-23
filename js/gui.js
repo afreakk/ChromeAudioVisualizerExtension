@@ -82,6 +82,8 @@ GUI.prototype.reCheckValuesInternally = function()
 };
 GUI.prototype.repopulateSceneList = function()
 {
+	aLog("repopulating scenelist");
+	console.dir(g.sceneSelector.sceneNames);
 	if(this.listElement)
 		this.datGUI.remove(this.listElement);
 	this.listElement = this.datGUI.add(g.sceneSelector,

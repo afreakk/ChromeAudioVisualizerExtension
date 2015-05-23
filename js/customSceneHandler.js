@@ -27,15 +27,20 @@ CustomSceneHandler.prototype.saveCustomScene = function(scene)
 	var keyName = generateSaveName(scene);
 	var sceneSetting = scene.settings;
 	this.treatSetting(sceneSetting);
-	var cBack = this.refreshCustomScenes.bind(this);
-	storage.scenes.insert(keyName, sceneSetting, cBack);
+	storage.scenes.insert(keyName, sceneSetting,function(scenes)
+		{
+			var xscene = this.refreshCustomScenes(scenes);
+			console.log("setting lol");
+			this.sceneSelector.setScene(xscene);
+		}.bind(this)
+	);
 	aLog("saving as :" + keyName, 1);
 },
 CustomSceneHandler.prototype.refreshCustomScenes = function(scenes)
 {
 	var scene = this.sceneSelector.insertPresets(scenes);
-	this.sceneSelector.setScene(scene);
 	this.presets = scenes;
+	return scene;
 },
 CustomSceneHandler.prototype.treatSetting = function(settings)
 {
