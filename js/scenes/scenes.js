@@ -63,17 +63,17 @@ SceneSelector.prototype.setScene = function(name)
 };
 SceneSelector.prototype.insertPresets = function(savedPresets)
 {
+	var oldList = this.sceneNames;
 	this.sceneNames = this.actualScenes.slice();
+	var retval;
 	for(var preset in savedPresets)
 	{
 		var presetName = preset.split(AV.strDelim)[1];
-		if(this.sceneNames.indexOf(presetName) === -1)
-		{
-			aLog("inserting presetScene: "+presetName,1);
-			this.sceneNames.push(presetName);
-		}
+		aLog("inserting presetScene: "+presetName,1);
+		this.sceneNames.push(presetName);
+		if(oldList.indexOf(presetName) === -1)
+			retVal = this.sceneNames[this.sceneNames.length-1]
 	}
-	var retVal = this.sceneNames[this.sceneNames.length-1];
 	this.sceneNames = this.sceneNames.sort();
 	if(g.gui)
 		g.gui.repopulateSceneList();

@@ -40,17 +40,6 @@ SceneManager.prototype.initCurrentlyChoosenScene = function()
 		refreshCustomScenes();
 	}
 };
-function refreshCustomScenes()
-{
-	storage.scenes.get(	
-		function(scenes)
-		{
-			//also do hard refresh of values in scenelist
-			//(cuz ur deleting in options at the same time)
-			g.customSceneHandler.refreshCustomScenes(scenes)
-		}
-	);
-}
 SceneManager.prototype.initScene=function(newScene)
 {
     aLog("init scene: " + newScene, 1);
