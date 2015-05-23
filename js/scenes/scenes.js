@@ -52,9 +52,12 @@ SceneSelector.prototype.setRandomScene = function()
 };
 SceneSelector.prototype.setScene = function(name)
 {
-	if(!(name in this.sceneNames))
+/*	if(!(name in this.sceneNames))
+	{
+		console.dir(this.sceneNames);
 		throw new Error("Trying to set scene but: "+name+" is not in list");
-	else
+	}
+	else*/
 		this.scene = name;
 };
 SceneSelector.prototype.insertPresets = function(savedPresets)
@@ -68,7 +71,7 @@ SceneSelector.prototype.insertPresets = function(savedPresets)
 			this.sceneNames.push(presetName);
 		}
 	}
-	var retVal = this.sceneNames[this.sceneNames.length];
+	var retVal = this.sceneNames[this.sceneNames.length-1];
 	this.sceneNames = this.sceneNames.sort();
 	if(g.gui)
 		g.gui.repopulateSceneList();

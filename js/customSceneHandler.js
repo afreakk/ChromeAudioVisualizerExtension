@@ -33,7 +33,8 @@ CustomSceneHandler.prototype.saveCustomScene = function(scene)
 },
 CustomSceneHandler.prototype.refreshCustomScenes = function(scenes)
 {
-	this.sceneSelector.insertPresets(scenes);
+	var scene = this.sceneSelector.insertPresets(scenes);
+	this.sceneSelector.setScene(scene);
 	this.presets = scenes;
 },
 CustomSceneHandler.prototype.treatSetting = function(settings)

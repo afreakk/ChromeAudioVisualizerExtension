@@ -48,14 +48,15 @@ storage.scenes.remove = function(key, callback)
 },
 storage.scenes.insert = function(keyName, sceneSetting, callback)
 {
-	storage.setKey(keyName, sceneSetting,
-		callback==true?
+	if(callback)
+		storage.setKey(keyName, sceneSetting,
 		function()
 		{
 			storage.scenes.get(callback);
 		}
-		:null
 	);
+	else
+		storage.setKey(keyName, sceneSetting);
 },
 storage.scenes.setError = function(keyName, exception)
 {
