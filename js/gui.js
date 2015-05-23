@@ -1,6 +1,6 @@
 function datUpdate(datElement)
 {
-	for (var i=0; i<datElement.__controllers.length; i++) 
+	for (var i=0; i<datElement.__controllers.length; i++)
 		datElement.__controllers[i].updateDisplay();
 }
 var DatFolder = function(guiElement)
@@ -18,31 +18,50 @@ DatFolder.prototype.reCheckChildElements = function()
 	datUpdate(this.folder);
 };
 
-DatFolder.prototype.repopulate = function(settings)
+DatFolder.prototype.repopulate = function(settings, id)
 {
     while(this.settings.length>0)
         this.folder.remove(this.settings.pop());
+	var errors = [];
     for(var setting in settings)
 	{
-        if(settings.hasOwnProperty(setting))//no object default atrbz
-		{
-			aLog("adding gui setting: "+setting);
-			if(setting == 'spectrumJumps')
-				this.settings.push(this.folder.add(settings, setting).step(1));
-			else if(settings[setting].length &&
-				   settings[setting].length	== 3)
-			{
-				try{
-				var owner = settings[setting][0],
-				attribName = settings[setting][1],
-				availableValues = settings[setting][2];
-				this.settings.push(this.folder.add(owner, attribName, availableValues));
-				}catch(e){console.log("xception in repopulate:"+e);}
-			}
-			else
-				this.settings.push(this.folder.add(settings, setting));
+		try{
+			if(	settings.hasOwnProperty(setting)
+				&& setting != "exception")
+				this.initSetting(setting, settings);
+		}
+		catch(e){
+			errors.push(setting+e.message);
+			aError(e);
 		}
 	}
+	return errors;
+},
+DatFolder.prototype.initSetting = function(setting, settings)
+{
+	aLog("adding gui setting: "+setting);
+	var owner, attribName, availableValues;
+	if(	settings[setting].length &&
+		settings[setting].length == 3)
+	{
+		owner =	settings[setting][0] == "g.ctx" ? g.ctx:
+				settings[setting][0],
+		attribName = settings[setting][1],
+		availableValues = settings[setting][2];
+	}
+	else
+		owner = settings, attribName = setting;
+	var elem = this.insertElement(owner, attribName, availableValues)
+	if(setting == 'spectrumJumps')
+		elem.step(1);
+},
+DatFolder.prototype.insertElement = function(owner, attrib, restrictValues)
+{
+	if(!(attrib in owner))
+		throw new Error("Error: "+attrib+" doesnt exist.");	
+	var folder = this.folder.add(owner, attrib, restrictValues);
+	this.settings.push(folder);
+	return folder;
 };
 var GUI = function(datGUI)
 {
@@ -70,5 +89,5 @@ GUI.prototype.repopulateSceneList = function()
 };
 GUI.prototype.repopulateFolder = function(settings, folderName)
 {
-	this.folders[folderName].repopulate(settings);
+	return this.folders[folderName].repopulate(settings);
 };

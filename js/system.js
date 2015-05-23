@@ -16,7 +16,7 @@ System.prototype.update = function(scene)
 		setFps(false);
 		this.updateScene(scene);
 	}
-	g.port.postMessage("r");
+	g.port.postMessage(AV.music);
 };
 System.prototype.updateScene = function(scene)
 {
@@ -51,11 +51,16 @@ function copyCanvasDim(canvas)
 	canvas.style.pointerEvents = g.canvas.style.pointerEvents;
 }
 
+fullDebug=false;
 function aLog(msg, layer)
 {
-	if(typeof layer != 'undefined'
-		&&layer == 3)
+	if((typeof layer != 'undefined'
+		&&layer == 3)||fullDebug)
 		console.log(msg);
+}
+function aError(e)
+{
+	console.error(e);
 }
 
 function togglePause()
@@ -79,4 +84,39 @@ function togglePause()
 		g.sceneManager.initCurrentScene();
 		g.sceneManager.update();
 	}
+}
+
+function setSaveName(callback)
+{
+	storage.scenes.get(
+		function(savedPresets)
+		{
+			var occupado = false;
+			for(var preset in savedPresets)
+			{
+				var presetName = preset.split(AV.strDelim)[1];
+				if(presetName == g.saveSceneName)
+					occupado = true;
+			}
+			for(var sceneNameKey in g.sceneManager.scenes)
+			{
+				if(g.saveSceneName == sceneNameKey)
+					occupado = true;
+			}
+			if(occupado)
+			{
+				if(g.saveSceneName.indexOf("_custom") === -1)
+					g.saveSceneName = g.saveSceneName + "_custom";
+				else
+					g.saveSceneName = getIncrementalString(g.saveSceneName);
+				setSaveName(callback);
+			}
+			else
+			{
+				g.gui.reCheckValuesInternally();
+				if(callback)
+					callback();
+			}
+		}
+	);
 }

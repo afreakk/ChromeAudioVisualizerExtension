@@ -48,11 +48,17 @@ SceneSelector.prototype.setRandomScene = function()
 {
     var i = Math.round(Math.random()*(this.sceneNames.length-1));
     this.scene = this.sceneNames[i];
-	this.scene = "Swipe";
+	//this.scene = "Swipe";
 };
-SceneSelector.prototype.insertPresets = function(savedPresets, doNotSet)
+SceneSelector.prototype.setScene = function(name)
 {
-	g.presets = savedPresets;
+	if(!(name in this.sceneNames))
+		throw new Error("Trying to set scene but: "+name+" is not in list");
+	else
+		this.scene = name;
+};
+SceneSelector.prototype.insertPresets = function(savedPresets)
+{
 	for(var preset in savedPresets)
 	{
 		var presetName = preset.split(AV.strDelim)[1];
@@ -62,11 +68,11 @@ SceneSelector.prototype.insertPresets = function(savedPresets, doNotSet)
 			this.sceneNames.push(presetName);
 		}
 	}
-	if(!doNotSet)
-		this.scene = this.sceneNames[this.sceneNames.length-1];
+	var retVal = this.sceneNames[this.sceneNames.length];
 	this.sceneNames = this.sceneNames.sort();
 	if(g.gui)
 		g.gui.repopulateSceneList();
+	return retVal;
 };
 SceneSelector.prototype.insertScene = function(scene)
 {

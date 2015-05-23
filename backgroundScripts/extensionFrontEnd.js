@@ -75,9 +75,17 @@ ExtensionFrontEnd.prototype.updateHandler = function(tabId, changeinfo, tab)
 };
 ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 {
-	var byteFrequency = new Uint8Array(AV.fftSize);
-	this.injectedTabs[port.name].analyzer.getByteFrequencyData(byteFrequency);
-	this.injectedTabs[port.name].port.postMessage(byteFrequency);
+	switch(msg)
+	{
+		case AV.music:
+			var byteFrequency = new Uint8Array(AV.fftSize);
+			this.injectedTabs[port.name].analyzer.getByteFrequencyData(byteFrequency);
+			this.injectedTabs[port.name].port.postMessage(byteFrequency);
+			break;
+		case AV.openOptions:
+			openOptions();
+			break;
+	}
 };
 ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 {

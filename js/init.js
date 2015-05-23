@@ -14,10 +14,9 @@ if(typeof g === 'undefined')
 	g.datStyle = null;
 	g.sceneSelector = null;
 	g.transparentBackground = true;
-	g.ShowFps = true;
+	g.ShowFps = false;
 	g.saveSceneName = "trolol";
-	g.saveButton = null;
-	g.presets = null;
+	g.buttonHandler = null;
 	g.gui = null;
 }
 aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
@@ -33,7 +32,6 @@ chrome.runtime.onConnect.addListener(function(port) {
 var startup = function(savedPresets)
 {
 	aLog("init begun");
-	g.port.postMessage("rofl");
 	initCanvas();
 
 	var scenes = initScenes(savedPresets);
@@ -41,6 +39,7 @@ var startup = function(savedPresets)
 	initGUI();
 	initSceneManager(scenes);
 	aLog("init finished, beginning sceneManager.update", 1);
+	setFps(g.ShowFps);
     g.sceneManager.update();
 };
 var initSceneManager = function(scenes)
@@ -53,7 +52,8 @@ var initSceneManager = function(scenes)
 var initScenes = function(savedPresets)
 {
 	g.sceneSelector = new SceneSelector();
-	g.sceneSelector.insertPresets(savedPresets, true);
+	g.customSceneHandler = new CustomSceneHandler(g.sceneSelector);
+	g.customSceneHandler.refreshCustomScenes(savedPresets);
     var scenes = {};
     for(var sceneName in AudioScenes)
     {
@@ -65,25 +65,42 @@ var initScenes = function(savedPresets)
     }
 	return scenes;
 };
+var ButtonHandler = function()
+{
+	this.buttons = {}
+};
+ButtonHandler.prototype.makeButton = function(label, callback)
+{
+	this.buttons[label] = {}
+	this.buttons[label][label] = callback;
+	return this.buttons[label];
+};
+
 var initGUI = function()
 {
 	//init
 	initStatsLibrary();
 	var datGUI = initDatGUI();
 	var gui = new GUI(datGUI);
+	g.buttonHandler = new ButtonHandler();
 
 	//adding Options Folder
 	var options = gui.appendFolder("Options");
     options.addSetting(g, "ShowFps");
     options.addSetting(g, "transparentBackground");
+	var optionsBtn = g.buttonHandler.makeButton("-->)Options(<--",
+		function()
+		{
+			g.port.postMessage(AV.openOptions);
+		}
+	);
+	options.addSetting(optionsBtn, "-->)Options(<--");
 
 	//adding Save Folder
 	var save = gui.appendFolder("Save");
 	save.addSetting(g, 'saveSceneName');
-	g.saveButton = {};
-	var label = '(->Save<-)';
-	g.saveButton[label] = saveButtonCallback;
-	save.addSetting(g.saveButton, label);
+	var saveBtn = g.buttonHandler.makeButton("-->)Save(<--", saveButtonCallback);
+	save.addSetting(saveBtn, "-->)Save(<--");
 
 	//adding Scene-Settings Folder
 	gui.appendFolder("Scene-Settings");
@@ -95,12 +112,16 @@ var initGUI = function()
 };
 var saveButtonCallback = function()
 {
-	var cBack = g.sceneManager.savePreset.bind(g.sceneManager);
+	var cBack = function()
+	{
+		g.customSceneHandler.saveCustomScene(g.sceneManager.currentScene);
+	}
+	//make sure savename not occupado
 	setSaveName(cBack);
-}
-var init = function()
+},
+init = function()
 {
-	getScenes(startup);
+	storage.scenes.get(startup);
 };
 function initCanvas()
 {
@@ -119,7 +140,6 @@ function initDatGUI()
 {
 	deleteDomClass("dg ac");
     var datGUI = new dat.GUI();
-	g.stats.isHidden = !g.ShowFps;
 
 	g.datStyle = document.getElementsByClassName("dg ac")[0].style;
 	g.datStyle.zIndex = g.canvasZIndex+1;
@@ -136,5 +156,4 @@ function initStatsLibrary()
 	g.stats.domElement.style.position = 'absolute';
 	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
 	document.body.appendChild( g.stats.domElement );
-	setFps(g.ShowFps);
 }

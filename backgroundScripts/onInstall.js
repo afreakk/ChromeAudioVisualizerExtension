@@ -2,7 +2,7 @@
 {
 	var insertExample = function(example)
 	{
-		chrome.storage.sync.get("options",
+		storage.options.get(
 			function(storage)
 			{
 				var pkg = {};

@@ -75,7 +75,7 @@ AudioScenes.SwipeScene = function()
       g.ctx.beginPath();
       g.ctx.arc(0, 0, this.circle.radius,
 			  this.dToR(this.circle.angleStart), this.dToR(this.circle.angleEnd), true);
-      g.ctx.lineWidth = this.circle.thickness; 
+	  g.ctx.lineWidth = this.circle.thickness;
       g.ctx.strokeStyle = this.gradient1;
       g.ctx.stroke();
       g.ctx.restore();

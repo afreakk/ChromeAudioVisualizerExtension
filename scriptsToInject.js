@@ -5,7 +5,7 @@ AV.scriptsToInject = [
 	"lib/stats.min.js",
 
 	"js/tools.js",
-	"js/getScenes.js",
+	"js/storageLayer.js",
 	"js/scenes/scenes.js",
 	"js/scenes/circleScene.js",
 	"js/scenes/wormScene.js",
@@ -16,7 +16,8 @@ AV.scriptsToInject = [
 	"js/scenes/seventiesScene.js",
 	"js/scenes/swipeScene.js",
 	"js/sceneManager.js",
-	"js/core.js",
+	"js/customSceneHandler.js",
+	"js/system.js",
 	"js/gui.js",
 	"js/init.js"
 ];

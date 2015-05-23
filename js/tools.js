@@ -86,3 +86,19 @@ function _deleteDom(elem)
 		);
 	}
 }
+function getIncrementalString(origStr)
+{
+	var lenMinOne = origStr.length-1;
+	var incremStr;
+	if(isNaN(origStr[lenMinOne]))
+		incremStr = origStr + "0";
+	else
+	{
+		var y = parseInt(origStr[lenMinOne])+1;
+		if(y>9)
+			incremStr = origStr + "0";
+		else
+			incremStr = origStr.substring(0, lenMinOne)+y;
+	}
+	return incremStr;
+}

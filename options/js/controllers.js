@@ -2,13 +2,19 @@ angular.module('AudioVisualizerOptions', []);
 
 function populateNameList($scope)
 {
-	getScenes(
+	storage.scenes.get(
 		function(storageStuff)
 		{
-			var i=0;
-			$scope.names = [];
+			$scope.sceneList = [];
 			for(var nameKey in storageStuff)
-				$scope.names[i++] = nameKey;
+			{
+				var customScene = storageStuff[nameKey],
+				listObj = {};
+				listObj.name = nameKey;
+				if('exception' in customScene)
+					listObj.exception = customScene.exception;
+				$scope.sceneList.push(listObj);
+			}
 			$scope.$apply();
 		}
 	);
@@ -19,7 +25,8 @@ angular.module('AudioVisualizerOptions').controller('storageController',
 		populateNameList($scope);
 		$scope.deleteByName = function(name)
 		{
-			chrome.storage.sync.remove(name, function()
+			storage.scenes.remove(name,
+				function()
 				{
 					populateNameList($scope);
 				}

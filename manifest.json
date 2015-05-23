@@ -20,15 +20,23 @@
 		"default_title": "AudioVisualizer"
 	},
 	"commands": {
+		"open-options": {
+			"suggested_key": {
+				"default": "Alt+Q"
+			},
+            "description": "Opens Options"
+		},
 		"_execute_browser_action": {
 			"suggested_key": {
 				"default": "Ctrl+Q"
-			}
+			},
+            "description": "Begins the show"
 		}
 	},
 	"background": {
 		"scripts": [
 			"settings/setting.js",
+			"backgroundScripts/openOptions.js",
 			"backgroundScripts/onInstall.js",
 			"backgroundScripts/extensionFrontEnd.js",
 			"backgroundScripts/main.js",

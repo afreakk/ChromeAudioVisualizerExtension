@@ -10,3 +10,11 @@
 		frontEnd.updateHandler.bind(frontEnd));
 
 })();
+
+chrome.commands.onCommand.addListener(
+	function(command)
+	{
+		if(command == "open-options")
+			openOptions();
+	}
+);
