@@ -79,7 +79,7 @@ function togglePause()
 		canvasResize();
 		g.canvas.style.visibility = "visible";
 		g.datStyle.visibility = "visible";
-		g.stats.domElement.style.visibility = 'visible';
+		setFps(g.showFps);
 		g.sceneManager.sceneSelector.setRandomScene();
 		g.sceneManager.initCurrentScene();
 		g.sceneManager.update();
