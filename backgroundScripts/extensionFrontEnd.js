@@ -1,4 +1,3 @@
-
 // ExtensionFrontEnd -- begin
 var ExtensionFrontEnd = function()
 {
@@ -13,7 +12,7 @@ ExtensionFrontEnd.prototype.togglePauseTab = function(tabId)
 	}
 	else
 		console.log("trying to toggle pause on uninjected tab with id: "+tabId);
-};
+},
 ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 {
 	console.log("MainKey triggered on tabid: "+tab.id);
@@ -21,6 +20,8 @@ ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 		{code: jsInjectedQuery},
 		function()
 		{
+			if(wasError("initTab"))
+				return;
 			if(!(tab.id in this.injectedTabs))
 				this.injectedTabs[tab.id] = new TabInfo();
 			if(this.injectedTabs[tab.id].injected==false)
@@ -43,17 +44,17 @@ ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 				this.togglePauseTab(tab.id);
 		}.bind(this)
 	);
-};
+},
 ExtensionFrontEnd.prototype.initTab = function(stream, tabId)
 {
 	if(!stream)
-		console.log(chrome.extension.lastError.message);
+		wasError("initTab");
 	else
 		this.initAudio(stream, tabId);
 	this.connectToTab(tabId);
 	console.log("init() on tabId:" + tabId);
 	chrome.tabs.executeScript(tabId, { code: "init();" });
-}
+},
 ExtensionFrontEnd.prototype.messageHandler = function(req, sender, sendResponse)
 {
     if ("tab" in sender)
@@ -67,13 +68,17 @@ ExtensionFrontEnd.prototype.messageHandler = function(req, sender, sendResponse)
 		console.log("got reply from tab with id: "+sender.tab.id+", injected status: "+
 			this.injectedTabs[sender.tab.id].injected);
 	}
-};
+},
 ExtensionFrontEnd.prototype.updateHandler = function(tabId, changeinfo, tab)
 {
     chrome.tabs.executeScript(tabId, {
         code: jsInjectedQuery
+	},
+	function()
+	{
+		wasError("updateHandler");
 	});
-};
+},
 ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 {
 	switch(msg)
@@ -87,7 +92,7 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 			openOptions();
 			break;
 	}
-};
+},
 ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 {
 	var context = new AudioContext();
@@ -96,23 +101,23 @@ ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 	this.injectedTabs[id].analyzer.fftSize = AV.fftSize;
 	sourceNode.connect(this.injectedTabs[id].analyzer);
 	sourceNode.connect(context.destination);
-}
+},
 ExtensionFrontEnd.prototype.connectToTab = function(id)
 {
 	console.log("connecting 2 tab: " + id);
 	this.injectedTabs[id].port = chrome.tabs.connect(id);
 	this.injectedTabs[id].port.name = id;
 	this.injectedTabs[id].port.onMessage.addListener(this.onPortMessage.bind(this));
-}
+},
 // ExtensionFrontEnd -- end
 
 
 // ScriptInjector  -- begin
-var ScriptInjector = function(tabId)
+ScriptInjector = function(tabId)
 {
 	this.tabId = tabId;
 	this.scriptsLoadedCallback = null;
-}
+};
 ScriptInjector.prototype.injectScripts = function(scripts, callback)
 {
 	this.scriptsLoadedCallback = callback;
@@ -120,23 +125,32 @@ ScriptInjector.prototype.injectScripts = function(scripts, callback)
 	this.scriptsLoaded = 0;
 	for(var script of scripts)
 		chrome.tabs.executeScript(this.tabId, {file:script}, this.scriptInjectCount.bind(this));
-}
+},
 ScriptInjector.prototype.scriptInjectCount=function()
 {
 	if(++this.scriptsLoaded == this.scripts.length)
 	{
 		this.scriptsLoadedCallback();
 	}
-}
+},
 // ScriptInjector  -- end
 
 // TabInfo - date struct class
-var TabInfo = function()
+TabInfo = function()
 {
 	this.port = null;
 	this.id = null;
 	this.injected = false;
 	this.analyzer = null;
-};
+},
 
-var jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof window.g !== 'undefined'});";
+// errorHandling
+wasError = function(id)
+{
+	return	chrome.runtime.lastError ?
+			console.log(	"error from id: " + id + "\n" +
+							"message: "+ chrome.runtime.lastError.message)
+			||true
+			:false;
+},
+jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof window.g !== 'undefined'});";

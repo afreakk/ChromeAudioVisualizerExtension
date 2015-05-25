@@ -52,8 +52,8 @@ CustomSceneHandler.prototype.treatSetting = function(settings)
 			settings[i][0] = "g.ctx";
 		}
 	}
-};
-function generateSaveName(scene)
+},
+generateSaveName = function(scene)
 {
 	return scene.originalName+AV.strDelim+g.saveSceneName;
 }

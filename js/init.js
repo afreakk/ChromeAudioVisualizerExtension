@@ -1,33 +1,4 @@
-//buttonhandler begin
-var ButtonHandler = function()
-{
-	this.buttons = {}
-};
-ButtonHandler.prototype.makeButton = function(label, callback)
-{
-	this.buttons[label] = {}
-	this.buttons[label][label] = callback;
-	return this.buttons[label];
-},
-ButtonHandler.prototype.styleButton = function(btn)
-{
-	btn.domElement.style.borderRadius="10px";
-	btn.domElement.style.background="green";
-},
-//buttonhandler end
-
-defIfUndef=function(x, val){
-	return isUndef(x)?val:x;
-},
-isUndef=function(x){
-	return typeof x === 'undefined';
-},
-initUndef=function(owner, attribName, value)
-{
-	owner[attribName] = defIfUndef(owner[attribName],value);
-},
-
-initSceneManager = function(scenes)
+var initSceneManager = function(scenes)
 {
     g.sceneManager = new SceneManager(scenes, g.sceneSelector);
 	canvasResize();
@@ -65,7 +36,6 @@ initGUI = function()
 	initStatsLibrary();
 	var datGUI = initDatGUI();
 	var gui = new GUI(datGUI);
-	g.buttonHandler = new ButtonHandler();
 
 	//adding Options Folder
 	var optionsFolder = gui.appendFolder("Options");
@@ -81,21 +51,19 @@ initGUI = function()
 			storage.options.setOption("transparentBackground", newValue);
 		}
 	);
-	var optionsBtnConfig = g.buttonHandler.makeButton("-->Options",
+	var optionsBtnConfig = buttonHandler.makeButton("-->Options",
 		function()
 		{
 			g.port.postMessage(AV.openOptions);
 		}
 	);
 	var optionsBtnElem = optionsFolder.addSetting(optionsBtnConfig, "-->Options");
-	//g.buttonHandler.styleButton(optionsBtnElem); doestn work
 
 	//adding Save Folder
 	var saveFolder = gui.appendFolder("Save");
 	saveFolder.addSetting(g, 'saveSceneName');
-	var saveBtnConf = g.buttonHandler.makeButton("-->Save", saveButtonCallback);
+	var saveBtnConf = buttonHandler.makeButton("-->Save", saveButtonCallback);
 	var saveBtnElem = saveFolder.addSetting(saveBtnConf, "-->Save");
-	//g.buttonHandler.styleButton(saveBtnElem); doestn work
 
 	//adding Scene-Settings Folder
 	gui.appendFolder("Scene-Settings");
@@ -150,6 +118,18 @@ initStatsLibrary=function()
 	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
 	document.body.appendChild( g.stats.domElement );
 },
+createG = function()
+{
+	var gDefined = true;
+	if(isUndef(window.g))
+	{
+		gDefined = false;
+		window.g = {};
+	}
+	aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
+										"undefined :) fresh inject."
+	,3);
+},
 startup = function(savedPresets)
 {
 	aLog("init begun");
@@ -163,20 +143,9 @@ startup = function(savedPresets)
 	setFps(OV.ShowFps);
     g.sceneManager.update();
 },
-createG = function()
-{
-	var gDefined = true;
-	if(isUndef(window.g))
-	{
-		gDefined = false;
-		window.g = {};
-	}
-	aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
-										"undefined :) fresh inject."
-	,3);
-},
 init = function()
 {
+	//init window.g.attributes
 	var i = function(attribName, value){
 		initUndef(g, attribName, value);
 	};
@@ -191,7 +160,6 @@ init = function()
 	i("datStyle", null);
 	i("sceneSelector", null);
 	i("saveSceneName", "trololol");
-	i("buttonHandler", null);
 	i("gui",null);
 
 	storage.scenes.get(startup);

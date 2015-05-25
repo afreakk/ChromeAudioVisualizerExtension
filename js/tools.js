@@ -1,8 +1,34 @@
-function componentToHex(c)
+//buttonhandler begin
+var buttonHandler = {};
+buttonHandler.buttons = {};
+buttonHandler.makeButton = function(label, callback)
+{
+	buttonHandler.buttons[label] = {}
+	buttonHandler.buttons[label][label] = callback;
+	return buttonHandler.buttons[label];
+},
+buttonHandler.styleButton = function(btn)
+{
+	btn.domElement.style.borderRadius="10px";
+	btn.domElement.style.background="green";
+},
+//buttonhandler end
+
+defIfUndef=function(x, val){
+	return isUndef(x)?val:x;
+},
+isUndef=function(x){
+	return typeof x === 'undefined';
+},
+initUndef=function(owner, attribName, value)
+{
+	owner[attribName] = defIfUndef(owner[attribName],value);
+},
+componentToHex=function(c)
 {
     var hex = Math.min(Math.round(c),255).toString(16);
     return hex.length == 1 ? "0" + hex : hex;
-}
+};
 
 function rgbToHex(r, g, b)
 {
@@ -10,7 +36,7 @@ function rgbToHex(r, g, b)
 }
 function refreshCustomScenes()
 {
-	storage.scenes.get(	
+	storage.scenes.get(
 		function(scenes)
 		{
 			//also do hard refresh of values in scenelist
