@@ -8,11 +8,11 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr ng-repeat="(key, value) in options | filter: searchText">
-				<td>{{key}}</td>
-				<td	ng-click="switchBoolean(key)"
-					ng-class="booleanLabel(value)">
-					{{value}}
+			<tr ng-repeat="option in options | filter: searchText">
+				<td>{{option.key}}</td>
+				<td	ng-click="switchBoolean(option.key)"
+					ng-class="booleanLabel(option.value)">
+					{{option.value}}
 				</td>
 			</tr>
 		</tbody>

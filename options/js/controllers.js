@@ -42,7 +42,14 @@ function populateOptions($scope)
 	storage.options.get(
 		function(options)
 		{
-			$scope.options = options;
+			repackedOptions=[];
+			for(var key in options){
+				var x = {};
+				x.key = key
+				x.value = options[key];
+				repackedOptions.push(x);
+			}
+			$scope.options = repackedOptions;
 			$scope.$apply();
 		}
 	);
