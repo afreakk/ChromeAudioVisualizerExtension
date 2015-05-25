@@ -4744,7 +4744,7 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
 }
 .label {
   display: inline;
-  padding: .2em .6em .3em;
+  padding: .2em .9em .3em;
   font-size: 75%;
   font-weight: bold;
   line-height: 1;
@@ -4752,7 +4752,7 @@ fieldset[disabled] .navbar-inverse .btn-link:focus {
   text-align: center;
   white-space: nowrap;
   vertical-align: baseline;
-  border-radius: .25em;
+  border-radius: .15em;
 }
 a.label:hover,
 a.label:focus {

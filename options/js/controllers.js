@@ -85,8 +85,8 @@ angular.module('AudioVisualizerOptions').controller('mainController',
 	function($scope, $location){
 		$scope.btnClass = function (url) {
 			if(url === $location.path())
-				return "btn btn-primary";
-			return "btn btn-default";
+				return "label label-primary";
+			return "label label-default";
 		};
 	}
 );

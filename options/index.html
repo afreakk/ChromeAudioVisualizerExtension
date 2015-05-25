@@ -12,16 +12,20 @@
 	</head>
 	<body ng-controller="mainController">
 		<center>
-			<h1>Options - AudioVisualizer</h1>
-			<a href="index.html#/optionsListing" 
-				ng-class="btnClass('/optionsListing')">
-				options
-			</a>
-			<a href="index.html#/sceneListing"
-				ng-class="btnClass('/sceneListing')">
-				custom scenes
-			</a>
+			<h1>Options</h1>
+			<h3>
+				<a href="index.html#/optionsListing" 
+					ng-class="btnClass('/optionsListing')">
+					options
+				</a>
+				&nbsp
+				<a href="index.html#/sceneListing"
+					ng-class="btnClass('/sceneListing')">
+					custom scenes
+				</a>
+			<h3>
 			<div ng-view></div>
+			<h6><font color="grey"><i>AudioVisualizer</i></font></h6>
 		</center>
 	</body>
 </html>
