@@ -1,3 +1,4 @@
+/* fug diz zhit
 (function()
 {
 	var insertExample = function(example)
@@ -23,7 +24,8 @@
 					}
 				}
 				if(Object.keys(pkg).length>0)
-					chrome.storage.sync.set(pkg);
+					//storage.options.set(pkg);
+					//chrome.storage.sync.set(pkg);             <-- lookzie
 			}
 		);
 	},
@@ -46,3 +48,4 @@
 		}
 	);
 })();
+*/

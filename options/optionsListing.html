@@ -1,0 +1,22 @@
+<div class="container">
+	<h3>List of options</h3>
+	<label>Search: <input ng-model="searchText"></label>
+	<br/>
+	<table class="table">
+		<thead>
+			<tr>
+				<th>Option</th>
+				<th>Value:</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="(key, value) in options | filter: searchText">
+				<td>{{key}}</td>
+				<td	ng-click="switchBoolean(key)"
+					ng-class="booleanLabel(value)">
+					{{value}}
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

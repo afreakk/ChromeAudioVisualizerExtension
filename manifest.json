@@ -1,8 +1,9 @@
 {
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
+	"short_name": "AudiViz",
 	"description": "Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the AV icon or default-hotkey: 'Ctrl+Q')",
-	"version": "2.42",
+	"version": "3.420",
 	"permissions": [
 		"tabCapture",
 		"tabs",
@@ -35,6 +36,7 @@
 	},
 	"background": {
 		"scripts": [
+			"js/storageLayer.js",
 			"settings/setting.js",
 			"backgroundScripts/openOptions.js",
 			"backgroundScripts/onInstall.js",

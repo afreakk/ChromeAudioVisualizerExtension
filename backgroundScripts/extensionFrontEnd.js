@@ -51,6 +51,7 @@ ExtensionFrontEnd.prototype.initTab = function(stream, tabId)
 	else
 		this.initAudio(stream, tabId);
 	this.connectToTab(tabId);
+	console.log("init() on tabId:" + tabId);
 	chrome.tabs.executeScript(tabId, { code: "init();" });
 }
 ExtensionFrontEnd.prototype.messageHandler = function(req, sender, sendResponse)
@@ -138,4 +139,4 @@ var TabInfo = function()
 	this.analyzer = null;
 };
 
-var jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof g !== 'undefined'});";
+var jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof window.g !== 'undefined'});";

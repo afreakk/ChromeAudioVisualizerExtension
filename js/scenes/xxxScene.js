@@ -336,7 +336,7 @@ AudioScenes.Hexagon = function() {
 		parseSettings(this,FccSettings, preset);
 	};
 	var container;
-	var transparentBackground = g.transparentBackground;
+	var transparentBackground = OV.transparentBackground;
     var initOnce = function() {
 		audioSource = {};
 		audioSource.volume = getVolume();

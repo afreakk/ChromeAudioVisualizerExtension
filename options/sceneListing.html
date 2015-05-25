@@ -1,0 +1,27 @@
+<div class="container">
+	<h3>List of saved scenes</h3>
+	<label>Search: <input ng-model="searchText"></label>
+	<table class="table">
+		<thead>
+			<tr>
+				<th><center>#</center></th>
+				<th>Name</th>
+				<th>Errors:</th>
+				<th><center>Delete?</center></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="scene in sceneList | filter: searchText">
+				<td class="label label-default">{{$index}}</td>
+				<td>{{scene.name|nmSvNm}}</td>
+				<td ng-class="{'label-warning':scene.exception}">
+					{{scene.exception ? scene.exception : "none"}}
+				</td>
+				<td ng-class="{'label-danger':true}"
+					ng-click="deleteByName(scene.name)">
+					Delete
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

@@ -4,7 +4,7 @@ var System = function()
 };
 System.prototype.update = function(scene)
 {
-	if(g.ShowFps)
+	if(OV.ShowFps)
 	{
 		setFps(true);
 		g.stats.begin();
@@ -22,7 +22,7 @@ System.prototype.updateScene = function(scene)
 {
 	if(!g.byteFrequency)
 		return
-	scene.clearBg(g.transparentBackground);
+	scene.clearBg(OV.transparentBackground);
 	scene.update();
 }
 
@@ -51,7 +51,7 @@ function copyCanvasDim(canvas)
 	canvas.style.pointerEvents = g.canvas.style.pointerEvents;
 }
 
-fullDebug=true;
+fullDebug=false;
 function aLog(msg, layer)
 {
 	if((typeof layer != 'undefined'

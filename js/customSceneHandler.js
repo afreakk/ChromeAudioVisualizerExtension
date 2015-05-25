@@ -30,7 +30,6 @@ CustomSceneHandler.prototype.saveCustomScene = function(scene)
 	storage.scenes.insert(keyName, sceneSetting,function(scenes)
 		{
 			var xscene = this.refreshCustomScenes(scenes);
-			console.log("setting lol");
 			this.sceneSelector.setScene(xscene);
 		}.bind(this)
 	);

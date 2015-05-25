@@ -4,6 +4,9 @@ AV.scriptsToInject = [
 	"lib/dat.gui.js",
 	"lib/stats.min.js",
 
+//	"lib/bootstrap.css",
+//	"lib/bootstrap-theme.css",
+
 	"js/tools.js",
 	"js/storageLayer.js",
 	"js/scenes/scenes.js",

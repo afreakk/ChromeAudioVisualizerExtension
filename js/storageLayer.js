@@ -6,7 +6,7 @@ storage.removeKey = function(key, callback)
 },
 storage.getKey = function(key,callback)
 {
-	storage.sync.get(key,callback);
+	chrome.storage.sync.get(key,callback);
 },
 storage.setKey = function(key, value, callback)
 {
@@ -22,13 +22,105 @@ storage.getAll = function(callback)
 
 //options
 storage.options = {},
+storage.options.initialized = false;
+storage.options.init = function(optionsOwner, callback)
+{
+	if(!storage.options.initialized){
+		storage.options.initialized = true;
+		storage.options.get(
+			function(options)
+			{
+				options = options || {};
+				for(var key in optionsOwner)
+				{
+					if(key in options)
+						optionsOwner[key] = options[key];
+					else
+						options[key] = optionsOwner[key];
+				}
+				storage.options.set(options, callback);
+			}
+		);
+	}
+},
 storage.options.get = function(callback)
 {
-	storage.getKey("options", callback);
+	if(!storage.options.initialized){
+		storage.options.init(OV, 
+			function()
+			{
+				storage.options.get(callback);
+			}
+		);
+	}
+	else{
+		storage.getKey("options",
+			function(pkg)
+			{
+				callback(pkg["options"]);
+			}
+		);
+	}
 },
 storage.options.set = function(options, callback)
 {
 	storage.setKey("options", options, callback);
+},
+storage.options.setOption = function(key,value, callback)
+{
+	storage.options.get(
+		function(options)
+		{
+			options[key] = value;
+			storage.options.set(options, callback);
+		}
+	);
+},
+storage.options.getOption = function(key, callback)
+{
+	storage.options.get(
+		function(pkg)
+		{
+			callback(pkg[key]);
+		}
+	);
+},
+storage.options.syncFromStorage = function(owner, attrib)
+{
+	storage.options.getOption(key,
+		function(value)
+		{
+			storage.options._syncValue(owner, attrib, value);
+		}
+	);
+},
+storage.options._isSet = function(value)
+{
+	return !(typeof value === 'undefined' || value === null);
+},
+storage.options._syncValue = function(owner, attrib, value)
+{
+	if(storage.options._isSet(value))
+		owner[attrib] = value;
+	else
+		storage.options.setOption(attrib, owner[attrib]);
+},
+storage.options.syncFromStorageMulti = function(owner, attribs, callback)
+{
+	storage.options.get(
+		function(optionValues)
+		{
+			attribs.forEach(
+				function(attrib)
+				{
+					storage.options._syncValue(owner, attrib, optionValues[attrib]);
+				}
+			);
+			if(callback)
+				callback();
+		}
+	);
+
 },
 //scenes
 storage.scenes = {},

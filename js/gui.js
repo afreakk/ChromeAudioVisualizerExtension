@@ -11,7 +11,9 @@ var DatFolder = function(guiElement)
 };
 DatFolder.prototype.addSetting = function(variable, attribName)
 {
-    this.settings.push(this.folder.add(variable, attribName));
+	var elem = this.folder.add(variable, attribName);
+	this.settings.push(elem);
+	return elem;
 };
 DatFolder.prototype.reCheckChildElements = function()
 {
@@ -83,7 +85,6 @@ GUI.prototype.reCheckValuesInternally = function()
 GUI.prototype.repopulateSceneList = function()
 {
 	aLog("repopulating scenelist");
-	console.dir(g.sceneSelector.sceneNames);
 	if(this.listElement)
 		this.datGUI.remove(this.listElement);
 	this.listElement = this.datGUI.add(g.sceneSelector,

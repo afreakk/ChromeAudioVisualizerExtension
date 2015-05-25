@@ -5,43 +5,23 @@
 		<link rel="stylesheet" href="../lib/bootstrap-theme.css">
 		<link rel="stylesheet" href="style.css">
 		<script src="../lib/angular.min.js"></script>
+		<script src="../lib/angular-route.min.js"></script>
 		<script src="../settings/setting.js"></script>
 		<script src="../js/storageLayer.js"></script>
 		<script src="js/controllers.js"></script>
 	</head>
-	<body ng-controller="storageController">
-		<ul>
-			<h1>AudioVisualizer - List of saved scenes</h1>
-			<div class = "row">
-				<div class="col-md-8">
-					<label>Search: <input ng-model="searchText"></label
-				></div>
-			</div>
-			<div class="col-md-6">
-				<table class="table">
-					<thead>
-						<tr>
-							<th><center>#</center></th>
-							<th>Name</th>
-							<th>Errors:</th>
-							<th><center>Delete?</center></th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr ng-repeat="scene in sceneList | filter: searchText">
-							<td class="label label-default">{{$index}}</td>
-							<td>{{scene.name|nmSvNm}}</td>
-							<td ng-class="{'label-warning':scene.exception}">
-								{{scene.exception ? scene.exception : "none"}}
-							</td>
-							<td ng-class="{'label-danger':true}"
-								ng-click="deleteByName(scene.name)">
-								Delete
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</ul>
+	<body ng-controller="mainController">
+		<center>
+			<h1>Options - AudioVisualizer</h1>
+			<a href="index.html#/optionsListing" 
+				ng-class="btnClass('/optionsListing')">
+				options
+			</a>
+			<a href="index.html#/sceneListing"
+				ng-class="btnClass('/sceneListing')">
+				custom scenes
+			</a>
+			<div ng-view></div>
+		</center>
 	</body>
 </html>

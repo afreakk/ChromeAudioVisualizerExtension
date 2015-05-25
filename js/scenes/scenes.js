@@ -65,7 +65,7 @@ SceneSelector.prototype.insertPresets = function(savedPresets)
 {
 	var oldList = this.sceneNames;
 	this.sceneNames = this.actualScenes.slice();
-	var retval;
+	var retVal;
 	for(var preset in savedPresets)
 	{
 		var presetName = preset.split(AV.strDelim)[1];
