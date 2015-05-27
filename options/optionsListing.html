@@ -10,7 +10,7 @@
 		<tbody>
 			<tr ng-repeat="option in options | filter: searchText">
 				<td>{{option.key}}</td>
-				<td	ng-click="switchBoolean(option.key)"
+				<td	ng-click="switchBoolean($index)"
 					ng-class="booleanLabel(option.value)">
 					{{option.value}}
 				</td>

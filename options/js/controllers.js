@@ -72,9 +72,10 @@ angular.module('AudioVisualizerOptions').controller('storageController',
 angular.module('AudioVisualizerOptions').controller('optionsController',
 	function($scope){
 		populateOptions($scope);
-		$scope.switchBoolean = function(key)
+		$scope.switchBoolean = function(index)
 		{
-			storage.options.setOption(key, !$scope.options[key],
+			storage.options.setOption($scope.options[index].key,
+				!$scope.options[index].value,
 				function(){
 					populateOptions($scope);
 				}

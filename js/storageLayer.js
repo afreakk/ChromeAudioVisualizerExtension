@@ -46,7 +46,7 @@ storage.options.init = function(optionsOwner, callback)
 storage.options.get = function(callback)
 {
 	if(!storage.options.initialized){
-		storage.options.init(OV, 
+		storage.options.init(window.OV, 
 			function()
 			{
 				storage.options.get(callback);

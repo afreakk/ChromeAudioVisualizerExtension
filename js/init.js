@@ -118,18 +118,6 @@ initStatsLibrary=function()
 	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
 	document.body.appendChild( g.stats.domElement );
 },
-createG = function()
-{
-	var gDefined = true;
-	if(isUndef(window.g))
-	{
-		gDefined = false;
-		window.g = {};
-	}
-	aLog("namespace g was: "+gDefined ?	"defined, smells foul :(":
-										"undefined :) fresh inject."
-	,3);
-},
 startup = function(savedPresets)
 {
 	aLog("init begun");
@@ -147,7 +135,7 @@ init = function()
 {
 	//init window.g.attributes
 	var i = function(attribName, value){
-		initUndef(g, attribName, value);
+		initUndef(window.g, attribName, value);
 	};
 	i("analyzer", null);
 	i("canvas", null);
@@ -162,16 +150,22 @@ init = function()
 	i("saveSceneName", "trololol");
 	i("gui",null);
 
-	storage.scenes.get(startup);
+
+	//synchronize window.OV variables
+	storage.options.init(window.OV,
+		function()
+		{
+			storage.scenes.get(startup);
+		}
+	);
 };
 
 //Invoked at script injection time
 (function(){
 	chrome.runtime.onConnect.addListener(
 		function(port){
-			createG();
+			initUndef(window, 'g', {});
 			g.port = port;
-
 			port.onMessage.addListener(
 				function(msg) {
 					g.byteFrequency = msg;
