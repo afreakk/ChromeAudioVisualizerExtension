@@ -47,6 +47,7 @@ function populateOptions($scope)
 				var x = {};
 				x.key = key
 				x.value = options[key];
+				x.type = typeof x.value;
 				repackedOptions.push(x);
 			}
 			$scope.options = repackedOptions;
@@ -72,7 +73,7 @@ angular.module('AudioVisualizerOptions').controller('storageController',
 angular.module('AudioVisualizerOptions').controller('optionsController',
 	function($scope){
 		populateOptions($scope);
-		$scope.switchBoolean = function(index)
+		$scope.toggleBoolean = function(index)
 		{
 			storage.options.setOption($scope.options[index].key,
 				!$scope.options[index].value,
@@ -81,6 +82,15 @@ angular.module('AudioVisualizerOptions').controller('optionsController',
 				}
 			);
 		};
+		$scope.updateInt = function(index)
+		{
+			storage.options.setOption($scope.options[index].key,
+				parseInt($scope.options[index].value),
+				function(){
+					populateOptions($scope);
+				}
+			);
+		}
 		$scope.booleanLabel = function(value)
 		{
 			if(value)

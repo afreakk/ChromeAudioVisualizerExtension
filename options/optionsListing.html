@@ -4,15 +4,27 @@
 		<thead>
 			<tr>
 				<th>Option</th>
-				<th>Value:</th>
+				<th><div align="right">Value</div></th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr ng-repeat="option in options | filter: searchText">
-				<td>{{option.key}}</td>
-				<td	ng-click="switchBoolean($index)"
-					ng-class="booleanLabel(option.value)">
-					{{option.value}}
+				<td>
+					{{option.key}}
+				</td>
+				<td ng-switch on="option.type" align="right">
+					<div ng-switch-when="boolean"
+						ng-class="booleanLabel(option.value)"
+						ng-click="toggleBoolean($index)">
+						{{option.value}}
+					</div>
+					<div ng-switch-when="number">
+						<input ng-model="option.value">
+						<button class="button button-primary"
+								ng-click="updateInt($index)">
+								save
+						</button>
+					</div>
 				</td>
 			</tr>
 		</tbody>

@@ -73,7 +73,7 @@ AudioScenes.Hexagon = function() {
         return [offsetX, offsetY];
     };
     Polygon.prototype.drawPolygon = function() {
-        var bucket = Math.ceil(AV.fftSize/tiles.length*this.num);
+        var bucket = Math.ceil(OV.fftSize/tiles.length*this.num);
         var val = Math.pow((g.byteFrequency[bucket]/255),2)*255;
         val *= this.num > 42 ? 1.1 : 1;
         // establish the value for this tile

@@ -137,7 +137,6 @@ init = function()
 	var i = function(attribName, value){
 		initUndef(window.g, attribName, value);
 	};
-	i("analyzer", null);
 	i("canvas", null);
 	i("ctx", null);
 	i("byteFrequency", [0]);

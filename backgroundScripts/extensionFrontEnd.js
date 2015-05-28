@@ -84,7 +84,7 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 	switch(msg)
 	{
 		case AV.music:
-			var byteFrequency = new Uint8Array(AV.fftSize);
+			var byteFrequency = new Uint8Array(OV.fftSize);
 			this.injectedTabs[port.name].analyzer.getByteFrequencyData(byteFrequency);
 			this.injectedTabs[port.name].port.postMessage(byteFrequency);
 			break;
@@ -98,7 +98,7 @@ ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 	var context = new AudioContext();
 	var sourceNode = context.createMediaStreamSource(stream);
 	this.injectedTabs[id].analyzer = context.createAnalyser();
-	this.injectedTabs[id].analyzer.fftSize = AV.fftSize;
+	this.injectedTabs[id].analyzer.fftSize = OV.fftSize;
 	sourceNode.connect(this.injectedTabs[id].analyzer);
 	sourceNode.connect(context.destination);
 },

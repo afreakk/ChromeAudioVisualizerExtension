@@ -36,15 +36,15 @@ AudioScenes.RoundSpectrum.prototype.update = function()
 
 	var z = 0;
 	var circleMax = Math.PI*2;
-	var barWidth = circleMax/AV.fftSize;
-	for(var i=0; i<AV.fftSize; i++)
+	var barWidth = circleMax/OV.fftSize;
+	for(var i=0; i<OV.fftSize; i++)
 	{
 		z = indexSpinner(z, xs.spectrumJumps);
 		var specValue = data[z];
 		g.ctx.fillStyle=this.getClr(s.clrOffset,xs.colorStrength*specValue);
 		s.clrOffset += xs.colorWidth-specValue/xs.musicColorInfluenceReducer;
 
-		var theta = (i/AV.fftSize)*circleMax;
+		var theta = (i/OV.fftSize)*circleMax;
 		var x = Math.sin(theta)*xs.innerWidth+cw2,
 		var y = Math.cos(theta)*xs.innerWidth+ch2,
 		g.ctx.fillRect(x,y,specValue*xs.musicPwr,specValue*xs.musicPwr);

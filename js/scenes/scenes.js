@@ -87,7 +87,7 @@ SceneSelector.prototype.insertActualScene = function(scene)
 
 function spin(i, data)
 {
-	var max = AV.fftSize-1;
+	var max = OV.fftSize-1;
 	if(i>max)
 		i=0+(i-max);
     while(i > max)
@@ -101,7 +101,7 @@ function spin(i, data)
 function indexSpinner(i, velocity)
 {
 	i+=velocity;
-	var max = AV.fftSize-1;
+	var max = OV.fftSize-1;
 	while(i>max)
 		i -= max+1;
 	while(i<0)
