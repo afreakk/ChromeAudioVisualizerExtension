@@ -41,6 +41,8 @@ function canvasResize()
 	//calculations
     s.widthInHalf = g.canvas.width/2;
     s.heightInHalf= g.canvas.height/2;
+	if(window.gl)
+		WGL.onCanvasResize();
 }
 function copyCanvasDim(canvas)
 {
@@ -60,6 +62,7 @@ function aLog(msg, layer)
 }
 function aError(e)
 {
+	console.log("caller of error is " + arguments.callee.caller.toString());
 	console.error(e);
 }
 

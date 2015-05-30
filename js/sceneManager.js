@@ -8,12 +8,12 @@ SceneManager.prototype.init = function(system)
 {
 	this.system = system
     this.initCurrentlyChoosenScene();
-};
+},
 SceneManager.prototype.cleanUpCurrentScene = function()
 {
 	if('cleanUp' in this.currentScene)
 		this.currentScene.cleanUp();
-}
+},
 SceneManager.prototype.initCurrentlyChoosenScene = function()
 {
 	var oldScene;
@@ -39,7 +39,7 @@ SceneManager.prototype.initCurrentlyChoosenScene = function()
 		}
 		refreshCustomScenes();
 	}
-};
+},
 SceneManager.prototype.initScene=function(newScene)
 {
     aLog("init scene: " + newScene, 1);
@@ -53,12 +53,12 @@ SceneManager.prototype.initScene=function(newScene)
 	if('init' in this.currentScene)
 		this.currentScene.init();
 	return customScene;
-};
+},
 SceneManager.prototype.initDefaultScene = function(newScene)
 {
 	this.currentScene = this.scenes[newScene];
 	this.currentScene.parseSettings("default");
-};
+},
 SceneManager.prototype.initCustomScene = function(newScene)
 {
 	var customScene = g.customSceneHandler.loadCustomScene(newScene);
@@ -67,7 +67,7 @@ SceneManager.prototype.initCustomScene = function(newScene)
 	this.currentScene.parseSettings(customScene.preset);
 	this.currentScene.name = newScene;
 	return customScene.keyName;
-};
+},
 function handleSceneSettingError(errors, keyName)
 {
 	errorStr = '';
@@ -79,7 +79,7 @@ function handleSceneSettingError(errors, keyName)
 	);
 	if(errorStr.length>0)
 		storage.scenes.setError(keyName, errorStr)
-}
+},
 SceneManager.prototype.update = function()
 {
 	if(!g.pause)

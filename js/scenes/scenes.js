@@ -49,7 +49,7 @@ SceneSelector.prototype.setRandomScene = function()
 {
     var i = Math.round(Math.random()*(this.sceneNames.length-1));
     this.scene = this.sceneNames[i];
-	//this.scene = "Swipe";
+//	this.scene = "WebGLScene";
 };
 SceneSelector.prototype.setScene = function(name)
 {

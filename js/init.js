@@ -83,17 +83,19 @@ saveButtonCallback = function()
 	setSaveName(cBack);
 },
 
-initCanvas = function()
+initCanvas = function(contextStr)
 {
+	var className = "lerret";
+	deleteDomClass(className);
 	g.canvas = document.createElement('canvas');
 	g.canvas.style.zIndex = g.canvasZIndex;
 	g.canvas.style.position = "absolute";
 	g.canvas.style.border = "0px";
 	g.canvas.style.pointerEvents = "none";
-	g.canvas.className = "lerret";
-	deleteDomClass(g.canvas.className);
+	g.canvas.className = className;
 	document.body.appendChild(g.canvas);
-    g.ctx = g.canvas.getContext('2d');
+    g.ctx = g.canvas.getContext(contextStr);
+	return g.ctx;
 },
 
 initDatGUI=function()
@@ -121,7 +123,7 @@ initStatsLibrary=function()
 startup = function(savedPresets)
 {
 	aLog("init begun");
-	initCanvas();
+	initCanvas("2d");
 
 	var scenes = initScenes(savedPresets);
 	g.sceneSelector.setRandomScene();
