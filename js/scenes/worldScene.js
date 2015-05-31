@@ -1,9 +1,9 @@
 CubeSceneSetting = function()
 {
 	this.volumeMultiplier = 0.0001,
-	this.redSpeed = 0.0002,
-	this.greenSpeed = 0.0002,
-	this.blueSpeed = 0.0002;
+	this.redSpeed =		0.00002,
+	this.greenSpeed =	0.00002,
+	this.blueSpeed =	0.00002;
 
 	this.spinSpeed = 0.001;
 	this.cubeVolumeScale = 0.0001;

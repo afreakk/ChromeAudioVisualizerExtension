@@ -13,6 +13,10 @@ angular.module('AudioVisualizerOptions').config(
 				templateUrl: 'optionsListing.html',
 				controller: 'optionsController',
 			})
+			.when('/controlListing', 
+			{
+				templateUrl: 'controlListing.html',
+			})
 			.otherwise ({
 				redirectTo: '/optionsListing'
 			});

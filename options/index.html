@@ -16,18 +16,24 @@
 			<h3>
 				<a href="index.html#/optionsListing" 
 					ng-class="btnClass('/optionsListing')">
-					options
+					general
 				</a>
 				&nbsp
 				<a href="index.html#/sceneListing"
 					ng-class="btnClass('/sceneListing')">
 					custom scenes
 				</a>
+				&nbsp
+				<a href="index.html#/controlListing"
+					ng-class="btnClass('/controlListing')">
+					hot-keys
+				</a>
 			<h3>
 			<div ng-view></div>
-			<font color="grey"><h6>
-				<i>AudioVisualizer - version: [ {{avVersion}} ]</i>
-			</font></h6>
+			<font color="grey">
+				<br/>
+				<h6><i>AudioVisualizer - version: [ {{avVersion}} ]</i><br/></h6>
+			</font>
 		</center>
 	</body>
 </html>
