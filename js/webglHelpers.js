@@ -1,11 +1,15 @@
 var WGL = {};
-WGL.initAndGetShader = function(vShader, fShader)
+WGL.initAndGetShader = function(shader)
 {
 	aLog("initializing webgl",3);
 	window.gl = initCanvas("webgl");
-	var shaderProgram = WGL.createProgram( vShader, fShader );
+	var shaderProgram = WGL.createProgram( shader.vShader, shader.fShader );
 	WGL.onCanvasResize();
 	canvasResize();
+	gl.useProgram(shaderProgram);
+	shaders.setUniforms(shaderProgram, shader.uniforms);
+	shaders.setAttributes(shaderProgram, shader.attributes);
+	console.dir(shaderProgram);
 	return shaderProgram;
 },
 WGL.deInitializeGL = function()
@@ -16,9 +20,7 @@ WGL.deInitializeGL = function()
 	canvasResize();
 },
 WGL.createProgram = function( vertex, fragment ) {
-	console.dir(this);
 	var program = gl.createProgram();
-	console.log("llll");
 	var vs = WGL.createShader( vertex, gl.VERTEX_SHADER );
 	var fs = WGL.createShader( '#ifdef GL_ES\nprecision highp float;\n#endif\n\n' + fragment,
 							gl.FRAGMENT_SHADER );

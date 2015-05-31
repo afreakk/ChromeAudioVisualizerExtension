@@ -6,13 +6,15 @@ var avCompOps = [
 var SwipeSceneSettings = function()
 {
 	this.compositeOperation = [g.ctx, 'globalCompositeOperation', avCompOps];
-	this.spinSpeed = 0.0001;
-	this.lineWidth = 0.0005;
+	this.spinSpeed = 0.001;
+	this.lineWidth = 0.00149;
 	this.particleAmnt = 100;
 	this.particleSpread = 0.005;
 	this.particleRadiusScale = 0.0004;
-	this.thickScale = 0.0025;
+	this.thickScale = 0.01;
 	this.colorMoveSpeed = 0.0005;
+	this.volumeRadiusScale = 0.0701;
+	this.radius = 40;
 };
 
 AudioScenes.SwipeScene = function()
@@ -31,7 +33,7 @@ AudioScenes.SwipeScene = function()
 		this.circle = {
 		  x: (g.canvas.width / 2) + 5,
 		  y: (g.canvas.height / 2) + 22,
-		  radius: 90,
+		  radius: this.settings.radius,
 		  speed: 2,
 		  rotation: 0,
 		  angleStart: 270,
@@ -67,6 +69,7 @@ AudioScenes.SwipeScene = function()
 			this.circle.rotation += this.circle.speed;
 		else
 			this.circle.rotation = 0;
+		this.circle.radius = this.settings.radius + volume*this.settings.volumeRadiusScale;
     },
     this.renderCircle = function(){
       g.ctx.save();

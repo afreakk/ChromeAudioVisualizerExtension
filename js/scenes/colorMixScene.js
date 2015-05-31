@@ -1,18 +1,21 @@
 ColorMixSettings = function()
 {
-	this.volumeMultiplier = 0.000001,
-	this.redSpeed = 1.0,
-	this.greenSpeed = 0.5,
-	this.blueSpeed = 0.25;
+	this.lowRedSpeed	=0.005,
+	this.midGreenSpeed	=0.005,
+	this.highBlueSpeed	=0.005;
+	this.revLow = 0.1;
+	this.revMid = 0.1;
+	this.revHigh = 0.1;
+	this.overAllSpeedReducer = 4;
 },
 AudioScenes.ColorMixScene = function()
 {
-	this.name = "ColorMixScene",
+	this.name = "SinusColorMix",
 	this.buffer = null,
-	this.vertex_position, // 0 ?
-	this.currentProgram = null,
-	this.soundValue = 0,
-	this.start_time = new Date().getTime();
+	this.shader = null,
+	this.low = 0,
+	this.mid = 0,
+	this.high = 0;
 },
 AudioScenes.ColorMixScene.prototype.cleanUp = function()
 {
@@ -27,7 +30,7 @@ AudioScenes.ColorMixScene.prototype.square = function(){
 	return new Float32Array(sq);
 },
 AudioScenes.ColorMixScene.prototype.init = function(){
-	this.currentProgram = WGL.initAndGetShader(shaders.twoDVShader, shaders.fShader),
+	this.shader = WGL.initAndGetShader(shaders.twoDShader),
 	this.buffer = gl.createBuffer();
 	gl.bindBuffer( gl.ARRAY_BUFFER, this.buffer );
 	gl.bufferData( gl.ARRAY_BUFFER, this.square(), gl.STATIC_DRAW );
@@ -38,19 +41,34 @@ AudioScenes.ColorMixScene.prototype.clearBg = function(clearColored)
 },
 AudioScenes.ColorMixScene.prototype.update = function(){
 
-	gl.useProgram( this.currentProgram );
-	var time = new Date().getTime() - this.start_time;
-	var volume = getVolume();
-	this.soundValue += volume?volume*this.settings.volumeMultiplier:0;
-	gl.uniform1f( gl.getUniformLocation( this.currentProgram, 'time' ), this.soundValue );
-	gl.uniform2f( gl.getUniformLocation( this.currentProgram, 'resolution' ),
-			g.canvas.width, g.canvas.height );
-	gl.uniform3f( gl.getUniformLocation( this.currentProgram, 'colorInfluence'),
-			this.settings.redSpeed, this.settings.greenSpeed, this.settings.blueSpeed);
+	spec=[];
+	spec[0] = (getLow() /100)*this.settings.lowRedSpeed	 - this.settings.revLow;
+	spec[1] =(getMid() /100)*this.settings.midGreenSpeed - this.settings.revMid; 
+	spec[2] = (getHigh()/100)*this.settings.highBlueSpeed - this.settings.revHigh;
 
-	gl.bindBuffer( gl.ARRAY_BUFFER, this.buffer );
-	gl.vertexAttribPointer( this.vertex_position, 2, gl.FLOAT, false, 0, 0 );
-	gl.enableVertexAttribArray( this.vertex_position );
-	gl.drawArrays( gl.TRIANGLES, 0, 6 );
-	gl.disableVertexAttribArray( this.vertex_position );
+	spec[0] = Math.max(spec[0], this.settings.revLow/2.0);
+	spec[1] = Math.max(spec[1], this.settings.revMid/2.0);
+	spec[2] = Math.max(spec[2], this.settings.revHigh/2.0);
+
+	for(var i=0; i< spec.length; i++)
+		spec[i] = spec[i]/this.settings.overAllSpeedReducer;
+
+	this.low +=	spec[0];
+	this.mid +=	spec[1];
+	this.high+= spec[2];
+
+	//console.log(this.low, this.mid, this.high);
+
+	gl.uniform1f(this.shader.low, this.low);
+	gl.uniform1f(this.shader.mid, this.mid);
+	gl.uniform1f(this.shader.high, this.high);
+	gl.uniform2f(this.shader.resolution, g.canvas.width, g.canvas.height);
+	gl.uniform3f(this.shader.colorInfluence, 1.0,
+		this.settings.midGreenSpeed, this.settings.highBlueSpeed);
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+	gl.vertexAttribPointer(this.shader.position, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray( this.shader.position);
+	gl.drawArrays(gl.TRIANGLES, 0, 6);
+	gl.disableVertexAttribArray(this.shader.position);
 };

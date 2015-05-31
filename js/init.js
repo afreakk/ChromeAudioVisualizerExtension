@@ -142,7 +142,6 @@ init = function()
 	i("canvas", null);
 	i("ctx", null);
 	i("byteFrequency", [0]);
-	//i("port", null);
 	i("canvasZIndex", 2147483646);
 	i("pause", false);
 	i("sceneManager",  null);
@@ -156,7 +155,12 @@ init = function()
 	storage.options.init(window.OV,
 		function()
 		{
-			storage.scenes.get(startup);
+			storage.scenes.get(
+				function()
+				{
+					i("frequencyBinCount",OV.fftSize/2);
+					startup();
+				});
 		}
 	);
 };

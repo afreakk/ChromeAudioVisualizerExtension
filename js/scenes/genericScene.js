@@ -37,15 +37,15 @@ AudioScenes.GenericScene.prototype.update = function()
     var xs = this.settings;
     var data = g.byteFrequency;
 	var z = 0;
-	var boxWidth = (g.canvas.width*2)/OV.fftSize;
-	for(var i=0; i<OV.fftSize; i++)
+	var boxWidth = (g.canvas.width*2)/g.frequencyBinCount;
+	for(var i=0; i<g.frequencyBinCount; i++)
 	{
 		z = indexSpinner(z, xs.spectrumJumps);
 		var specValue = data[z] ? data[z] : 0 ;
 		var boxHeight = specValue*xs.barHeight;
 		g.ctx.fillStyle=this.getClr(s.clrOffset,xs.colorStrength*specValue);
 		g.ctx.fillRect(
-			(i/OV.fftSize)*g.canvas.width*2,
+			(i/g.frequencyBinCount)*g.canvas.width*2,
 			g.canvas.height-boxHeight,
 			boxWidth,boxHeight
 		);

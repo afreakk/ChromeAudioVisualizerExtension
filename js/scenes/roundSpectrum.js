@@ -3,13 +3,13 @@ RoundSpectrumSettings = function()
 {
     this.colorStrength = 0.75;
     this.colorOffset = Math.PI;
-	this.spectrumJumps = 4.0;
+	this.spectrumJumps = 1;
 	this.colorWidth = 0.1;
 	this.musicColorInfluenceReducer =33000;
 	this.innerWidth = g.canvas.width/10;
 	this.staticWidth = 1.1;
 	this.musicHeightPower = 0.01;
-	this.circleMax = 30;
+	this.circleMax = Math.PI*2.8;
 };
 AudioScenes.RoundSpectrum = function()
 {
@@ -40,25 +40,25 @@ AudioScenes.RoundSpectrum.prototype.clearBg = function(clearColored)
 AudioScenes.RoundSpectrum.prototype.update = function()
 {
     var xs = this.settings;
-    var data = g.byteFrequency;
 
 	var z = 0;
-	var circleMax = xs.circleMax;
-	var barWidth = circleMax/OV.fftSize;
-	for(var i=0; i<OV.fftSize; i++)
+	var barWidth = xs.circleMax/g.frequencyBinCount;
+	for(var i=0; i<g.frequencyBinCount; i++)
 	{
 		z = indexSpinner(z, xs.spectrumJumps);
-		var specValue = data[z];
+		var specValue = g.byteFrequency[z]||0;
 		g.ctx.fillStyle=this.getClr(s.clrOffset,xs.colorStrength*specValue);
 		s.clrOffset += xs.colorWidth-specValue/xs.musicColorInfluenceReducer;
 
-		var theta = (i/OV.fftSize)*circleMax;
-		var p = getTriangle(theta, xs.innerWidth, barWidth, 
+		var theta = (i/g.frequencyBinCount)*xs.circleMax;
+		var p = getTriangle(theta, xs.innerWidth, barWidth,
 				xs.staticWidth+specValue*xs.musicHeightPower);
         g.ctx.beginPath();
+
         g.ctx.moveTo(p[0],p[1]);
         g.ctx.lineTo(p[2],p[3]);
         g.ctx.lineTo(p[4],p[5]);
+        g.ctx.lineTo(p[6],p[7]);
         g.ctx.fill();
 	}
 };
@@ -70,8 +70,13 @@ function getTriangle(theta, baseWidth, barWidth, outerWidth)
 	return	[
 		Math.sin(theta)*baseWidth+cw2,
 		Math.cos(theta)*baseWidth+ch2,
-		(Math.sin(theta+barWidth/2)*baseWidth)*outerWidth+cw2,
-		(Math.cos(theta+barWidth/2)*baseWidth)*outerWidth+ch2,
+
+		(Math.sin(theta)*baseWidth)*outerWidth+cw2,
+		(Math.cos(theta)*baseWidth)*outerWidth+ch2,
+
+		(Math.sin(theta+barWidth)*baseWidth)*outerWidth+cw2,
+		(Math.cos(theta+barWidth)*baseWidth)*outerWidth+ch2,
+
 		Math.sin(theta+barWidth)*baseWidth+cw2,
 		Math.cos(theta+barWidth)*baseWidth+ch2
 	];

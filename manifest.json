@@ -9,8 +9,7 @@
 		"tabs",
 		"activeTab",
 		"storage",
-		"http://*/",
-		"https://*/"
+		"<all_urls>"
 	],
 	"icons": {
 		"128": "gfx/icon.png"

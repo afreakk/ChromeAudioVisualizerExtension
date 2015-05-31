@@ -84,9 +84,10 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 	switch(msg)
 	{
 		case AV.music:
-			var byteFrequency = new Uint8Array(OV.fftSize);
-			this.injectedTabs[port.name].analyzer.getByteFrequencyData(byteFrequency);
-			this.injectedTabs[port.name].port.postMessage(byteFrequency);
+			var frequencyData = new Uint8Array(
+					this.injectedTabs[port.name].analyzer.frequencyBinCount);
+			this.injectedTabs[port.name].analyzer.getByteFrequencyData(frequencyData);
+			this.injectedTabs[port.name].port.postMessage(frequencyData);
 			break;
 		case AV.openOptions:
 			openOptions();

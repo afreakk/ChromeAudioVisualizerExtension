@@ -4,6 +4,7 @@ var System = function()
 };
 System.prototype.update = function(scene)
 {
+	g.port.postMessage(AV.music);
 	if(OV.ShowFps)
 	{
 		setFps(true);
@@ -16,7 +17,6 @@ System.prototype.update = function(scene)
 		setFps(false);
 		this.updateScene(scene);
 	}
-	g.port.postMessage(AV.music);
 };
 System.prototype.updateScene = function(scene)
 {

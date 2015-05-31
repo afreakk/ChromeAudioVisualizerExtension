@@ -4,15 +4,32 @@ s.heightInHalf = 0.0;
 
 s.rotationOffset = Math.PI/4.0;
 s.clrOffset = 0.0;
-var AudioScenes = AudioScenes || {}
+var AudioScenes = AudioScenes || {},
 
-function getVolume(){
+getFrequency=function(from, to)
+{
 	var total = 0;
 	if(!g.byteFrequency)
 		return 0;
-	for (var i = 0; i < 80; i++)
+	var i;
+	for (i = Math.round(from); i < Math.round(to); i++)
 		total += g.byteFrequency[i];
-	return total;
+	return total||0;
+},
+getLow=function(){
+	var third = g.frequencyBinCount/3;
+	return getFrequency(0,third);
+},
+getMid=function(){
+	var third = g.frequencyBinCount/3;
+	return getFrequency(third, third*2);
+},
+getHigh=function(){
+	var third = g.frequencyBinCount/3;
+	return getFrequency(third*2, g.frequencyBinCount-1)*10;
+};
+function getVolume(){
+	return getFrequency(0, g.frequencyBinCount/16);
 };
 function resetBrokenGlobalSceneValues()
 {
@@ -49,7 +66,7 @@ SceneSelector.prototype.setRandomScene = function()
 {
     var i = Math.round(Math.random()*(this.sceneNames.length-1));
     this.scene = this.sceneNames[i];
-//	this.scene = "WebGLScene";
+	this.scene = "SpinningCube";
 };
 SceneSelector.prototype.setScene = function(name)
 {
@@ -87,7 +104,7 @@ SceneSelector.prototype.insertActualScene = function(scene)
 
 function spin(i, data)
 {
-	var max = OV.fftSize-1;
+	var max = g.frequencyBinCount-1;
 	if(i>max)
 		i=0+(i-max);
     while(i > max)
@@ -101,7 +118,7 @@ function spin(i, data)
 function indexSpinner(i, velocity)
 {
 	i+=velocity;
-	var max = OV.fftSize-1;
+	var max = g.frequencyBinCount-1;
 	while(i>max)
 		i -= max+1;
 	while(i<0)

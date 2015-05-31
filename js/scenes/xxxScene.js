@@ -8,12 +8,14 @@
 
 var FccSettings = function()
 {
+	this.intensity = Math.PI;
 };
 AudioScenes.Hexagon = function() {
 	this.name = "Hexagon";
     var tileSize;
     var tiles = [];
     var stars = [];
+	var settings;
     // canvas vars
     var fgCanvas;
     var fgCtx;
@@ -73,7 +75,7 @@ AudioScenes.Hexagon = function() {
         return [offsetX, offsetY];
     };
     Polygon.prototype.drawPolygon = function() {
-        var bucket = Math.ceil(OV.fftSize/tiles.length*this.num);
+        var bucket = Math.ceil(g.frequencyBinCount/tiles.length*this.num);
         var val = Math.pow((g.byteFrequency[bucket]/255),2)*255;
         val *= this.num > 42 ? 1.1 : 1;
         // establish the value for this tile
@@ -295,7 +297,7 @@ AudioScenes.Hexagon = function() {
     };
 
     var draw = function() {
-		audioSource.volume = getVolume();
+		audioSource.volume = getVolume()*settings.intensity;
         fgCtx.clearRect(-fgCanvas.width, -fgCanvas.height, fgCanvas.width*2, fgCanvas.height *2);
         sfCtx.clearRect(-fgCanvas.width/2, -fgCanvas.height/2, fgCanvas.width, fgCanvas.height);
 
@@ -334,6 +336,7 @@ AudioScenes.Hexagon = function() {
 	this.parseSettings = function(preset)
 	{
 		parseSettings(this,FccSettings, preset);
+		settings = this.settings;
 	};
 	var container;
 	var transparentBackground = OV.transparentBackground;
