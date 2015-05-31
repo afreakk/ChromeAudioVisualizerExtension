@@ -92,7 +92,7 @@ angular.module('AudioVisualizerOptions').controller('optionsController',
 				}
 			);
 		};
-		$scope.updateInt = function(index)
+		$scope.updateStr = function(index)
 		{
 			storage.options.setOption($scope.options[index].key,
 				$scope.options[index].value,
