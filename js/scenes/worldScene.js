@@ -59,7 +59,7 @@ AudioScenes.CubeScene.prototype.updateUniforms = function()
 	var s = vec3.create();
 	s[0]=getHigh(), s[1]=getMid(), s[2]=getLow();
 	for(var i=0; i<s.length; i++)
-		s[i] = s[i]*this.settings.cubeVolumeScale;
+		s[i] = Math.max(s[i]*this.settings.cubeVolumeScale, 0.1);
 	var scaleMatrix = mat4.create();
 	mat4.scale(scaleMatrix, scaleMatrix, s);
 

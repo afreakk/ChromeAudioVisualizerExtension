@@ -66,7 +66,7 @@ SceneSelector.prototype.setRandomScene = function()
 {
     var i = Math.round(Math.random()*(this.sceneNames.length-1));
     this.scene = this.sceneNames[i];
-	this.scene = "SpinningCube";
+//	this.scene = "SpinningCube";
 };
 SceneSelector.prototype.setScene = function(name)
 {
