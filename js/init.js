@@ -156,10 +156,10 @@ init = function()
 		function()
 		{
 			storage.scenes.get(
-				function()
+				function(savedPresets)
 				{
 					i("frequencyBinCount",OV.fftSize/2);
-					startup();
+					startup(savedPresets);
 				});
 		}
 	);
