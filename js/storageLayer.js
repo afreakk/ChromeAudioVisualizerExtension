@@ -22,10 +22,15 @@ storage.getAll = function(callback)
 
 //options
 storage.options = {},
-storage.options.initialized = false;
+storage.options.initialized = false,
+storage.options.defaultValues = null,
 storage.options.init = function(optionsOwner, callback)
 {
 	if(!storage.options.initialized){
+		storage.options.defaultValues = {};
+		for(var key in optionsOwner)
+			storage.options.defaultValues[key] = optionsOwner[key];
+
 		storage.options.initialized = true;
 		storage.options.get(
 			function(options)

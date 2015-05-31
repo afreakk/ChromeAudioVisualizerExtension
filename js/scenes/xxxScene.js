@@ -351,21 +351,21 @@ AudioScenes.Hexagon = function() {
 
         sfCanvas = document.createElement('canvas');
         sfCanvas.setAttribute('style', 'position: absolute; z-index: '+
-				(g.canvasZIndex - 1));
+				(OV.canvasZIndex - 1));
         sfCanvas.setAttribute('id', 'sfCanvas');
 		container.appendChild(sfCanvas);
         sfCtx = sfCanvas.getContext("2d");
 
         bgCanvas = document.createElement('canvas');
         bgCanvas.setAttribute('style', 'position: absolute; z-index: '+
-				(g.canvasZIndex - 2));
+				(OV.canvasZIndex - 2));
         bgCanvas.setAttribute('id', 'bgCanvas');
 		container.appendChild(bgCanvas);
         bgCtx = bgCanvas.getContext("2d");
 
 		vbgCanvas = document.createElement('canvas');
 		vbgCanvas.setAttribute('style', 'position: absolute; z-index: '+
-				(g.canvasZIndex - 3));
+				(OV.canvasZIndex - 3));
         vbgCanvas.setAttribute('id', 'vbgCanvas');
 		if(!transparentBackground)
 			container.appendChild(vbgCanvas);

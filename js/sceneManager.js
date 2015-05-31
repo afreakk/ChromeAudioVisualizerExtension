@@ -34,6 +34,7 @@ SceneManager.prototype.initCurrentlyChoosenScene = function()
 		aError(e);
 		if(oldScene)
 		{
+			this.cleanUpCurrentScene();
 			this.sceneSelector.setScene(oldScene);
 			this.initCurrentlyChoosenScene();
 		}

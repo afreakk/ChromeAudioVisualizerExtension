@@ -37,6 +37,22 @@ function populateNameList($scope)
 		}
 	);
 }
+angular.module('AudioVisualizerOptions').controller('storageController',
+	function ($scope) {
+		$scope.names = [];
+		populateNameList($scope);
+		$scope.deleteByName = function(name)
+		{
+			storage.scenes.remove(name,
+				function()
+				{
+					populateNameList($scope);
+				}
+			);
+		};
+	}
+);
+
 function populateOptions($scope)
 {
 	storage.options.get(
@@ -55,21 +71,6 @@ function populateOptions($scope)
 		}
 	);
 }
-angular.module('AudioVisualizerOptions').controller('storageController',
-	function ($scope) {
-		$scope.names = [];
-		populateNameList($scope);
-		$scope.deleteByName = function(name)
-		{
-			storage.scenes.remove(name,
-				function()
-				{
-					populateNameList($scope);
-				}
-			);
-		};
-	}
-);
 angular.module('AudioVisualizerOptions').controller('optionsController',
 	function($scope){
 		populateOptions($scope);
@@ -90,12 +91,47 @@ angular.module('AudioVisualizerOptions').controller('optionsController',
 					populateOptions($scope);
 				}
 			);
-		}
+		};
+		$scope.updateInt = function(index)
+		{
+			storage.options.setOption($scope.options[index].key,
+				$scope.options[index].value,
+				function(){
+					populateOptions($scope);
+				}
+			);
+		};
+		$scope.setDefaultValue = function(index, callback)
+		{
+			var dValue = storage.options
+				.defaultValues[ $scope.options[index].key ];
+			storage.options.setOption($scope.options[index].key,
+				dValue, function(){
+					if(callback)
+						callback();
+					else
+						populateOptions($scope);
+				}
+			);
+		};
+		$scope.setFactory = function(i)
+		{
+			if(!i)
+				i=0;
+			$scope.setDefaultValue(i, function(){
+					i++;
+					if(i == $scope.options.length)
+						populateOptions($scope);
+					else
+						$scope.setFactory(i)
+				}
+			);
+		};
 		$scope.booleanLabel = function(value)
 		{
 			if(value)
-				return "label label-success";
-			return "label label-default";
+				return "btn btn-success";
+			return "btn btn-danger";
 		};
 	}
 );
@@ -106,6 +142,7 @@ angular.module('AudioVisualizerOptions').controller('mainController',
 				return "label label-primary";
 			return "label label-default";
 		};
+		$scope.avVersion = chrome.runtime.getManifest().version;
 	}
 );
 angular.module('AudioVisualizerOptions').filter('nmSvNm', 

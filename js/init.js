@@ -88,7 +88,7 @@ initCanvas = function(contextStr)
 	var className = "lerret";
 	deleteDomClass(className);
 	g.canvas = document.createElement('canvas');
-	g.canvas.style.zIndex = g.canvasZIndex;
+	g.canvas.style.zIndex = OV.canvasZIndex;
 	g.canvas.style.position = "absolute";
 	g.canvas.style.border = "0px";
 	g.canvas.style.pointerEvents = "none";
@@ -104,7 +104,7 @@ initDatGUI=function()
     var datGUI = new dat.GUI();
 
 	g.datStyle = document.getElementsByClassName("dg ac")[0].style;
-	g.datStyle.zIndex = g.canvasZIndex+1;
+	g.datStyle.zIndex = OV.canvasZIndex+1;
 
 	return datGUI;
 },
@@ -117,7 +117,7 @@ initStatsLibrary=function()
 	g.stats.setMode(0); // 0: fps, 1: ms
 
 	g.stats.domElement.style.position = 'absolute';
-	g.stats.domElement.style.zIndex = g.canvasZIndex+1;
+	g.stats.domElement.style.zIndex = OV.canvasZIndex+1;
 	document.body.appendChild( g.stats.domElement );
 },
 startup = function(savedPresets)
@@ -135,19 +135,18 @@ startup = function(savedPresets)
 },
 init = function()
 {
-	//init window.g.attributes
 	var i = function(attribName, value){
 		initUndef(window.g, attribName, value);
 	};
+	//init window.g.attributes
 	i("canvas", null);
 	i("ctx", null);
 	i("byteFrequency", [0]);
-	i("canvasZIndex", 2147483646);
 	i("pause", false);
 	i("sceneManager",  null);
 	i("datStyle", null);
 	i("sceneSelector", null);
-	i("saveSceneName", "trololol");
+	i("saveSceneName", "not_set");
 	i("gui",null);
 
 

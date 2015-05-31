@@ -64,19 +64,16 @@ var SceneSelector = function()
 };
 SceneSelector.prototype.setRandomScene = function()
 {
-    var i = Math.round(Math.random()*(this.sceneNames.length-1));
-    this.scene = this.sceneNames[i];
-//	this.scene = "SpinningCube";
+	if(OV.startupScene in this.sceneNames)
+		this.scene = OV.startupScene;
+	else{
+		var i = Math.round(Math.random()*(this.sceneNames.length-1));
+		this.scene = this.sceneNames[i];
+	}
 };
 SceneSelector.prototype.setScene = function(name)
 {
-/*	if(!(name in this.sceneNames))
-	{
-		console.dir(this.sceneNames);
-		throw new Error("Trying to set scene but: "+name+" is not in list");
-	}
-	else*/
-		this.scene = name;
+	this.scene = name;
 };
 SceneSelector.prototype.insertPresets = function(savedPresets)
 {
