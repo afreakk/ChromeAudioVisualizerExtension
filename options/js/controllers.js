@@ -2,6 +2,14 @@ angular.module('AudioVisualizerOptions', ['ngRoute']);
 angular.module('AudioVisualizerOptions').config(
 	function($routeProvider) 
 	{
+		function appendScript(scriptPath){
+			var script = document.createElement('script');
+			script.setAttribute('src', scriptPath);
+			document.head.appendChild(script);
+		}
+		AV.scripts.scenes.forEach(function(e){
+				appendScript('../'+e);
+		});
 		$routeProvider
 			.when('/sceneListing', 
 			{
@@ -59,19 +67,29 @@ angular.module('AudioVisualizerOptions').controller('storageController',
 
 function populateOptions($scope)
 {
-	storage.options.get(
-		function(options)
+	storage.scenes.get(
+		function(customScenes)
 		{
-			repackedOptions=[];
-			for(var key in options){
-				var x = {};
-				x.key = key
-				x.value = options[key];
-				x.type = typeof x.value;
-				repackedOptions.push(x);
-			}
-			$scope.options = repackedOptions;
-			$scope.$apply();
+			storage.options.get(
+				function(options)
+				{
+					repackedOptions=[];
+					for(var key in options){
+						var x = {};
+						x.key = key
+						x.value = options[key];
+						if(x.key ===  "startupScene"){
+							x.dropDownValues = getAllSceneNames(customScenes);
+							x.type = "dropdown";
+						}
+						else
+							x.type = typeof x.value;
+						repackedOptions.push(x);
+					}
+					$scope.options = repackedOptions;
+					$scope.$apply();
+				}
+			);
 		}
 	);
 }

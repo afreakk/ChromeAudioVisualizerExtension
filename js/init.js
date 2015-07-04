@@ -148,20 +148,15 @@ init = function()
 	i("sceneSelector", null);
 	i("saveSceneName", "not_set");
 	i("gui",null);
-
-
-	//synchronize window.OV variables
 	storage.options.init(window.OV,
-		function()
+	function(){
+		storage.scenes.get(
+		function(savedPresets)
 		{
-			storage.scenes.get(
-				function(savedPresets)
-				{
-					i("frequencyBinCount",OV.fftSize/2);
-					startup(savedPresets);
-				});
-		}
-	);
+			i("frequencyBinCount",OV.fftSize/2);
+			startup(savedPresets);
+		});
+	});
 };
 
 //Invoked at script injection time

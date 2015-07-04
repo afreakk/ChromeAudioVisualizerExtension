@@ -34,6 +34,14 @@
 								save
 						</button>
 					</div>
+					<div ng-switch-when="dropdown">
+						<select ng-model="option.value" 
+							ng-options="dropOption for dropOption in option.dropDownValues"></select>
+						<button class="btn btn-primary"
+								ng-click="updateStr($index)">
+								save
+						</button>
+					</div>
 
 				</td>
 				<td class="text-right">

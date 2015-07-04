@@ -1,3 +1,10 @@
 interactive creation of scenes in javascript
-list warnings & exceptions per save game, updaload from client
-or do full check in options  & client = best
+option- get data from:
+AnalyserNode.getFloatFrequencyData()
+Copies the current frequency data into a Float32Array array passed into it.
+AnalyserNode.getByteFrequencyData()
+Copies the current frequency data into a Uint8Array (unsigned byte array) passed into it.
+AnalyserNode.getFloatTimeDomainData()
+Copies the current waveform, or time-domain, data into a Float32Array array passed into it.
+AnalyserNode.getByteTimeDomainData()
+Copies the current waveform, or time-domain, data into a Uint8Array (unsigned byte array) passed into it.

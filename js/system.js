@@ -79,13 +79,17 @@ function togglePause()
 	}
 	else
 	{
-		canvasResize();
-		g.canvas.style.visibility = "visible";
-		g.datStyle.visibility = "visible";
-		setFps(g.showFps);
-		g.sceneManager.sceneSelector.setRandomScene();
-		g.sceneManager.initCurrentlyChoosenScene();
-		g.sceneManager.update();
+		storage.options.init(window.OV,
+		function()
+		{
+			canvasResize();
+			g.canvas.style.visibility = "visible";
+			g.datStyle.visibility = "visible";
+			setFps(g.showFps);
+			g.sceneManager.sceneSelector.setRandomScene();
+			g.sceneManager.initCurrentlyChoosenScene();
+			g.sceneManager.update();
+		}, true);
 	}
 }
 

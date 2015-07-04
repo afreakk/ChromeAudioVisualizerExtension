@@ -6,6 +6,18 @@ s.rotationOffset = Math.PI/4.0;
 s.clrOffset = 0.0;
 var AudioScenes = AudioScenes || {},
 
+getAllSceneNames=function(customScenes)
+{
+	allScenes = [];
+	for(var sceneName in AudioScenes){
+		var scene = new AudioScenes[sceneName];
+		allScenes.push(scene.name);
+	}
+	for(var customSceneName in customScenes){
+		allScenes.push(customSceneName.split(AV.strDelim)[1]);
+	}
+	return allScenes;
+},
 getFrequency=function(from, to)
 {
 	var total = 0;
@@ -48,12 +60,10 @@ function parseSettings(scene, settings, preset)
 {
 	scene.settings = new settings();
 	if(preset === "default")
-	{
-		scene.name = scene.originalName;
-		return;
-	}
+		return scene.name = scene.originalName;
 	for(var preSetSetting in preset)
 		scene.settings[preSetSetting] = preset[preSetSetting];
+	return scene.name;
 }
 
 var SceneSelector = function()
@@ -64,8 +74,9 @@ var SceneSelector = function()
 };
 SceneSelector.prototype.setRandomScene = function()
 {
-	if(OV.startupScene in this.sceneNames)
+	if(this.sceneNames.indexOf(OV.startupScene)!=-1){
 		this.scene = OV.startupScene;
+	}
 	else{
 		var i = Math.round(Math.random()*(this.sceneNames.length-1));
 		this.scene = this.sceneNames[i];

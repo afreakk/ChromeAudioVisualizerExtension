@@ -7,7 +7,7 @@ RoundSpectrumSettings = function()
 	this.colorWidth = 0.1;
 	this.musicColorInfluenceReducer =33000;
 	this.innerWidth = g.canvas.width/10;
-	this.staticWidth = 1.1;
+	this.staticWidth = 1.0;
 	this.musicHeightPower = 0.01;
 	this.circleMax = Math.PI*2.8;
 };
@@ -46,7 +46,7 @@ AudioScenes.RoundSpectrum.prototype.update = function()
 	for(var i=0; i<g.frequencyBinCount; i++)
 	{
 		z = indexSpinner(z, xs.spectrumJumps);
-		var specValue = g.byteFrequency[z]||0;
+		var specValue = g.byteFrequency[z]? g.byteFrequency[z] : 0;
 		g.ctx.fillStyle=this.getClr(s.clrOffset,xs.colorStrength*specValue);
 		s.clrOffset += xs.colorWidth-specValue/xs.musicColorInfluenceReducer;
 
