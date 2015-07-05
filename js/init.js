@@ -69,7 +69,7 @@ initGUI = function()
 	gui.appendFolder("Scene-Settings");
 
 	//adding scene selection drop down
-	gui.repopulateSceneList();
+	gui.addSetting(g.sceneSelector, 'scene', g.sceneSelector.sceneNames);
 
 	g.gui = gui;
 },

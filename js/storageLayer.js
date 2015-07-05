@@ -6,7 +6,16 @@ storage.removeKey = function(key, callback)
 },
 storage.getKey = function(key,callback)
 {
-	chrome.storage.sync.get(key,callback);
+	chrome.storage.sync.get(key,function(data){
+		try{
+			callback(data);
+		}catch(e){
+			aError(e.message);
+			aError(e.stack);
+			if(chrome.runtime.lastError)
+				aError(chrome.runtime.lastError.message);
+		}
+	});
 },
 storage.setKey = function(key, value, callback)
 {
@@ -16,7 +25,16 @@ storage.setKey = function(key, value, callback)
 },
 storage.getAll = function(callback)
 {
-	chrome.storage.sync.get(null,callback);
+	chrome.storage.sync.get(null,function(data){
+		try{
+			callback(data);
+		}catch(e){
+			aError(e.message);
+			aError(e.stack);
+			if(chrome.runtime.lastError)
+				aError(chrome.runtime.lastError.message);
+		}
+	});
 },
 //-- higher->
 

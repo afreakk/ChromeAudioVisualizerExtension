@@ -101,7 +101,7 @@ SceneSelector.prototype.insertPresets = function(savedPresets)
 	}
 	this.sceneNames = this.sceneNames.sort();
 	if(g.gui)
-		g.gui.repopulateSceneList();
+		g.gui.refreshSetting(g.sceneSelector, 'scene', g.sceneSelector.sceneNames);
 	return retVal;
 };
 SceneSelector.prototype.insertActualScene = function(scene)

@@ -62,7 +62,7 @@ function aLog(msg, layer)
 }
 function aError(e)
 {
-	console.log("caller of error is " + arguments.callee.caller.toString());
+	//console.log("caller of error is " + arguments.callee.caller.toString());
 	console.error(e);
 }
 
@@ -120,7 +120,7 @@ function setSaveName(callback)
 			}
 			else
 			{
-				g.gui.reCheckValuesInternally();
+				g.gui.reCheckChildElements();
 				if(callback)
 					callback();
 			}
