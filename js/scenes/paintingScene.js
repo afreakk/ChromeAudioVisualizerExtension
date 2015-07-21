@@ -1,14 +1,14 @@
 PaintingSceneSettings = function()
 {
-    this.moveLength=0.01;
-    this.numBars=48;
+    this.moveLength=0.021;
+    this.numBars=128;
     this.circleSize=0.1;
-    this.rotationSpeed = 85.0;
-    this.colorSpeed = 150.0;
-    this.colorStrength = 0.85;
-    this.colorWidth = 2.5;
-    this.colorOffset = Math.PI;
-	this.spectrumJumps = 10.0;
+    this.rotationSpeed = 58;
+    this.colorSpeed = 148;
+    this.colorStrength = 0.5;
+    this.colorWidth = 18;
+    this.colorOffset = 10;
+	this.spectrumJumps = 18;
 	this.innSnevring = 0.001;
 };
 

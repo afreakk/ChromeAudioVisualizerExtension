@@ -3,7 +3,7 @@
 	"name": "AudioVisualizer",
 	"short_name": "AudiViz",
 	"description": "Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the AV icon or default-hotkey: 'Ctrl+Q')",
-	"version": "4.420.2",
+	"version": "4.420.3",
 	"permissions": [
 		"tabCapture",
 		"tabs",
