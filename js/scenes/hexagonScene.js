@@ -282,7 +282,6 @@ AudioScenes.Hexagon = function() {
 		copyCanvasDim(sfCanvas);
 		copyCanvasDim(bgCanvas);
 		copyCanvasDim(vbgCanvas);
-
 		fgCtx.translate(fgCanvas.width/2,fgCanvas.height/2);
 		sfCtx.translate(fgCanvas.width/2,fgCanvas.height/2);
 		//bgCtx.translate(fgCanvas.width/2,fgCanvas.height/2);

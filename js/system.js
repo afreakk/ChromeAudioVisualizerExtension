@@ -95,7 +95,7 @@ function togglePause()
 			g.datStyle.visibility = "visible";
 			setFps(g.showFps);
 			g.sceneManager.sceneSelector.setRandomScene();
-			g.sceneManager.initCurrentlyChoosenScene();
+			g.sceneManager.init();
 			g.sceneManager.update();
 			if(OV.FullScreen)
 				g.port.postMessage(AV.setFullScreen);

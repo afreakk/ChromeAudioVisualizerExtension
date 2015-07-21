@@ -6,7 +6,9 @@ var SceneManager = function(scenes, sceneSelector, system)
 };
 SceneManager.prototype.init = function(system)
 {
-	this.system = system
+	this.system = system || this.system;
+	canvasResize();
+	g.ctx.resetTransform();
     this.initCurrentlyChoosenScene();
 },
 SceneManager.prototype.resizeCurrentScene = function()
