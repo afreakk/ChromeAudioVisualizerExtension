@@ -92,6 +92,12 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 		case AV.openOptions:
 			openOptions();
 			break;
+		case AV.setFullScreen:
+			toggleScreenState("fullscreen");
+			break;
+		case AV.disableFullScreen:
+			toggleScreenState("normal");
+			break;
 	}
 },
 ExtensionFrontEnd.prototype.initAudio = function(stream, id)

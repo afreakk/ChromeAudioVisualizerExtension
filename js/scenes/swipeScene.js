@@ -201,6 +201,10 @@ AudioScenes.SwipeScene.prototype.cleanUp = function()
 }
 AudioScenes.SwipeScene.prototype.clearBg = function(clearColored)
 {
+	if(!clearColored){
+		g.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+		g.ctx.fillRect(0, 0, g.canvas.width, g.canvas.height);
+	}
 	var old = g.ctx.globalCompositeOperation;
 	g.ctx.globalCompositeOperation = 'destination-out';
 	g.ctx.fillStyle = 'rgba(0, 0, 0, .1)';

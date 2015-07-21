@@ -22,6 +22,9 @@ System.prototype.updateScene = function(scene)
 {
 	if(!g.byteFrequency)
 		return
+	if(	g.canvas.width != window.innerWidth ||
+		g.canvas.height != window.innerHeight)
+		canvasResize();
 	scene.clearBg(OV.transparentBackground);
 	scene.update();
 }
@@ -31,8 +34,10 @@ function canvasResize()
 {
 	g.canvas.width = window.innerWidth;
 	g.canvas.height = window.innerHeight;
+
 	var top = window.scrollY.toString()+"px";
 	var left = window.scrollX.toString()+"px";
+
 	g.canvas.style.top = top;
 	g.canvas.style.left = left;
 	g.stats.domElement.style.top = top;
@@ -43,6 +48,7 @@ function canvasResize()
     s.heightInHalf= g.canvas.height/2;
 	if(window.gl)
 		WGL.onCanvasResize();
+	g.sceneManager.resizeCurrentScene();
 }
 function copyCanvasDim(canvas)
 {
@@ -76,6 +82,8 @@ function togglePause()
 		g.datStyle.visibility = "hidden";
 		g.stats.domElement.style.visibility = 'hidden';
 		g.sceneManager.cleanUpCurrentScene();
+		if(OV.FullScreen)
+			g.port.postMessage(AV.disableFullScreen);
 	}
 	else
 	{
@@ -89,6 +97,8 @@ function togglePause()
 			g.sceneManager.sceneSelector.setRandomScene();
 			g.sceneManager.initCurrentlyChoosenScene();
 			g.sceneManager.update();
+			if(OV.FullScreen)
+				g.port.postMessage(AV.setFullScreen);
 		}, true);
 	}
 }

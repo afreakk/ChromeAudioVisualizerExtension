@@ -9,6 +9,12 @@ SceneManager.prototype.init = function(system)
 	this.system = system
     this.initCurrentlyChoosenScene();
 },
+SceneManager.prototype.resizeCurrentScene = function()
+{
+	if(	this.currentScene && 
+		"resizeCanvas" in this.currentScene)
+		this.currentScene.resizeCanvas();
+},
 SceneManager.prototype.cleanUpCurrentScene = function()
 {
 	if('cleanUp' in this.currentScene)

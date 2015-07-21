@@ -30,6 +30,20 @@ initScenes = function(savedPresets)
 	return scenes;
 },
 
+initDBSetting = function(guiElement, valueObject, valueName, callback)
+{
+    guiElement.addSetting(valueObject, valueName).onChange(
+		function(newValue)
+		{
+			storage.options.setOption(valueName, newValue);
+			if(callback)
+				callback(newValue);
+		}
+	);
+	if(callback)
+		callback(valueObject[valueName]);
+},
+
 initGUI = function()
 {
 	//init
@@ -37,27 +51,29 @@ initGUI = function()
 	var datGUI = initDatGUI();
 	var gui = new GUI(datGUI);
 
-	//adding Options Folder
-	var optionsFolder = gui.appendFolder("Options");
-    optionsFolder.addSetting(OV, "ShowFps").onChange(
+
+	//adding settings Folder
+	var settingsFolder = gui.appendFolder("Settings");
+	initDBSetting(settingsFolder, OV, "transparentBackground");
+	initDBSetting(settingsFolder, OV, "FullScreen",
 		function(newValue)
 		{
-			storage.options.setOption("ShowFps", newValue);
+			if(newValue)
+				g.port.postMessage(AV.setFullScreen);
+			else
+				g.port.postMessage(AV.disableFullScreen);
 		}
 	);
-    optionsFolder.addSetting(OV, "transparentBackground").onChange(
-		function(newValue)
-		{
-			storage.options.setOption("transparentBackground", newValue);
-		}
-	);
+	initDBSetting(settingsFolder, OV, "ShowFps");
+
 	var optionsBtnConfig = buttonHandler.makeButton("-->Options",
 		function()
 		{
 			g.port.postMessage(AV.openOptions);
 		}
 	);
-	var optionsBtnElem = optionsFolder.addSetting(optionsBtnConfig, "-->Options");
+	var optionsBtnElem = settingsFolder.addSetting(
+		optionsBtnConfig, "-->Options");
 
 	//adding Save Folder
 	var saveFolder = gui.appendFolder("Save");
