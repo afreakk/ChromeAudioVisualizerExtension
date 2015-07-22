@@ -64,6 +64,7 @@ initGUI = function()
 				g.port.postMessage(AV.disableFullScreen);
 		}
 	);
+	initDBSetting(settingsFolder, OV, "DrawMode");
 	initDBSetting(settingsFolder, OV, "ShowFps");
 
 	var optionsBtnConfig = buttonHandler.makeButton("-->Options",

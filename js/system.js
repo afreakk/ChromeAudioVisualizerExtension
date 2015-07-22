@@ -25,7 +25,8 @@ System.prototype.updateScene = function(scene)
 	if(	g.canvas.width != window.innerWidth ||
 		g.canvas.height != window.innerHeight)
 		canvasResize();
-	scene.clearBg(OV.transparentBackground);
+	if(!OV.DrawMode)
+		scene.clearBg(OV.transparentBackground);
 	scene.update();
 }
 
