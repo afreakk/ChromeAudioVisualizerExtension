@@ -96,7 +96,7 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 			toggleScreenState("fullscreen");
 			break;
 		case AV.disableFullScreen:
-			toggleScreenState("normal");
+			toggleScreenState();
 			break;
 	}
 },

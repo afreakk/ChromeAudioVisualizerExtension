@@ -6,8 +6,20 @@ openOptions = function()
 	chrome.tabs.create({ url: optionsUrl });
 },
 
-toggleScreenState = function(screenState)
+toggleScreenState = (function()
 {
-	windowId = chrome.windows.WINDOW_ID_CURRENT;
-	chrome.windows.update(windowId, { state: screenState });
-};
+	var previousState = null;
+	var windowId = chrome.windows.WINDOW_ID_CURRENT;
+	return function(screenState){
+		if(screenState) {
+			chrome.windows.getCurrent(function(window){
+					previousState = window.state;
+					chrome.windows.update(windowId, { state: screenState });
+				}
+			);
+		}
+		else if(previousState){
+			chrome.windows.update(windowId, { state: previousState });
+		}
+	}
+})();

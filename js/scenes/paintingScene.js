@@ -1,9 +1,9 @@
 PaintingSceneSettings = function()
 {
     this.moveLength=0.021;
-    this.numBars=128;
+    this.numBars=12;
     this.circleSize=0.1;
-    this.rotationSpeed = 58;
+    this.rotationSpeed = 128;
     this.colorSpeed = 148;
     this.colorStrength = 0.5;
     this.colorWidth = 18;
@@ -69,6 +69,7 @@ AudioScenes.PaintingScene.prototype.update = function()
         g.ctx.arc(x0, y0, scaled_average_v, 0, 2 * Math.PI, false);
         g.ctx.fillStyle=this.getClr(rgbS,scaled_average_c);
         g.ctx.fill();
+        g.ctx.stroke();
         sumtotal += sum;
     }
     sumtotal /= 10000000;
