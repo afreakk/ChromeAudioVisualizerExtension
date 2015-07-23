@@ -64,7 +64,15 @@ initGUI = function()
 				g.port.postMessage(AV.disableFullScreen);
 		}
 	);
-	initDBSetting(settingsFolder, OV, "DrawMode");
+	initDBSetting(settingsFolder, OV, "DrawMode",
+        function(newValue)
+        {
+            if( g.sceneManager  &&
+                g.sceneManager.currentScene &&
+                g.sceneManager.currentScene.clearBg)
+                g.sceneManager.currentScene.clearBg(OV.transparentBackground);
+        }
+    );
 	initDBSetting(settingsFolder, OV, "ShowFps");
 
 	var optionsBtnConfig = buttonHandler.makeButton("-->Options",

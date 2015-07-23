@@ -52,7 +52,7 @@ GUI.prototype =  {
 		else
 			owner = settings, attribName = setting;
 		if(!(attribName in owner))
-			throw new Error("Error: "+attribName+" doesnt exist.");	
+			throw new Error("Error: "+attribName+" doesnt exist.");
 		var elem = this.addSetting(owner, attribName, availableValues)
 		if(setting == 'spectrumJumps')
 			elem.step(1);
@@ -66,16 +66,11 @@ GUI.prototype =  {
 		return this.childHubs[folderName].repopulate(settings);
 	}
 };
-GUI.prototype.refreshSetting = (function(owner, attribName, restrictValues)
-{
-	var setting = null;
-	return function(){
-		if(setting)
-			this.removeSetting(setting);
-		setting = this.addSetting(gui, attribName, restrictValues);
-	};
-
-})();
+GUI.prototype.refreshSetting =  function(owner, attribName, restrictValues){
+	if(attribName in this.settings)
+		this.removeSetting(attribName);
+	setting = this.addSetting(owner, attribName, restrictValues);
+};
 
 //utilz
 function datUpdate(datElement)
