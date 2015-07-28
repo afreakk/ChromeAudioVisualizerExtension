@@ -12,11 +12,17 @@
 		"<all_urls>"
 	],
 	"icons": {
-		"128": "gfx/icon.png"
+		"16": "gfx/icon16.png",
+		"48": "gfx/icon48.png",
+		"128": "gfx/icon128.png"
 	},
 	"options_page": "options/index.html",
 	"browser_action": {
-		"default_icon": "gfx/icon.png",
+		"default_icon": {
+			"16": "gfx/icon16.png",
+			"48": "gfx/icon48.png",
+			"128": "gfx/icon128.png"
+		},
 		"default_title": "AudioVisualizer"
 	},
 	"commands": {
