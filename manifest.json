@@ -3,7 +3,7 @@
 	"name": "AudioVisualizer",
 	"short_name": "AudiViz",
 	"description": "Bring the party to your browser ┐(・。・┐) ♪ (Press icon or 'Ctrl+Q' to start/stop)",
-	"version": "4.420.7",
+	"version": "4.420.7.1",
 	"permissions": [
 		"tabCapture",
 		"tabs",
