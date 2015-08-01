@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
 	"short_name": "AudiViz",
-	"description": "Put on some music and turn your browsing session into a party! ┐(・。・┐) ♪ (By pressing the AV icon or default-hotkey: 'Ctrl+Q')",
+	"description": "Bring the party to your browser ┐(・。・┐) ♪ (Press icon or 'Ctrl+Q' to start/stop)",
 	"version": "4.420.7",
 	"permissions": [
 		"tabCapture",
