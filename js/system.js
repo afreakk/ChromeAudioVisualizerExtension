@@ -33,7 +33,7 @@ System.prototype.updateScene = function(scene)
 //core functions
 function canvasResize()
 {
-	g.canvas.width = window.innerWidth;
+	g.canvas.width = document.body.clientWidth;
 	g.canvas.height = window.innerHeight;
 
 	var top = window.scrollY.toString()+"px";
