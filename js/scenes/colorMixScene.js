@@ -35,12 +35,12 @@ AudioScenes.ColorMixScene.prototype.init = function(){
 	gl.bindBuffer( gl.ARRAY_BUFFER, this.buffer );
 	gl.bufferData( gl.ARRAY_BUFFER, this.square(), gl.STATIC_DRAW );
 },
-AudioScenes.ColorMixScene.prototype.clearBg = function(clearColored)
+AudioScenes.ColorMixScene.prototype.clearBg = function()
 {
-	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 },
 AudioScenes.ColorMixScene.prototype.update = function(){
 
+	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 	spec=[];
 	spec[0] = (getLow() /100)*this.settings.lowRedSpeed	 - this.settings.revLow;
 	spec[1] =(getMid() /100)*this.settings.midGreenSpeed - this.settings.revMid; 

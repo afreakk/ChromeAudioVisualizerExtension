@@ -1,7 +1,7 @@
 AV.scripts = {};
 AV.scripts.scenes = [
 	"js/scenes/shaders/shaders.js",
-	"js/scenes/scenes.js",
+	"js/scenes/sceneHelpers.js",
 	"js/scenes/colorMixScene.js",
 	"js/scenes/particleCircle.js",
 	"js/scenes/dotsAndLines.js",
@@ -13,7 +13,6 @@ AV.scripts.scenes = [
 	"js/scenes/roundSpectrum.js",
 	"js/scenes/hexagonScene.js",
 	"js/scenes/seventiesScene.js",
-	"js/scenes/swipeScene.js",
 	"js/scenes/paintingScene.js"
 ];
 
@@ -30,6 +29,7 @@ AV.scripts.appFramework = [
 	"js/webglHelpers.js",
 	"js/storageLayer.js",
 	"js/sceneManager.js",
+	"js/sceneSelector.js",
 	"js/customSceneHandler.js",
 	"js/system.js",
 	"js/gui.js",

@@ -44,14 +44,16 @@ AudioScenes.CubeScene.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,CubeSceneSetting, preset);
 },
-AudioScenes.CubeScene.prototype.clearBg = function(clearColored)
+AudioScenes.CubeScene.prototype.clearBg = function()
 {
-	if(!clearColored)
-		gl.clearColor(0.0, 0.0, 0.5, 1.0);
-	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 },
 AudioScenes.CubeScene.prototype.updateUniforms = function()
 {
+	if(!OV.transparentBackground)
+		gl.clearColor(0.0, 0.0, 0.5, 1.0);
+	else
+		gl.clearColor(0.0, 0.0, 0.0, 0.0);
+	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 	var volume = getVolume()/100.0;
 	if(isNaN(volume))
 		volume=0;

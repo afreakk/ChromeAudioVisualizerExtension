@@ -28,11 +28,9 @@ AudioScenes.SceneCircle.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,SceneCircleSettings, preset);
 };
-AudioScenes.SceneCircle.prototype.clearBg = function(clearColored)
+AudioScenes.SceneCircle.prototype.clearBg = function()
 {
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	if(!clearColored)
-		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 };
 
 AudioScenes.SceneCircle.prototype.update = function()

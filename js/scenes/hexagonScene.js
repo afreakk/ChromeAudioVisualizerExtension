@@ -366,8 +366,7 @@ AudioScenes.Hexagon = function() {
 		vbgCanvas.setAttribute('style', 'position: absolute; z-index: '+
 				(OV.canvasZIndex - 3));
         vbgCanvas.setAttribute('id', 'vbgCanvas');
-		if(!transparentBackground)
-			container.appendChild(vbgCanvas);
+		container.appendChild(vbgCanvas);
 
 
     };
@@ -377,20 +376,11 @@ AudioScenes.Hexagon = function() {
 			clearInterval(this.intervals[i]);
 		container.removeChild(bgCanvas);
 		container.removeChild(sfCanvas);
-		if(!transparentBackground)
-			container.removeChild(vbgCanvas);
+		container.removeChild(vbgCanvas);
 		fgCtx.resetTransform();
 	}
-	this.clearBg = function(clearColored)
+	this.clearBg = function()
 	{
-		if(transparentBackground != clearColored)
-		{
-			transparentBackground = clearColored;
-			if(clearColored)
-				container.removeChild(vbgCanvas);
-			else
-				container.appendChild(vbgCanvas);
-		}
 	};
 	this.update = function() {
 		draw();

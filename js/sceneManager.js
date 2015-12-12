@@ -9,7 +9,7 @@ SceneManager.prototype.init = function(system)
 	this.system = system || this.system;
 	canvasResize();
 	g.ctx.resetTransform();
-    this.initCurrentlyChoosenScene();
+	this.initNextScene();
 },
 SceneManager.prototype.resizeCurrentScene = function()
 {
@@ -19,35 +19,48 @@ SceneManager.prototype.resizeCurrentScene = function()
 },
 SceneManager.prototype.cleanUpCurrentScene = function()
 {
-	if('cleanUp' in this.currentScene)
+	if(this.currentScene&&'cleanUp' in this.currentScene)
 		this.currentScene.cleanUp();
+},
+SceneManager.prototype.initNextScene=function()
+{
+	var sceneInited=false;
+	var settingsKeyName;
+	var tries=0;
+	while(!sceneInited)
+	{
+		try
+		{
+			sceneInited=true;
+			settingsKeyName = this.initCurrentlyChoosenScene();
+			this.system.update(this.currentScene);
+		}
+		catch(e)
+		{
+			sceneInited=false;
+			aError(e);
+			handleSceneSettingError([e.message], settingsKeyName);
+			if(g.sceneSelector.scene)
+				this.cleanUpCurrentScene();
+			this.sceneSelector.setRandomScene(true);
+			refreshCustomScenes();
+			if(tries++>10)
+				throw "this is not working";
+		}
+	}
 },
 SceneManager.prototype.initCurrentlyChoosenScene = function()
 {
-	var oldScene;
-	if(this.currentScene)
-		oldScene = this.currentScene.name;
-	try
-	{
-		resetBrokenGlobalSceneValues();
-		var custom = this.initScene(g.sceneSelector.scene);
-		g.saveSceneName = this.currentScene.name;
-		setSaveName();
-		var errors = g.gui.repopulateFolder(this.currentScene.settings, "Scene-Settings");
-		if(custom&&errors.length>0)
-			handleSceneSettingError(errors, custom);
-	}
-	catch(e)
-	{
-		aError(e);
-		if(oldScene)
-		{
-			this.cleanUpCurrentScene();
-			this.sceneSelector.setScene(oldScene);
-			this.initCurrentlyChoosenScene();
-		}
-		refreshCustomScenes();
-	}
+	resetBrokenGlobalSceneValues();
+	var settingsKeyName = this.initScene(g.sceneSelector.scene);
+	if(!this.currentScene)
+		return settingsKeyName;
+	g.saveSceneName = this.currentScene.name;
+	setSaveName();
+	var settingErrors = g.gui.repopulateFolder(
+				this.currentScene.settings, "Scene-Settings");
+	handleSceneSettingError(settingErrors, settingsKeyName);
+	return settingsKeyName;
 },
 SceneManager.prototype.initScene=function(newScene)
 {
@@ -59,7 +72,7 @@ SceneManager.prototype.initScene=function(newScene)
 		customScene = this.initCustomScene(newScene);
 		//level with custom settings
 
-	if('init' in this.currentScene)
+	if(this.currentScene&&'init' in this.currentScene)
 		this.currentScene.init();
 	return customScene;
 },
@@ -73,34 +86,43 @@ SceneManager.prototype.initCustomScene = function(newScene)
 	var customScene = g.customSceneHandler.loadCustomScene(newScene);
 	aLog("loading custom settings for sceneName: "+customScene.name, 1);
 	this.currentScene = this.scenes[customScene.name];
-	this.currentScene.parseSettings(customScene.preset);
-	this.currentScene.name = newScene;
+	try
+	{
+		this.currentScene.parseSettings(customScene.preset);
+		this.currentScene.name = newScene;
+	}
+	catch(e)
+	{
+		aError(e);
+	}
 	return customScene.keyName;
-},
-function handleSceneSettingError(errors, keyName)
-{
-	errorStr = '';
-	errors.forEach(
-		function(e)
-		{
-			errorStr += e;
-		}
-	);
-	if(errorStr.length>0)
-		storage.scenes.setError(keyName, errorStr)
 },
 SceneManager.prototype.update = function()
 {
 	if(!g.pause)
 	{
 		window.requestAnimationFrame(this.update.bind(this));
-		this.system.update(this.currentScene);
 		if(this.sceneSelector.scene != this.currentScene.name)
 		{
 			this.cleanUpCurrentScene();
-			this.initCurrentlyChoosenScene();
+			this.initNextScene();
 		}
+		this.system.update(this.currentScene);
 	}
 	else
 		aLog("scene paused");
 };
+
+function handleSceneSettingError(errors, keyName)
+{
+	errorStr = '';
+	errors.forEach(
+		function(e)
+		{
+			if(typeof e === 'string')
+				errorStr += e;
+		}
+	);
+	if(errorStr.length>0&&keyName)
+		storage.scenes.setError(keyName, errorStr)
+}

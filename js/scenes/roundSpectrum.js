@@ -27,15 +27,10 @@ AudioScenes.RoundSpectrum.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,RoundSpectrumSettings, preset);
 };
-AudioScenes.RoundSpectrum.prototype.clearBg = function(clearColored)
+AudioScenes.RoundSpectrum.prototype.clearBg = function()
 {
-	if(clearColored)
-		g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	else
-	{
-		g.ctx.fillStyle = '#000000';
-		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
-	}
+	g.ctx.fillStyle = '#000000';
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 }
 AudioScenes.RoundSpectrum.prototype.update = function()
 {

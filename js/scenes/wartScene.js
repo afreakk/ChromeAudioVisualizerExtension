@@ -30,11 +30,9 @@ AudioScenes.WartScene.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,WartSceneSettings, preset);
 };
-AudioScenes.WartScene.prototype.clearBg = function(clearColored)
+AudioScenes.WartScene.prototype.clearBg = function()
 {
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	if(!clearColored)
-		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 }
 AudioScenes.WartScene.prototype.update = function()
 {

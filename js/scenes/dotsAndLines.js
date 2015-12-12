@@ -29,15 +29,10 @@ AudioScenes.DotsAndLines.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,DotsAndLinesSettings, preset);
 };
-AudioScenes.DotsAndLines.prototype.clearBg = function(clearColored)
+AudioScenes.DotsAndLines.prototype.clearBg = function()
 {
-	if(clearColored)
-		g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	else
-	{
-		g.ctx.fillStyle = '#000000';
-		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
-	}
+	g.ctx.fillStyle = '#000000';
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 }
 AudioScenes.DotsAndLines.prototype.update = function()
 {

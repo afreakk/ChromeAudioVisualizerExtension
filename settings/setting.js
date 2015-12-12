@@ -13,4 +13,3 @@ OV.fftSize = 512;
 OV.startupScene = "";
 OV.canvasZIndex = 2147483646;
 OV.FullScreen = false;
-OV.DrawMode = false;

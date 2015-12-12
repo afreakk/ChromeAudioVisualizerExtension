@@ -16,14 +16,10 @@ AudioScenes.seventiesScene.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,SeventieSceneSettings, preset);
 };
-AudioScenes.seventiesScene.prototype.clearBg = function(clearColored)
+AudioScenes.seventiesScene.prototype.clearBg = function()
 {
-    g.ctx.clearRect(0, 0, g.canvas.width, g.canvas.height);
-	if(!clearColored)
-	{
-		g.ctx.fillStyle = '#000000';
-		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
-	}
+	g.ctx.fillStyle = '#000000';
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 };
 AudioScenes.seventiesScene.prototype.init = function()
 {
