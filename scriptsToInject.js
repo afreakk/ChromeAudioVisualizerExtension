@@ -13,6 +13,7 @@ AV.scripts.scenes = [
 	"js/scenes/roundSpectrum.js",
 	"js/scenes/hexagonScene.js",
 	"js/scenes/seventiesScene.js",
+	"js/scenes/madnessScene.js",
 	"js/scenes/paintingScene.js"
 ];
 

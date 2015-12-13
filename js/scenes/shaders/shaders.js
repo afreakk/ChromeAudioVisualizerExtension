@@ -42,7 +42,7 @@ shaders.twoDShader.attributes = [
 ];
 
 /* threeDShader - 
- * used in: */
+ * used in: Box/World Scene */
 shaders.threeDShader={};
 shaders.threeDShader.vShader = [
 'attribute vec3 position;',
@@ -104,3 +104,42 @@ shaders.uLocSet=function(program, name)
 {
 	program[name] = gl.getUniformLocation(program, name);
 };
+
+/* madnessShader - 
+ * used in: MadnessScene */
+shaders.madnessShader={};
+shaders.madnessShader.vShader = [
+'attribute vec2 position;',
+'void main() {',
+'	gl_Position = vec4( vec3(position, 0.0), 1.0 );',
+'}'
+].join('\n'),
+
+shaders.madnessShader.fShader = [
+'uniform float high;',
+'uniform float low;',
+'uniform float mid;',
+'float lol=0.0;',
+'uniform float madness;',
+'uniform vec2 resolution;',
+'void main( void ) {',
+'	vec2 position = - 1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;',
+'	float yq = (madness-position.y)*mid;',
+'	float red = yq*abs( sin( (lol * high+position.y) * low*high));',
+'	float green = yq*abs( sin( (position.x+lol) * mid*low  ) );',
+'	float blue = yq*abs( sin( (position.y+lol) * high*mid  ) );',
+'	gl_FragColor = vec4( red, green, blue, 1.0 );',
+'	lol = lol +pow(low,high);',
+'}'
+].join('\n');
+
+shaders.madnessShader.uniforms = [
+	'high',
+	'low',
+	'mid',
+	'resolution',
+	'madness'
+],
+shaders.madnessShader.attributes = [
+	'position'
+];
