@@ -22,9 +22,11 @@ System.prototype.updateScene = function(scene)
 {
 	if(!g.byteFrequency)
 		return
-	if(	g.canvas.width != window.innerWidth ||
+	if(	g.canvas.width != document.body.clientWidth ||
 		g.canvas.height != window.innerHeight)
 		canvasResize();
+	if(!OV.DrawMode&&g.ctx.clearRect)
+		g.ctx.clearRect(0,0,g.canvas.width,g.canvas.height);
 	if(!OV.transparentBackground)
 		scene.clearBg();
 	scene.update();
