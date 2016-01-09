@@ -33,6 +33,7 @@ SceneManager.prototype.initNextScene=function()
 		{
 			sceneInited=true;
 			settingsKeyName = this.initCurrentlyChoosenScene();
+			this.currentScene.clearBg();
 			this.system.update(this.currentScene);
 		}
 		catch(e)
