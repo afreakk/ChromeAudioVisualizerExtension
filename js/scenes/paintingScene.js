@@ -17,6 +17,15 @@ AudioScenes.PaintingScene = function()
     this.name = "PaintScene";
     this.settings = new PaintingSceneSettings();
 };
+AudioScenes.PaintingScene.prototype.init = function()
+{
+	this.oldDrawMode = OV.DrawMode;
+	OV.DrawMode = true;
+};
+AudioScenes.PaintingScene.prototype.cleanUp = function()
+{
+	OV.DrawMode =this.oldDrawMode;
+};
 AudioScenes.PaintingScene.prototype.getClr = function(rgbS,scaled_average_c)
 {
     return rgbToHex(
@@ -24,19 +33,16 @@ AudioScenes.PaintingScene.prototype.getClr = function(rgbS,scaled_average_c)
             (Math.cos(rgbS)/2.0+0.5)*scaled_average_c,
             (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
             );
-}
+};
 AudioScenes.PaintingScene.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,PaintingSceneSettings, preset);
 };
-AudioScenes.PaintingScene.prototype.bgColored = false;
 AudioScenes.PaintingScene.prototype.clearBg = function()
 {
-	if(!this.bgColored) {
-		g.ctx.fillStyle = '#000000';
-		g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
-	}
-}
+	g.ctx.fillStyle = '#000000';
+	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
+};
 AudioScenes.PaintingScene.prototype.update = function()
 {
     var xs = this.settings;
@@ -69,4 +75,4 @@ AudioScenes.PaintingScene.prototype.update = function()
     sumtotal /= 10000000;
     s.rotationOffset += sumtotal*xs.rotationSpeed;
     s.clrOffset += sumtotal*xs.colorSpeed;
-}
+};

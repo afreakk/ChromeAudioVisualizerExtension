@@ -68,7 +68,7 @@ SceneManager.prototype.initScene=function(newScene)
     aLog("init scene: " + newScene, 1);
 	var customScene = null;
 	if(newScene in this.scenes)
-		this.initDefaultScene(newScene);
+		this.setDefaultScene(newScene);
 	else
 		customScene = this.initCustomScene(newScene);
 		//level with custom settings
@@ -77,7 +77,7 @@ SceneManager.prototype.initScene=function(newScene)
 		this.currentScene.init();
 	return customScene;
 },
-SceneManager.prototype.initDefaultScene = function(newScene)
+SceneManager.prototype.setDefaultScene = function(newScene)
 {
 	this.currentScene = this.scenes[newScene];
 	this.currentScene.parseSettings("default");
