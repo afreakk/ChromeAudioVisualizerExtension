@@ -6,7 +6,7 @@ var SceneSelector = function()
 };
 SceneSelector.prototype.setRandomScene = function(noStartup)
 {
-	if(this.sceneNames.indexOf(OV.startupScene&&noStartup)!=-1){
+	if(this.sceneNames.indexOf(OV.startupScene)!=-1&&!noStartup){
 		this.scene = OV.startupScene;
 	}
 	else{
