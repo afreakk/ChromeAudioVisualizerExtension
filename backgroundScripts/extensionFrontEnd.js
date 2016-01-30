@@ -2,6 +2,7 @@
 var ExtensionFrontEnd = function()
 {
 	this.injectedTabs = {};
+	this.frequencyData = new Uint8Array(OV.fftSize/2);
 };
 ExtensionFrontEnd.prototype.togglePauseTab = function(tabId)
 {
@@ -84,10 +85,8 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 	switch(msg)
 	{
 		case AV.music:
-			var frequencyData = new Uint8Array(
-					this.injectedTabs[port.name].analyzer.frequencyBinCount);
-			this.injectedTabs[port.name].analyzer.getByteFrequencyData(frequencyData);
-			this.injectedTabs[port.name].port.postMessage(frequencyData);
+			this.injectedTabs[port.name].analyzer.getByteFrequencyData(this.frequencyData);
+			this.injectedTabs[port.name].port.postMessage(this.frequencyData);
 			break;
 		case AV.openOptions:
 			openOptions();
