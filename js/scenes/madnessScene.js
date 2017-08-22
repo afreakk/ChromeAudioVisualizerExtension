@@ -31,7 +31,8 @@ AudioScenes.MadnessScene.prototype.square = function(){
 	return new Float32Array(sq);
 },
 AudioScenes.MadnessScene.prototype.init = function(){
-	this.shader = WGL.initAndGetShader(shaders.madnessShader),
+	WGL.init(),
+	this.shader = WGL.getShader(shaders.madnessShader);
 	this.buffer = gl.createBuffer();
 	gl.bindBuffer( gl.ARRAY_BUFFER, this.buffer );
 	gl.bufferData( gl.ARRAY_BUFFER, this.square(), gl.STATIC_DRAW );

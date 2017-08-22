@@ -6,8 +6,10 @@ storage.removeKey = function(key, callback)
 },
 storage.getKey = function(key,callback)
 {
+	console.log('key',key);
 	chrome.storage.sync.get(key,function(data){
 		try{
+			console.log(data);
 			callback(data);
 		}catch(e){
 			aError(e.message);

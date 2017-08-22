@@ -1,5 +1,6 @@
 ColorMixSettings = function()
 {
+	this.spinninShader = 1;
 	this.lowRedSpeed	=0.005,
 	this.midGreenSpeed	=0.005,
 	this.highBlueSpeed	=0.005;
@@ -30,7 +31,8 @@ AudioScenes.ColorMixScene.prototype.square = function(){
 	return new Float32Array(sq);
 },
 AudioScenes.ColorMixScene.prototype.init = function(){
-	this.shader = WGL.initAndGetShader(shaders.twoDShader),
+	WGL.init(),
+	this.shader = WGL.getShader(shaders.twoDShader);
 	this.buffer = gl.createBuffer();
 	gl.bindBuffer( gl.ARRAY_BUFFER, this.buffer );
 	gl.bufferData( gl.ARRAY_BUFFER, this.square(), gl.STATIC_DRAW );

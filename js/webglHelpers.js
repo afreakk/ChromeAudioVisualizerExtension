@@ -1,11 +1,14 @@
 var WGL = {};
-WGL.initAndGetShader = function(shader)
-{
+WGL.init = function(){
 	aLog("initializing webgl",3);
 	window.gl = initCanvas("webgl");
-	var shaderProgram = WGL.createProgram( shader.vShader, shader.fShader );
 	WGL.onCanvasResize();
 	canvasResize();
+},
+WGL.getShader = function(shader)
+{
+	aLog("initializing webgl-shader",3);
+	var shaderProgram = WGL.createProgram( shader.vShader, shader.fShader );
 	gl.useProgram(shaderProgram);
 	shaders.setUniforms(shaderProgram, shader.uniforms);
 	shaders.setAttributes(shaderProgram, shader.attributes);

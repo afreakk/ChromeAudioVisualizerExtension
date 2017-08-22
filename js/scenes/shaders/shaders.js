@@ -24,9 +24,9 @@ shaders.twoDShader.fShader = [
 'uniform vec2 resolution;',
 'void main( void ) {',
 '	vec2 position = - 1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;',
-'	float red = abs( sin( position.x * position.y + low  ) );',
-'	float green = abs( sin( position.x * position.y + mid  ) );',
-'	float blue = abs( sin( position.x * position.y + high  ) );',
+'	float red =  sin( position.x * position.y + low  ) ;',
+'	float green =  sin( position.x * position.y + mid   );',
+'	float blue =  sin( position.x * position.y + high   );',
 '	gl_FragColor = vec4( red, green, blue, 1.0 );',
 '}'
 ].join('\n');

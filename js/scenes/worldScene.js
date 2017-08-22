@@ -24,7 +24,8 @@ AudioScenes.CubeScene.prototype.cleanUp = function()
 },
 AudioScenes.CubeScene.prototype.init = function(){
 
-	this.currentProgram = WGL.initAndGetShader(shaders.threeDShader);
+	WGL.init(),
+	this.currentProgram = WGL.getShader(shaders.threeDShader);
 	var cube = this.getCube();
 	this.vertices = cube.vertices,this.indices = cube.indices,
 	this.txCoords = cube.txCoords;

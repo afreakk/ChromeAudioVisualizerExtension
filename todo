@@ -1,10 +1,3 @@
-interactive creation of scenes in javascript
-option- get data from:
-AnalyserNode.getFloatFrequencyData()
-Copies the current frequency data into a Float32Array array passed into it.
-AnalyserNode.getByteFrequencyData()
-Copies the current frequency data into a Uint8Array (unsigned byte array) passed into it.
-AnalyserNode.getFloatTimeDomainData()
-Copies the current waveform, or time-domain, data into a Float32Array array passed into it.
-AnalyserNode.getByteTimeDomainData()
-Copies the current waveform, or time-domain, data into a Uint8Array (unsigned byte array) passed into it.
+feature:interactive creation of scenes(or shaders) in javascript using textedit.
+feature: export import scene.
+feature: pack extension with a few of my custom scenes.
