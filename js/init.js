@@ -82,6 +82,11 @@ initGUI = function()
 	var saveBtnConf = buttonHandler.makeButton("-->Save", saveButtonCallback);
 	var saveBtnElem = saveFolder.addSetting(saveBtnConf, "-->Save");
 
+	var exportToJsonConf = buttonHandler.makeButton("-->Export to json", exportToJson);
+	var exportToJsonElem = saveFolder.addSetting(exportToJsonConf, "-->Export to json");
+
+	var exportToJsonConf = buttonHandler.makeButton("-->Export to b64", exportToBase64);
+	var exportToJsonElem = saveFolder.addSetting(exportToJsonConf, "-->Export to b64");
 	//adding Scene-Settings Folder
 	gui.appendFolder("Scene-Settings");
 
@@ -98,6 +103,17 @@ saveButtonCallback = function()
 	}
 	//make sure savename not occupado
 	setSaveName(cBack);
+},
+exportToJson = function(){
+	var json = g.customSceneHandler.exportToJson(g.sceneManager.currentScene);
+	var string = JSON.stringify(json);
+	console.log(string);
+},
+exportToBase64 = function(){
+	var json = g.customSceneHandler.exportToJson(g.sceneManager.currentScene);
+	var string = JSON.stringify(json);
+	var b64 = btoa(string)
+	console.log(b64);
 },
 
 initCanvas = function(contextStr)

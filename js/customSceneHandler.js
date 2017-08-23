@@ -35,6 +35,13 @@ CustomSceneHandler.prototype.saveCustomScene = function(scene)
 	);
 	aLog("saving as :" + keyName, 1);
 },
+CustomSceneHandler.prototype.exportToJson = function(scene)
+{
+	var keyName = generateSaveName(scene);
+	var sceneSetting = scene.settings;
+	this.treatSetting(sceneSetting);
+	return {key: keyName, settings: sceneSetting};
+},
 CustomSceneHandler.prototype.refreshCustomScenes = function(scenes)
 {
 	var scene = this.sceneSelector.insertPresets(scenes);

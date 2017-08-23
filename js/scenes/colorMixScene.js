@@ -1,6 +1,5 @@
 ColorMixSettings = function()
 {
-	this.spinninShader = 1;
 	this.lowRedSpeed	=0.005,
 	this.midGreenSpeed	=0.005,
 	this.highBlueSpeed	=0.005;
