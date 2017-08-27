@@ -81,5 +81,5 @@ generateSaveNameFromJson = function(obj, saveName){
 }
 jsonFromSaveName = function(saveName){
 	var values = saveName.split(AV.strDelim);
-	return {original: values[0], saveName: values[0]};
+	return {original: values[0], saveName: values[1]};
 }
