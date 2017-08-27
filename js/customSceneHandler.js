@@ -35,6 +35,18 @@ CustomSceneHandler.prototype.saveCustomScene = function(scene)
 	);
 	aLog("saving as :" + keyName, 1);
 },
+CustomSceneHandler.prototype.saveFromJson = function(json)
+{
+	var keyObject = jsonFromSaveName(json.key);
+	getAvailableSaveName(function(availableSaveName){
+		var saveName = generateSaveNameFromJson(keyObject, availableSaveName);
+		storage.scenes.insert(saveName, json.settings, function(scenes){
+			this.refreshCustomScenes(scenes);
+			this.sceneSelector.setScene(availableSaveName);
+		}.bind(this));
+	}.bind(this), keyObject.saveName);
+	aLog("saving as :" + json.key, 1);
+},
 CustomSceneHandler.prototype.exportToJson = function(scene)
 {
 	var keyName = generateSaveName(scene);
@@ -62,5 +74,12 @@ CustomSceneHandler.prototype.treatSetting = function(settings)
 },
 generateSaveName = function(scene)
 {
-	return scene.originalName+AV.strDelim+g.saveSceneName;
+	return scene.originalName + AV.strDelim + g.saveSceneName;
+},
+generateSaveNameFromJson = function(obj, saveName){
+	return obj.original + AV.strDelim + saveName;
+}
+jsonFromSaveName = function(saveName){
+	var values = saveName.split(AV.strDelim);
+	return {original: values[0], saveName: values[0]};
 }

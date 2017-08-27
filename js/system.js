@@ -140,3 +140,36 @@ function setSaveName(callback)
 		}
 	);
 }
+function getAvailableSaveName(callback, wantedName)
+{
+	storage.scenes.get(
+		function(savedPresets)
+		{
+			var occupado = false;
+			for(var preset in savedPresets)
+			{
+				var presetName = preset.split(AV.strDelim)[1];
+				if(presetName == wantedName)
+					occupado = true;
+			}
+			for(var sceneNameKey in g.sceneManager.scenes)
+			{
+				if(wantedName == sceneNameKey)
+					occupado = true;
+			}
+			if(occupado)
+			{
+				if(wantedName.indexOf("_custom") === -1)
+					wantedName = wantedName + "_custom";
+				else
+					wantedName = getIncrementalString(wantedName);
+				getAvailableSaveName(callback, wantedName);
+			}
+			else
+			{
+				if(callback)
+					callback(wantedName);
+			}
+		}
+	);
+}

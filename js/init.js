@@ -82,11 +82,21 @@ initGUI = function()
 	var saveBtnConf = buttonHandler.makeButton("-->Save", saveButtonCallback);
 	var saveBtnElem = saveFolder.addSetting(saveBtnConf, "-->Save");
 
-	var exportToJsonConf = buttonHandler.makeButton("-->Export to json", exportToJson);
-	var exportToJsonElem = saveFolder.addSetting(exportToJsonConf, "-->Export to json");
+	var exportFolder = gui.appendFolder("Export scene");
+	exportFolder.addSetting(g, 'exportOutput');
+	var exportToJsonConf = buttonHandler.makeButton("->Export to json", exportToJson);
+	var exportToJsonElem = exportFolder.addSetting(exportToJsonConf, "->Export to json");
 
-	var exportToJsonConf = buttonHandler.makeButton("-->Export to b64", exportToBase64);
-	var exportToJsonElem = saveFolder.addSetting(exportToJsonConf, "-->Export to b64");
+	var exportToB64Conf = buttonHandler.makeButton("->Export to b64", exportToBase64);
+	var exportToB64Elem = exportFolder.addSetting(exportToB64Conf, "->Export to b64");
+
+	var importFolder = gui.appendFolder("Import scene");
+	importFolder.addSetting(g, 'importInput');
+	var importFromJsonConf = buttonHandler.makeButton("->Import from json", importFromJson);
+	var importFromJsonElem = importFolder.addSetting(importFromJsonConf, "->Import from json");
+
+	var importFromB64Conf = buttonHandler.makeButton("->Import from b64", importFromB64);
+	var importFromB64Elem = importFolder.addSetting(importFromB64Conf, "->Import from b64");
 	//adding Scene-Settings Folder
 	gui.appendFolder("Scene-Settings");
 
@@ -104,16 +114,35 @@ saveButtonCallback = function()
 	//make sure savename not occupado
 	setSaveName(cBack);
 },
+importFromJson = function(){
+	try{
+		g.customSceneHandler.saveFromJson(JSON.parse(g.importInput));
+	}
+	catch(e){
+		alert(e);
+	}
+},
+importFromB64 = function(){
+	try{
+		var json = atob(g.importInput);
+		g.customSceneHandler.saveFromJson(JSON.parse(json));
+	}
+	catch(e){
+		alert(e);
+	}
+}
 exportToJson = function(){
 	var json = g.customSceneHandler.exportToJson(g.sceneManager.currentScene);
 	var string = JSON.stringify(json);
-	console.log(string);
+	g.exportOutput = string;
+	g.gui.reCheckChildElements();
 },
 exportToBase64 = function(){
 	var json = g.customSceneHandler.exportToJson(g.sceneManager.currentScene);
 	var string = JSON.stringify(json);
 	var b64 = btoa(string)
-	console.log(b64);
+	g.exportOutput = b64;
+	g.gui.reCheckChildElements();
 },
 
 initCanvas = function(contextStr)
@@ -180,6 +209,8 @@ init = function()
 	i("datStyle", null);
 	i("sceneSelector", null);
 	i("saveSceneName", "not_set");
+	i("importInput", "");
+	i("exportOutput", "");
 	i("gui",null);
 	storage.options.init(window.OV,
 	function(){
