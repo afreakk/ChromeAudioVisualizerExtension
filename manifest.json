@@ -1,9 +1,8 @@
 {
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
-	"short_name": "AudiViz",
-	"description": "Bring the party to your browser ┐(・。・┐) ♪ (Press icon or 'Ctrl+Q' to start/stop)",
-	"version": "5",
+	"description": "Visualize music and other audio, works on any website. Press icon or 'Ctrl+Q' to start/stop.    ♪ ┐(・。・┐) ",
+	"version": "5.0.1",
 	"permissions": [
 		"tabCapture",
 		"tabs",
