@@ -1,8 +1,8 @@
 {
 	"manifest_version": 2,
 	"name": "AudioVisualizer",
-	"description": "Visualize music and other audio, works on any website. Press icon or 'Ctrl+Q' to start/stop.    ♪ ┐(・。・┐) ",
-	"version": "5.0.1",
+	"description": "Audio Visualizer, works on any website. Press icon or 'Ctrl+Q' to start/stop.    ♪ ┐(・。・┐) ",
+	"version": "5.1",
 	"permissions": [
 		"tabCapture",
 		"tabs",

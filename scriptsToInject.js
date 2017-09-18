@@ -16,7 +16,19 @@ AV.scripts.scenes = [
 	"js/scenes/hexagonScene.js",
 	"js/scenes/seventiesScene.js",
 	"js/scenes/madnessScene.js",
-	"js/scenes/paintingScene.js"
+	"js/scenes/paintingScene.js",
+        'js/scenes/WebGLFunWrapper/ExtLibs/gl-matrix-min.js',
+        'js/scenes/WebGLFunWrapper/ExtLibs/perlinsimplexnoise.js',
+        'js/scenes/WebGLFunWrapper/3DObjects/shape.js',
+        'js/scenes/WebGLFunWrapper/3DObjects/terrain.js',
+        'js/scenes/WebGLFunWrapper/ShaderObjects/terrainshader.js',
+        'js/scenes/WebGLFunWrapper/ShaderObjects/generalshader.js',
+        'js/scenes/WebGLFunWrapper/Core/shader.js',
+        'js/scenes/WebGLFunWrapper/Core/keyhandler.js',
+        'js/scenes/WebGLFunWrapper/Core/managers.js',
+        'js/scenes/WebGLFunWrapper/Scenes/terrainscene.js',
+        'js/scenes/WebGLFunWrapper/main.js',
+        'js/scenes/terrainScene.js'
 ];
 
 AV.scripts.libs = [
