@@ -226,7 +226,6 @@ init = function()
 };
 function onNewByteFrequencyData(msg){
 	window.g.byteFrequency = msg;
-	window.g.port.postMessage(AV.music);
 }
 //Invoked at script injection time
 (function(){

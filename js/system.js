@@ -4,6 +4,7 @@ var System = function()
 };
 System.prototype.update = function(scene)
 {
+	window.g.port.postMessage(AV.music);
 	if(OV.ShowFps)
 	{
 		setFps(true);

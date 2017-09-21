@@ -4,48 +4,63 @@ var ExtensionFrontEnd = function()
 	this.injectedTabs = {};
 	this.frequencyData = new Uint8Array(OV.fftSize);
 	this.onPortMessage = this.onPortMessage.bind(this);
+	this.onScriptsInjected = this.onScriptsInjected.bind(this);
 };
-ExtensionFrontEnd.prototype.togglePauseTab = function(tabId)
+ExtensionFrontEnd.prototype.togglePauseContentScripts = function(tabId){
+	chrome.tabs.executeScript(tabId, { code: "togglePause();" });
+}
+ExtensionFrontEnd.prototype.pauseTab = function(tabId)
 {
-	if(tabId in this.injectedTabs && this.injectedTabs[tabId].injected==true)
-	{
-		console.log("toggling pause on tabid: "+tabId);
-		chrome.tabs.executeScript(tabId, { code: "togglePause();" });
+	if(tabId in this.injectedTabs && this.injectedTabs[tabId].injected==true){
+		this.togglePauseContentScripts(tabId);
+		this.injectedTabs[tabId].stream.getTracks().forEach(function(track){
+			track.stop();
+		});
+		this.closeContext(tabId);
+		this.injectedTabs[tabId].isPaused = true;
 	}
-	else
+	else{
 		console.log("trying to toggle pause on uninjected tab with id: "+tabId);
+	}
+},
+ExtensionFrontEnd.prototype.onScriptsInjected = function(tabId){
+	console.log('scripts injected to tab'+tabId);
+	this.injectedTabs[tabId].injected = true;
+	this.captureAudioFromTab(tabId);
+},
+ExtensionFrontEnd.prototype.captureAudioFromTab = function(tabId){
+	console.log('capturing audio from tab'+tabId);
+	chrome.tabCapture.capture({audio: true}, function(stream){
+		this.initTab(stream, tabId);
+	}.bind(this));
+},
+ExtensionFrontEnd.prototype._MainClickedCallback = function(tabId){
+	if(wasError("initTab")){
+		return;
+	}
+	if(!(tabId in this.injectedTabs)){
+		this.injectedTabs[tabId] = new TabInfo();
+	}
+
+	if(this.injectedTabs[tabId].injected==false){
+		var scriptInjector = new ScriptInjector(tabId);
+		scriptInjector.injectScripts(AV.scriptsToInject, this.onScriptsInjected);
+	}
+	else if(this.injectedTabs[tabId].isPaused === true){
+		this.captureAudioFromTab(tabId);
+		this.injectedTabs[tabId].isPaused = false;
+		this.togglePauseContentScripts(tabId);
+	}
+	else{
+		this.pauseTab(tabId);
+	}
 },
 ExtensionFrontEnd.prototype.MainClickedCallback = function(tab)
 {
 	console.log("MainKey triggered on tabid: "+tab.id);
-    chrome.tabs.executeScript(tab.id,
-		{code: jsInjectedQuery},
-		function()
-		{
-			if(wasError("initTab"))
-				return;
-			if(!(tab.id in this.injectedTabs))
-				this.injectedTabs[tab.id] = new TabInfo();
-			if(this.injectedTabs[tab.id].injected==false)
-			{
-				var scriptInjector = new ScriptInjector(tab.id);
-				scriptInjector.injectScripts(AV.scriptsToInject,
-					function()
-					{
-						this.injectedTabs[tab.id].injected = true;
-						chrome.tabCapture.capture({audio: true},
-							function(stream)
-							{
-								this.initTab(stream, tab.id);
-							}.bind(this)
-						);
-					}.bind(this)
-				);
-			}
-			else
-				this.togglePauseTab(tab.id);
-		}.bind(this)
-	);
+	chrome.tabs.executeScript(tab.id, {code: jsInjectedQuery}, function(){
+		this._MainClickedCallback(tab.id);
+	}.bind(this));
 },
 ExtensionFrontEnd.prototype.initTab = function(stream, tabId)
 {
@@ -147,6 +162,7 @@ ScriptInjector = function(tabId)
 {
 	this.tabId = tabId;
 	this.scriptsLoadedCallback = null;
+	this.scriptInjectCount = this.scriptInjectCount.bind(this);
 };
 ScriptInjector.prototype.injectScripts = function(scripts, callback)
 {
@@ -154,13 +170,13 @@ ScriptInjector.prototype.injectScripts = function(scripts, callback)
 	this.scripts = scripts;
 	this.scriptsLoaded = 0;
 	for(var script of scripts)
-		chrome.tabs.executeScript(this.tabId, {file:script}, this.scriptInjectCount.bind(this));
+		chrome.tabs.executeScript(this.tabId, {file:script}, this.scriptInjectCount);
 },
 ScriptInjector.prototype.scriptInjectCount=function()
 {
 	if(++this.scriptsLoaded == this.scripts.length)
 	{
-		this.scriptsLoadedCallback();
+		this.scriptsLoadedCallback(this.tabId);
 	}
 },
 // ScriptInjector  -- end
@@ -171,6 +187,7 @@ TabInfo = function()
 	this.port = null;
 	this.id = null;
 	this.injected = false;
+	this.isPaused = false;
 	this.analyzer = null;
 },
 
