@@ -4,6 +4,7 @@ AV.music = "§";
 AV.openOptions = "|";
 AV.setFullScreen = "!";
 AV.disableFullScreen = "#";
+AV.latencyHint = "?";
 
 //initial values, gets overriden by userdefined values
 OV = {};
@@ -14,3 +15,4 @@ OV.startupScene = "";
 OV.canvasZIndex = 2147483646;
 OV.FullScreen = false;
 OV.DrawMode = false;
+OV.LatencyHint = "playback";

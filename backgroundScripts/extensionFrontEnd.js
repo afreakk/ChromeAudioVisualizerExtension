@@ -2,7 +2,8 @@
 var ExtensionFrontEnd = function()
 {
 	this.injectedTabs = {};
-	this.frequencyData = new Uint8Array(OV.fftSize/2);
+	this.frequencyData = new Uint8Array(OV.fftSize);
+	this.onPortMessage = this.onPortMessage.bind(this);
 };
 ExtensionFrontEnd.prototype.togglePauseTab = function(tabId)
 {
@@ -87,33 +88,56 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 		case AV.music:
 			this.injectedTabs[port.name].analyzer.getByteFrequencyData(this.frequencyData);
 			this.injectedTabs[port.name].port.postMessage(this.frequencyData);
-			break;
+			return;
 		case AV.openOptions:
 			openOptions();
-			break;
+			return;
 		case AV.setFullScreen:
 			toggleScreenState("fullscreen");
-			break;
+			return;
 		case AV.disableFullScreen:
 			toggleScreenState();
-			break;
+			return;
+	}
+	if(msg[0] === AV.latencyHint){
+		storage.options.init(window.OV, function(){
+			var tabs = Object.keys(this.injectedTabs);//reinitialize on all tabs
+			for(var i = 0; i<tabs.length; i++){
+				this.initAudio(this.injectedTabs[tabs[i]].stream, tabs[i]);
+			}
+		}.bind(this), true);
 	}
 },
+ExtensionFrontEnd.prototype.closeContext = function(id){
+	return this.injectedTabs[id].context.close().then(function(){
+		delete this.injectedTabs[id].context;
+	}.bind(this));
+}
 ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 {
-	var context = new AudioContext();
-	var sourceNode = context.createMediaStreamSource(stream);
-	this.injectedTabs[id].analyzer = context.createAnalyser();
+	if(this.injectedTabs[id].context){
+		this.injectedTabs[id].sourceNode.disconnect();
+		this.closeContext(id).then(function(){
+			this.initAudio(stream, id);
+		}.bind(this));
+		return;
+	}
+	var audioCtxSettings = {latencyHint: OV.LatencyHint};
+	console.log(audioCtxSettings);
+	this.injectedTabs[id].context = new AudioContext(audioCtxSettings);
+	this.injectedTabs[id].sourceNode = this.injectedTabs[id].context.createMediaStreamSource(stream);
+	this.injectedTabs[id].analyzer = this.injectedTabs[id].context.createAnalyser();
 	this.injectedTabs[id].analyzer.fftSize = OV.fftSize;
-	sourceNode.connect(this.injectedTabs[id].analyzer);
-	sourceNode.connect(context.destination);
+	this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].analyzer);
+	this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].context.destination);
+	this.injectedTabs[id].stream = stream;
 },
 ExtensionFrontEnd.prototype.connectToTab = function(id)
 {
 	console.log("connecting 2 tab: " + id);
 	this.injectedTabs[id].port = chrome.tabs.connect(id);
 	this.injectedTabs[id].port.name = id;
-	this.injectedTabs[id].port.onMessage.addListener(this.onPortMessage.bind(this));
+	this.injectedTabs[id].port.onMessage.addListener(this.onPortMessage);
 },
 // ExtensionFrontEnd -- end
 

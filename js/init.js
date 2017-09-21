@@ -1,8 +1,7 @@
-var initSceneManager = function(scenes)
+var initSceneManager = function(scenes, system)
 {
     g.sceneManager = new SceneManager(scenes, g.sceneSelector);
 	canvasResize();
-	system = new System();
 	try
 	{
 		g.sceneManager.init(system);
@@ -30,9 +29,9 @@ initScenes = function(savedPresets)
 	return scenes;
 },
 
-initDBSetting = function(guiElement, valueObject, valueName, callback)
+initDBSetting = function(guiElement, valueObject, valueName, callback, valueList)
 {
-    guiElement.addSetting(valueObject, valueName).onChange(
+    guiElement.addSetting(valueObject, valueName, valueList).onChange(
 		function(newValue)
 		{
 			storage.options.setOption(valueName, newValue);
@@ -55,24 +54,25 @@ initGUI = function()
 	//adding settings Folder
 	var settingsFolder = gui.appendFolder("Settings");
 	initDBSetting(settingsFolder, OV, "transparentBackground");
-	initDBSetting(settingsFolder, OV, "FullScreen",
-		function(newValue)
-		{
-			if(newValue)
-				g.port.postMessage(AV.setFullScreen);
-			else
-				g.port.postMessage(AV.disableFullScreen);
-		}
-	);
+	initDBSetting(settingsFolder, OV, "FullScreen", function(newValue){
+		if(newValue)
+			g.port.postMessage(AV.setFullScreen);
+		else
+			g.port.postMessage(AV.disableFullScreen);
+	});
 	initDBSetting(settingsFolder, OV, "DrawMode");
 	initDBSetting(settingsFolder, OV, "ShowFps");
-
-	var optionsBtnConfig = buttonHandler.makeButton("-->Options",
-		function()
-		{
-			g.port.postMessage(AV.openOptions);
+	initDBSetting(settingsFolder, OV, "LatencyHint", function(newValue){
+		if(newValue){
+			setTimeout(function(){
+				g.port.postMessage(AV.latencyHint);
+			}, 1000);
 		}
-	);
+	}, ['playback', 'balanced', 'interactive']);
+
+	var optionsBtnConfig = buttonHandler.makeButton("-->Options", function(){
+			g.port.postMessage(AV.openOptions);
+	});
 	var optionsBtnElem = settingsFolder.addSetting(
 		optionsBtnConfig, "-->Options");
 
@@ -190,13 +190,15 @@ startup = function(savedPresets)
 	var scenes = initScenes(savedPresets);
 	g.sceneSelector.setRandomScene();
 	initGUI();
-	initSceneManager(scenes);
+	initSceneManager(scenes, new System());
+	window.g.port.postMessage(AV.music);
 	aLog("init finished, beginning sceneManager.update", 1);
 	setFps(OV.ShowFps);
     g.sceneManager.update();
 },
 init = function()
 {
+	initUndef(window, 'g', {});
 	var i = function(attribName, value){
 		initUndef(window.g, attribName, value);
 	};
@@ -222,18 +224,17 @@ init = function()
 		});
 	});
 };
-
+function onNewByteFrequencyData(msg){
+	window.g.byteFrequency = msg;
+	window.g.port.postMessage(AV.music);
+}
 //Invoked at script injection time
 (function(){
 	chrome.runtime.onConnect.addListener(
 		function(port){
 			initUndef(window, 'g', {});
 			g.port = port;
-			port.onMessage.addListener(
-				function(msg) {
-					g.byteFrequency = msg;
-				}
-			);
+			port.onMessage.addListener(onNewByteFrequencyData);
 		}
 	);
 })();

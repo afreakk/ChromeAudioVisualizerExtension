@@ -15,9 +15,9 @@ buttonHandler.styleButton = function(btn)
 //buttonhandler end
 
 defIfUndef=function(x, val){
-	return isUndef(x)?val:x;
+	return typeof x === 'undefined' ? val : x;
 },
-isUndef=function(x){
+isUndef=function(x){ //not sure if in uze
 	return typeof x === 'undefined';
 },
 initUndef=function(owner, attribName, value)

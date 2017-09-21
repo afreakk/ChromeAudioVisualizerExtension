@@ -82,6 +82,10 @@ function populateOptions($scope)
 							x.dropDownValues = getAllSceneNames(customScenes);
 							x.type = "dropdown";
 						}
+						else if(x.key ===  "LatencyHint"){
+							x.dropDownValues = ['playback', 'balanced', 'interactive'];
+							x.type = "dropdown";
+						}
 						else
 							x.type = typeof x.value;
 						repackedOptions.push(x);
