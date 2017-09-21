@@ -18,6 +18,7 @@ AudioScenes.TerrainScene = function()
 },
 AudioScenes.TerrainScene.prototype.cleanUp = function()
 {
+	terrain.deInitialize();
 	WGL.deInitializeGL();
 },
 AudioScenes.TerrainScene.prototype.init = function(){

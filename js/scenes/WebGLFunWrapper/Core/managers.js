@@ -4,8 +4,11 @@ fun.CanvasManager = function()
     this.init = function()
     {
         canvas = g.canvas;
-        window.addEventListener( 'resize', this.onWindowResize, false );
+        window.addEventListener( 'resize', this.onWindowResize);
     };
+	this.deInitialize = function(){
+        window.removeEventListener( 'resize', this.onWindowResize);
+	};
     this.onWindowResize = function(event)
     {
         canvas.width = window.innerWidth;

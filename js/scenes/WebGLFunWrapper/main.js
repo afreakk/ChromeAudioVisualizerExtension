@@ -17,12 +17,13 @@ var timeMgr = null;
 var sceneMgr = null;
 // <-- End managers 
 
-terrain = {};
+var terrain = {};
+
 
 terrain.init = function()
 {
-    canvasMgr = new fun.CanvasManager();
-    canvasMgr.init();
+    terrain.canvasMgr = new fun.CanvasManager();
+    terrain.canvasMgr.init();
 
     glMgr = new fun.GLManager();
     glMgr.initShaders();
@@ -35,7 +36,12 @@ terrain.init = function()
     key = new KeyManager();
     key.init();
 
-    canvasMgr.onWindowResize();
+    terrain.canvasMgr.onWindowResize();
+}
+
+terrain.deInitialize = function()
+{
+	terrain.canvasMgr.deInitialize();
 }
 
 terrain.update = function(settings)
