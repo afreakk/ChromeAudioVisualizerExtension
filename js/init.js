@@ -63,7 +63,7 @@ initGUI = function()
 	initDBSetting(settingsFolder, OV, "DrawMode");
 	initDBSetting(settingsFolder, OV, "ShowFps");
 	initDBSetting(settingsFolder, OV, "LatencyHint", function(newValue){
-		if(newValue){
+		if(newValue !== OV.LatencyHint){
 			setTimeout(function(){
 				g.port.postMessage(AV.latencyHint);
 			}, 1000);
