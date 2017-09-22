@@ -118,7 +118,9 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 		storage.options.init(window.OV, function(){
 			var tabs = Object.keys(this.injectedTabs);//reinitialize on all tabs
 			for(var i = 0; i<tabs.length; i++){
-				this.initAudio(this.injectedTabs[tabs[i]].stream, tabs[i]);
+				if(this.injectedTabs[tabs[i]].stream && !this.injectedTabs[tabs[i]].isPaused){
+					this.initAudio(this.injectedTabs[tabs[i]].stream, tabs[i]);
+				}
 			}
 		}.bind(this), true);
 	}
