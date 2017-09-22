@@ -62,11 +62,13 @@ initGUI = function()
 	});
 	initDBSetting(settingsFolder, OV, "DrawMode");
 	initDBSetting(settingsFolder, OV, "ShowFps");
+	var currentLatencyHint = OV.LatencyHint;
 	initDBSetting(settingsFolder, OV, "LatencyHint", function(newValue){
-		if(newValue !== OV.LatencyHint){
+		if(newValue !== currentLatencyHint){
 			setTimeout(function(){
 				g.port.postMessage(AV.latencyHint);
 			}, 1000);
+			currentLatencyHint = newValue;
 		}
 	}, ['playback', 'balanced', 'interactive']);
 
