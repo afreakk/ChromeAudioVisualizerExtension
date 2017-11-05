@@ -5,6 +5,7 @@ AV.openOptions = "|";
 AV.setFullScreen = "!";
 AV.disableFullScreen = "#";
 AV.latencyHint = "?";
+AV.postScene = "&";
 
 //initial values, gets overriden by userdefined values
 OV = {};

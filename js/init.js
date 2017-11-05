@@ -92,6 +92,9 @@ initGUI = function()
 	var exportToB64Conf = buttonHandler.makeButton("->Export to b64", exportToBase64);
 	var exportToB64Elem = exportFolder.addSetting(exportToB64Conf, "->Export to b64");
 
+	var uploadToServerConf = buttonHandler.makeButton("->Upload scene", uploadToServer);
+	var uploadToServerElem = exportFolder.addSetting(uploadToServerConf, "->Upload scene");
+
 	var importFolder = gui.appendFolder("Import scene");
 	importFolder.addSetting(g, 'importInput');
 	var importFromJsonConf = buttonHandler.makeButton("->Import from json", importFromJson);
@@ -145,6 +148,12 @@ exportToBase64 = function(){
 	var b64 = btoa(string)
 	g.exportOutput = b64;
 	g.gui.reCheckChildElements();
+},
+uploadToServer = function(){
+
+	var json = g.customSceneHandler.exportToJson(g.sceneManager.currentScene);
+	var string = JSON.stringify({scene: json, s: 33});
+	g.port.postMessage(AV.postScene + string);
 },
 
 initCanvas = function(contextStr)

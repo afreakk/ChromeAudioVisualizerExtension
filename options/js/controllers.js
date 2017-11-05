@@ -14,16 +14,21 @@ angular.module('AudioVisualizerOptions').config(
 			.when('/sceneListing', 
 			{
 				templateUrl: 'sceneListing.html',
-				controller: 'storageController',
+				controller: 'storageController'
 			})
 			.when('/optionsListing', 
 			{
 				templateUrl: 'optionsListing.html',
-				controller: 'optionsController',
+				controller: 'optionsController'
 			})
 			.when('/controlListing', 
 			{
 				templateUrl: 'controlListing.html',
+			})
+			.when('/downloadScenes',
+			{
+				templateUrl: 'downloadScenes.html',
+				controller: 'downloadScenesController'
 			})
 			.otherwise ({
 				redirectTo: '/optionsListing'
@@ -64,7 +69,35 @@ angular.module('AudioVisualizerOptions').controller('storageController',
 		};
 	}
 );
-
+angular.module('AudioVisualizerOptions').controller('downloadScenesController',
+	function($scope, $http){
+		$scope.sceneList = [];
+		$http.get('http://139.59.213.46:420/get.php?x=66').
+		  success(function(data, status, headers, config) {
+			  var i = 0;
+			  $scope.sceneList = data;
+			  $scope.sceneList.forEach(function(scene){
+				  scene.id = i++;
+				  scene.installed = false;
+			  });
+			  i = 0;
+			  $scope.installById = function(id){
+				var deleted = false;
+				while(i < $scope.sceneList.length && deleted === false){
+					if($scope.sceneList[i].id === id){
+						saveFromJson($scope.sceneList[i], function(){
+							$scope.sceneList[i].installed = true;
+						});
+						deleted = true;
+					}
+				}
+			  }
+		  }).
+		  error(function(data, status, headers, config) {
+			  console.log(data,status,headers,config);
+		  });
+	}
+);
 function populateOptions($scope)
 {
 	storage.scenes.get(

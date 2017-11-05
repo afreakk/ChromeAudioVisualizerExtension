@@ -23,6 +23,20 @@ ExtensionFrontEnd.prototype.pauseTab = function(tabId)
 		console.log("trying to toggle pause on uninjected tab with id: "+tabId);
 	}
 },
+ExtensionFrontEnd.prototype.postAsync = function(url, string, onComplete)
+{
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', url);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState == 4 && xhr.status == 200) {
+			if(onComplete){
+				onComplete(xhr.responseText);
+			}
+		}
+	}
+	xhr.send(string);
+},
 ExtensionFrontEnd.prototype.onScriptsInjected = function(tabId){
 	console.log('scripts injected to tab'+tabId);
 	this.injectedTabs[tabId].injected = true;
@@ -123,6 +137,9 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 				}
 			}
 		}.bind(this), true);
+	}
+	else if(msg[0] === AV.postScene){
+		this.postAsync('http://139.59.213.46:420/post.php', msg.substring(1));
 	}
 },
 ExtensionFrontEnd.prototype.closeContext = function(id){

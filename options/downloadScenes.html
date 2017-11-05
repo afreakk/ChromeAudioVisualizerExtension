@@ -1,0 +1,21 @@
+<h4>Search: <input ng-model="searchText"></h4>
+<div class="container">
+	<table class="table">
+		<thead>
+			<tr>
+				<th><center>#</center></th>
+				<th>Name</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="scene in sceneList | filter: searchText">
+				<td class="label label-default">{{$index}}</td>
+				<td>{{scene.key|nmSvNm}}</td>
+				<td ng-class="{'label-primary':!scene.installed}"
+					ng-click="installById(scene.id)">
+					Install
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
