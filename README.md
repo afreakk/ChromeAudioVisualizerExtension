@@ -12,10 +12,10 @@ if you want to contribute, contact me: laderud(a-t)hotmail.com, for code explana
 * toggle settings to get different effects.
   (drawmode, transparentbackground etc.)
 
-* play around with scene-settings to fundamentally change any scene.
+* play around with scene settings to fundamentally change any scene.
   (scenes look pretty boring with default settings)
 
-* save custom scene-settings as stand-alone scenes.
+* save custom scene settings as stand-alone scenes.
  
 
 note: this extension contains flickering effects.   
@@ -25,7 +25,7 @@ hotkeys:
 * alt+q - open options. 
 
 tips:
-* under scene-settings, hover mouse over the value you want to change, then drag mouse up/down while holding down left mouse button to increase/decrease value.
+* under scene settings, hover mouse over the value you want to change, then drag mouse up/down while holding down left mouse button to increase/decrease value.
 
 * example custom scene to import:  
 https://gist.githubusercontent.com/afreakk/0ed8de8a7c0ff596854235f4347c6a26/raw/a10f5a44666629df06fab5365b6ae8aad2fd41e5/customscenes

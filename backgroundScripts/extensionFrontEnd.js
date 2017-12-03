@@ -113,6 +113,9 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 		case AV.disableFullScreen:
 			toggleScreenState();
 			return;
+		case AV.openSceneShare:
+			openSceneShareWebSite();
+			return;
 	}
 	if(msg[0] === AV.latencyHint){
 		storage.options.init(window.OV, function(){
@@ -201,5 +204,11 @@ wasError = function(id)
 							"message: "+ chrome.runtime.lastError.message)
 			||true
 			:false;
+},
+openSceneShareWebSite = function(q)
+{
+	chrome.tabs.create({
+		url: "http://139.59.131.214:420/"
+	});
 },
 jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof window.g !== 'undefined'});";

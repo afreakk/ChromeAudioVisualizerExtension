@@ -5,6 +5,7 @@ AV.openOptions = "|";
 AV.setFullScreen = "!";
 AV.disableFullScreen = "#";
 AV.latencyHint = "?";
+AV.openSceneShare = "^";
 
 //initial values, gets overriden by userdefined values
 OV = {};

@@ -59,7 +59,7 @@ SceneManager.prototype.initCurrentlyChoosenScene = function()
 	g.saveSceneName = this.currentScene.name;
 	setSaveName();
 	var settingErrors = g.gui.repopulateFolder(
-				this.currentScene.settings, "Scene-Settings");
+				this.currentScene.settings, "Scene settings");
 	handleSceneSettingError(settingErrors, settingsKeyName);
 	return settingsKeyName;
 },

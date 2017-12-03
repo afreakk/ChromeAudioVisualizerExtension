@@ -52,7 +52,7 @@ initGUI = function()
 
 
 	//adding settings Folder
-	var settingsFolder = gui.appendFolder("Settings");
+	var settingsFolder = gui.appendFolder("General settings");
 	initDBSetting(settingsFolder, OV, "transparentBackground");
 	initDBSetting(settingsFolder, OV, "FullScreen", function(newValue){
 		if(newValue)
@@ -72,19 +72,21 @@ initGUI = function()
 		}
 	}, ['playback', 'balanced', 'interactive']);
 
-	var optionsBtnConfig = buttonHandler.makeButton("-->Options", function(){
+	var optionsBtnConfig = buttonHandler.makeButton("-->More settings", function(){
 			g.port.postMessage(AV.openOptions);
 	});
 	var optionsBtnElem = settingsFolder.addSetting(
-		optionsBtnConfig, "-->Options");
+		optionsBtnConfig, "-->More settings");
 
 	//adding Save Folder
-	var saveFolder = gui.appendFolder("Save");
+	var saveFolder = gui.appendFolder("Save scene");
 	saveFolder.addSetting(g, 'saveSceneName');
 	var saveBtnConf = buttonHandler.makeButton("-->Save", saveButtonCallback);
 	var saveBtnElem = saveFolder.addSetting(saveBtnConf, "-->Save");
 
-	var exportFolder = gui.appendFolder("Export scene");
+	var shareFolder = gui.appendFolder("Share scenes");
+
+	var exportFolder = shareFolder.appendFolder("Export scene");
 	exportFolder.addSetting(g, 'exportOutput');
 	var exportToJsonConf = buttonHandler.makeButton("->Export to json", exportToJson);
 	var exportToJsonElem = exportFolder.addSetting(exportToJsonConf, "->Export to json");
@@ -92,15 +94,20 @@ initGUI = function()
 	var exportToB64Conf = buttonHandler.makeButton("->Export to b64", exportToBase64);
 	var exportToB64Elem = exportFolder.addSetting(exportToB64Conf, "->Export to b64");
 
-	var importFolder = gui.appendFolder("Import scene");
+	var importFolder = shareFolder.appendFolder("Import scene");
 	importFolder.addSetting(g, 'importInput');
 	var importFromJsonConf = buttonHandler.makeButton("->Import from json", importFromJson);
 	var importFromJsonElem = importFolder.addSetting(importFromJsonConf, "->Import from json");
 
 	var importFromB64Conf = buttonHandler.makeButton("->Import from b64", importFromB64);
 	var importFromB64Elem = importFolder.addSetting(importFromB64Conf, "->Import from b64");
-	//adding Scene-Settings Folder
-	gui.appendFolder("Scene-Settings");
+
+	var shareScenesWebConf = buttonHandler.makeButton("->SceneSharing", function(){
+		window.g.port.postMessage(AV.openSceneShare);
+	});
+	var shareScenesWebElem = shareFolder.addSetting(shareScenesWebConf, "->SceneSharing");
+	//adding Scene settings Folder
+	gui.appendFolder("Scene settings");
 
 	//adding scene selection drop down
 	gui.addSetting(g.sceneSelector, 'scene', g.sceneSelector.sceneNames);
@@ -146,7 +153,6 @@ exportToBase64 = function(){
 	g.exportOutput = b64;
 	g.gui.reCheckChildElements();
 },
-
 initCanvas = function(contextStr)
 {
 	var className = "lerret";
