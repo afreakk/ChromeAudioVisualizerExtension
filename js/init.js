@@ -88,19 +88,20 @@ initGUI = function()
 
 	var exportFolder = shareFolder.appendFolder("Export scene");
 	exportFolder.addSetting(g, 'exportOutput');
-	var exportToJsonConf = buttonHandler.makeButton("->Export to json", exportToJson);
-	var exportToJsonElem = exportFolder.addSetting(exportToJsonConf, "->Export to json");
+	var exportToJsonConf = buttonHandler.makeButton("->Export scene", exportToJson);
+	var exportToJsonElem = exportFolder.addSetting(exportToJsonConf, "->Export scene");
 
-	var exportToB64Conf = buttonHandler.makeButton("->Export to b64", exportToBase64);
-	var exportToB64Elem = exportFolder.addSetting(exportToB64Conf, "->Export to b64");
+	// to many options ? to noisy ? 
+	//var exportToB64Conf = buttonHandler.makeButton("->Export to b64", exportToBase64);
+	//var exportToB64Elem = exportFolder.addSetting(exportToB64Conf, "->Export to b64");
 
 	var importFolder = shareFolder.appendFolder("Import scene");
 	importFolder.addSetting(g, 'importInput');
-	var importFromJsonConf = buttonHandler.makeButton("->Import from json", importFromJson);
-	var importFromJsonElem = importFolder.addSetting(importFromJsonConf, "->Import from json");
+	var importFromJsonConf = buttonHandler.makeButton("->Import scene", importFromJson);
+	var importFromJsonElem = importFolder.addSetting(importFromJsonConf, "->Import scene");
 
-	var importFromB64Conf = buttonHandler.makeButton("->Import from b64", importFromB64);
-	var importFromB64Elem = importFolder.addSetting(importFromB64Conf, "->Import from b64");
+	//var importFromB64Conf = buttonHandler.makeButton("->Import from b64", importFromB64);
+	//var importFromB64Elem = importFolder.addSetting(importFromB64Conf, "->Import from b64");
 
 	var shareScenesWebConf = buttonHandler.makeButton("->SceneSharing", function(){
 		window.g.port.postMessage(AV.openSceneShare);
@@ -126,6 +127,7 @@ saveButtonCallback = function()
 importFromJson = function(){
 	try{
 		g.customSceneHandler.saveFromJson(JSON.parse(g.importInput));
+		notify('Scene imported!', 5000);
 	}
 	catch(e){
 		alert(e);
@@ -145,6 +147,8 @@ exportToJson = function(){
 	var string = JSON.stringify(json);
 	g.exportOutput = string;
 	g.gui.reCheckChildElements();
+	copyToClipboard(string);
+	notify('Sent scene to your clipboard!', 5000);
 },
 exportToBase64 = function(){
 	var json = g.customSceneHandler.exportToJson(g.sceneManager.currentScene);
@@ -178,7 +182,33 @@ initDatGUI=function()
 
 	return datGUI;
 },
-
+notify=function(msg, timeout)
+{
+	var className = "noityfycazion";
+	deleteDomClass(className);
+	g.notificationDom = document.createElement('h1');
+	g.notificationDom.style.zIndex = OV.canvasZIndex+1;
+	g.notificationDom.style.position = "fixed";
+	g.notificationDom.style.top = 0;
+	g.notificationDom.style.left = 10;
+	g.notificationDom.style.backgroundColor = "orange";
+	g.notificationDom.className = className;
+	g.notificationDom.innerText = msg;
+	document.body.appendChild(g.notificationDom);
+	clearTimeout(g.notifyTimeout);
+	g.notifyTimeout = setTimeout(function(){
+		deleteDomClass(className);
+	}, timeout)
+},
+copyToClipboard=function(text)
+{
+	var input = document.createElement('input');
+	input.setAttribute('value', text);
+	document.body.appendChild(input);
+	input.select();
+	document.execCommand('copy');
+	document.body.removeChild(input)
+},
 initStatsLibrary=function()
 {
 	deleteDomById("stats");
