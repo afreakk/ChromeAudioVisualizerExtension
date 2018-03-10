@@ -6,7 +6,8 @@ SeventieSceneSettings = function()
 	this.spawnTreshold = 785000.0;
 	this.crowdSurpression = 0.0009;
 	this.speedMusicScale = 10;
-	this.speedReducer = 50000;
+	this.speedReducer = 5000;
+	this.targetSize = 50;
 };
 AudioScenes.seventiesScene = function()
 {
@@ -52,11 +53,19 @@ AudioScenes.seventiesScene.prototype.startCircles=function(vol) {
 
 AudioScenes.seventiesScene.prototype.updateCircles=function(vol) {
 	vol /= this.settings.speedReducer;
+	var data = Object.values(g.byteFrequency);
+	var bottom = data.slice(0,data.length/10).reduce(function(a,b){
+		return a + b;
+	}, 0);
+	var top = data.slice(data.length/10, data.length).reduce(function(a,b){
+		return a + b;
+	}, 0);
+	var controller = (top - bottom)/this.settings.speedReducer;
 	for(var i = 0; i < this.circles.length; i++)
 	{
-		this.circles[i].x += this.circles[i].velX*vol;
-		this.circles[i].y += this.circles[i].velY*vol;
-		this.circles[i].r += Math.max(this.circles[i].speed*vol, 1);
+		this.circles[i].x += controller;
+		this.circles[i].y += vol;
+		this.circles[i].r += vol;
 		this.circles[i].hue+=vol;
 		if (this.circles[i].r > this.circles[i].target)
 		{
@@ -82,13 +91,11 @@ AudioScenes.seventiesScene.prototype.drawCircles=function() {
 
 AudioScenes.seventiesScene.prototype.createCircle=function(vol) {
 	var x = Math.random() * this.width;
-	var y = Math.random() * this.height;
+	var y = Math.max(0,Math.min(this.height - vol/10, this.height));
 	var speed = this.settings.speedMusicScale;
 	var hue_start = Math.random() * 360;
 	var opacity_step = Math.PI / 20;
-	var target_size = this.width / Math.floor((Math.random() * 16) + 6);
-	var velX = (Math.random() * 8) - 4;
-	var velY = (Math.random() * 8) - 4;
+	var target_size = this.settings.targetSize;
 	var z=0;
 	for (var i = 0; i <this.settings.circleResolution; i++)
 	{
@@ -98,8 +105,6 @@ AudioScenes.seventiesScene.prototype.createCircle=function(vol) {
 				x: x,
 				y: y,
 				r: i*2,
-				velX: velX,
-				velY: velY,
 				target: target_size,
 				speed: speed,
 				hue: hue_start + i * 10,
