@@ -16,6 +16,7 @@ AV.scripts.scenes = [
 	"js/scenes/hexagonScene.js",
 	"js/scenes/seventiesScene.js",
 	"js/scenes/madnessScene.js",
+	"js/scenes/dancingCubes.js",
 	"js/scenes/paintingScene.js",
         'js/scenes/WebGLFunWrapper/ExtLibs/gl-matrix-min.js',
         'js/scenes/WebGLFunWrapper/ExtLibs/perlinsimplexnoise.js',
