@@ -1,38 +1,38 @@
-var FunniThing = function(x,y,height,width){
-	this.init = function(x,y,height,width){
+var FunniThing = function(x,y){
+	this.init = function(x,y){
 		this.x = x;
 		this.y = y;
-		this.width = height;
-		this.height = width;
 	};
-	this.init(x,y,height,width);
-	this.update = function(v){
-		this.x += Math.sin(v)*v;
-		this.y += Math.cos(v)*v;
-		if(this.x > g.canvas.width + this.width){
-			this.x = -this.width;
+	this.init(x,y);
+	this.update = function(v,width,height,speed,directionChangeSpeed){
+		this.x += Math.sin(v*directionChangeSpeed)*v*speed;
+		this.y += Math.cos(v*directionChangeSpeed)*v*speed;
+		if(this.x > g.canvas.width + width){
+			this.x = -width;
 		}
-		if(this.x < -this.width){
-			this.x = g.canvas.width + this.width;
+		if(this.x < -width){
+			this.x = g.canvas.width + width;
 		}
-		if(this.y > g.canvas.height + this.height){
-			this.y = -this.width;
+		if(this.y > g.canvas.height + height){
+			this.y = -width;
 		}
-		if(this.y < -this.height){
-			this.y = g.canvas.height + this.height;
+		if(this.y < -height){
+			this.y = g.canvas.height + height;
 		}
 	};
-	this.draw = function(v){
-		g.ctx.fillStyle = this.getClr(v);
-		g.ctx.fillRect(this.x, this.y, this.width, this.height);
-		g.ctx.fillStyle = '#000000';
-		g.ctx.strokeRect(this.x, this.y, this.width, this.height);
+	this.draw = function(v,width,height,borderR,borderG,borderB,borderWidth,colorStr,colorChangeSpeed){
+		g.ctx.fillStyle = this.getClr(v,colorStr,colorChangeSpeed);
+		g.ctx.fillRect(this.x, this.y, width, height);
+		g.ctx.strokeStyle = rgbToHex(borderR,borderG,borderB);
+		g.ctx.lineWidth = borderWidth;
+		g.ctx.strokeRect(this.x, this.y, width, height);
 	};
-	this.getClr = function(v){
+	this.getClr = function(v,colorStr,colorChangeSpeed){
+		var change = v*colorChangeSpeed;
 		return rgbToHex(
-			(Math.sin(v)/2.0+0.5)*v*v*v,
-			(Math.cos(v)/2.0+0.5)*v*v*v,
-			(Math.sin(v)/2.0+0.5)*v*v*v
+			(Math.sin(change)/2.0+0.5)*v*colorStr,
+			(Math.cos(change)/2.0+0.5)*v*colorStr,
+			(Math.tan(change)/2.0+0.5)*v*colorStr
 		);
 	};
 };
@@ -40,28 +40,40 @@ var FunniThing = function(x,y,height,width){
 DancingCubesSettings = function()
 {
     this.danceSpeed = 0.05;
-	this.particleCount = 220;
+	this.directionChangeSpeed = 0.05;
+
+	this.particleCount = 140;
+
+	this.cubeWidth = 25;
+	this.cubeHeight = 25;
+
+	this.backgroundRed = 0;
+	this.backgroundGreen = 0;
+	this.backgroundBlue = 0;
+	this.backgroundAlpha = 0.99;
+
+	this.cubeBorderRed = 10;
+	this.cubeBorderGreen = 10;
+	this.cubeBorderBlue = 10;
+
+	this.cubeBorderWidth = 2;
+
+	this.cubeColorStrength = 0.75;
+	this.cubeColorChangeSpeed = 0.05;
 };
 AudioScenes.DancingCubes = function()
 {
     this.name = "DancingCubes";
 	this.particles = [];
 };
-AudioScenes.DancingCubes.prototype.getClr = function(rgbS,scaled_average_c)
-{
-    return rgbToHex(
-            (Math.sin(rgbS)/2.0+0.5)*scaled_average_c,
-            (Math.cos(rgbS)/2.0+0.5)*scaled_average_c,
-            (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
-            );
-}
 AudioScenes.DancingCubes.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,DancingCubesSettings, preset);
 };
 AudioScenes.DancingCubes.prototype.clearBg = function()
 {
-	g.ctx.fillStyle = '#000000';
+	g.ctx.fillStyle = 'rgba('+this.settings.backgroundRed+
+		','+this.settings.backgroundGreen+','+this.settings.backgroundBlue+','+this.settings.backgroundAlpha+')';
 	g.ctx.fillRect(0,0,g.canvas.width,g.canvas.height);
 }
 AudioScenes.DancingCubes.prototype.update = function()
@@ -78,9 +90,9 @@ AudioScenes.DancingCubes.prototype.update = function()
 		}
 		var sum = 0;
 		if(!isNaN(g.byteFrequency[i])){
-			sum =g.byteFrequency[i]*xs.danceSpeed;
+			sum =g.byteFrequency[i];
 		}
-		this.particles[i].update(sum);
-		this.particles[i].draw(sum);
+		this.particles[i].update(sum,xs.cubeWidth,xs.cubeHeight,xs.danceSpeed,xs.directionChangeSpeed);
+		this.particles[i].draw(sum,xs.cubeWidth,xs.cubeHeight,xs.cubeBorderRed,xs.cubeBorderGreen,xs.cubeBorderBlue,xs.cubeBorderWidth,xs.cubeColorStrength,xs.cubeColorChangeSpeed);
 	}
 };
