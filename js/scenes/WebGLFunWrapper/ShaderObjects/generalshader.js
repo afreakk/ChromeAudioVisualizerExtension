@@ -1,8 +1,27 @@
+var Gvs = ''+
+			'attribute vec3 vertexPos;'+
+            'uniform mat4 perspective;'+
+            'varying vec3 pos;'+
+ 
+			'void main() {'+
+                'vec3 camPos = vec3(0.0, 75.0, 25.0);'+
+				'gl_Position = perspective*vec4( vertexPos-camPos, 1.0 );'+
+                'pos = vertexPos;'+
+ 
+			'}';
+var Gfs = ''+
+			'uniform float time;'+
+			'uniform vec2 resolution;'+
+            'varying vec3 pos;'+
+			'void main( void ) {'+
+                'vec4 endC = vec4(cos(pos.x+time),sin(pos.y+time),tan(pos.z+time),1.0);'+
+                'gl_FragColor = endC;'+
+ 
+			'}';
 
-
-function GeneralShader(vertex_shader, fragment_shader)
+function GeneralShader()
 {
-    this.program = createProgram( vertex_shader, fragment_shader );
+    this.program = createProgram( Gvs, Gfs);
     this.vertex_position = null;
 
     this.resolution = null;
@@ -31,13 +50,21 @@ function GeneralShader(vertex_shader, fragment_shader)
         gl.useProgram( this.program );
         gl.uniformMatrix4fv( this.perspective, false, matrix ); 
     }
+	this.drawElements=function(indexBuffer, indexBufferLen, vertexBuffer){
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.drawElements(
+			gl.TRIANGLE_STRIP,
+			indexBufferLen,
+			gl.UNSIGNED_SHORT, 0
+		);
+	}
     this.drawLine=function(vertexArray, vertexBuffer)
     {
         gl.useProgram( this.program );
 
         gl.bindBuffer( gl.ARRAY_BUFFER, vertexBuffer );
         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( vertexArray ), gl.STREAM_DRAW );
-        gl.vertexAttribPointer( terrainShader.vertex_position, 3, gl.FLOAT, false, 0, 0 );
+        gl.vertexAttribPointer( this.vertex_position, 3, gl.FLOAT, false, 0, 0 );
 
 
         gl.enableVertexAttribArray( this.vertex_position );

@@ -46,7 +46,6 @@ shaders.twoDShader.attributes = [
 shaders.threeDShader={};
 shaders.threeDShader.vShader = [
 'attribute vec3 position;',
-'attribute vec2 aTxCoords;',
 'uniform mat4 projectionMatrix;',
 'uniform mat4 worldMatrix;',
 'uniform mat4 modelMatrix;',
@@ -55,7 +54,6 @@ shaders.threeDShader.vShader = [
 'void main() {',
 '	gl_Position = projectionMatrix*worldMatrix*modelMatrix*vec4( position, 1.0 );',
 '	v_pos = position;',
-'	vTxCoord = aTxCoords;',
 '}'
 ].join('\n'),
 shaders.threeDShader.fShader = [
@@ -83,28 +81,8 @@ shaders.threeDShader.uniforms = [
 	'colorInfluence'
 ],
 shaders.threeDShader.attributes = [
-	'position',
-	'aTxCoords'
+	'position'
 ],
-shaders.setUniforms = function(program, uniforms)
-{
-	for(uniform of uniforms)
-		shaders.uLocSet(program, uniform);
-},
-shaders.setAttributes = function(program, attributes)
-{
-	for(var attribute of attributes)
-		shaders.aLocSet(program, attribute);
-},
-shaders.aLocSet=function(program, name)
-{
-	program[name] = gl.getAttribLocation(program, name);
-},
-shaders.uLocSet=function(program, name)
-{
-	program[name] = gl.getUniformLocation(program, name);
-};
-
 /* madnessShader - 
  * used in: MadnessScene */
 shaders.madnessShader={};
@@ -143,3 +121,72 @@ shaders.madnessShader.uniforms = [
 shaders.madnessShader.attributes = [
 	'position'
 ];
+
+/* dancingCubeShader - 
+ * used in: dancingCubeScene */
+shaders.dancingCubeShader={};
+shaders.dancingCubeShader.vShader = [
+'attribute vec4 position;',
+'attribute vec3 vertexNormal;',
+'uniform mat4 projectionMatrix;',
+'uniform vec4 worldPos;',
+'uniform mat4 modelViewMatrix;',
+'uniform mat4 normalMatrix;',
+'varying highp vec3 vLighting;',
+'varying vec4 vPos;',
+'void main() {',
+'	vPos = vec4((position.xyz*worldPos.xyz), worldPos.w);',
+'	gl_Position = projectionMatrix*modelViewMatrix*position;',
+
+'   highp vec3 ambientLight = vec3(0.5, 0.5, 0.5);',
+'   highp vec3 directionalLightColor = vec3(1, 1, 1);',
+'   highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));',
+'   highp vec4 transformedNormal = normalMatrix * vec4(vertexNormal, 1.0);',
+'   highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);',
+'   vLighting = ambientLight + (directionalLightColor * directional);',
+'}'
+].join('\n'),
+shaders.dancingCubeShader.fShader = [
+'uniform vec3 colorInfluence;',
+'uniform float cubeAlpha;',
+'varying highp vec3 vLighting;',
+'varying vec4 vPos;',
+'void main( void ) {',
+'	vec3 clr = vec3(colorInfluence.r*sin(vPos.x*0.01*vPos.w),colorInfluence.g*cos(vPos.y*0.01*vPos.w),colorInfluence.b*sin(vPos.z*0.01*vPos.w+0.34));',
+'	gl_FragColor = vec4( vLighting*clr, vPos.w*cubeAlpha );',
+'}'
+].join('\n'),
+
+shaders.dancingCubeShader.uniforms = [
+	'cubeAlpha',
+	'projectionMatrix',
+	'modelViewMatrix',
+	'normalMatrix',
+	'colorInfluence',
+	'worldPos'
+],
+shaders.dancingCubeShader.attributes = [
+	'position',
+	'vertexNormal',
+];
+
+shaders.setUniforms = function(program, uniforms)
+{
+	for(uniform of uniforms)
+		shaders.uLocSet(program, uniform);
+},
+shaders.setAttributes = function(program, attributes)
+{
+	for(var attribute of attributes)
+		shaders.aLocSet(program, attribute);
+},
+shaders.aLocSet=function(program, name)
+{
+	program[name] = gl.getAttribLocation(program, name);
+	if(program[name] === -1) aError('couldnt get attribName:'+name+' from '+JSON.stringify(program, null, 4));
+},
+shaders.uLocSet=function(program, name)
+{
+	program[name] = gl.getUniformLocation(program, name);
+};
+

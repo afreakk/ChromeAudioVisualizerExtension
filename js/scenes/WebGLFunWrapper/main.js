@@ -12,7 +12,6 @@ var perspectiveMatrix = mat4.create();
 
 // Managers -->
 var canvasMgr = null;
-var glMgr = null;
 var timeMgr = null;
 var sceneMgr = null;
 // <-- End managers 
@@ -25,13 +24,15 @@ terrain.init = function()
     terrain.canvasMgr = new fun.CanvasManager();
     terrain.canvasMgr.init();
 
-    glMgr = new fun.GLManager();
-    glMgr.initShaders();
+	terrainShader = new TerrainShader();
+	terrainShader.init();
+
+    terrain.canvasMgr.setActiveShaders([terrainShader]);
 
     timeMgr = new fun.TimeManager();
 
     sceneMgr = new fun.SceneManager();
-    sceneMgr.init();
+    sceneMgr.init(TryTerrainScene);
 
     key = new KeyManager();
     key.init();

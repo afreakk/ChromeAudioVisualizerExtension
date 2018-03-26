@@ -82,6 +82,34 @@ function Terrain()
     }
 }
 
+function CubeModel(){
+	var cube = new CubeVertexData();
+    var vertexBuffer    = gl.createBuffer();
+    var indexBuffer = gl.createBuffer();
+	this.init=function(){
+        gl.bindBuffer( gl.ARRAY_BUFFER, vertexBuffer );
+        gl.bufferData(
+			gl.ARRAY_BUFFER,
+			new Float32Array( cube.getVertices() ),
+			gl.STREAM_DRAW
+		);
+        gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(
+			gl.ELEMENT_ARRAY_BUFFER,
+			new Uint16Array( cube.getIndices() ),
+			gl.DYNAMIC_DRAW
+		);
+	};
+    this.draw = function()
+    {
+        generalShader.drawElements(
+			indexBuffer,
+			cube.getIndicesCount(),
+			vertexBuffer
+		);
+    };
+}
+
 function Player()
 {
     var line            = new Line();

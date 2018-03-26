@@ -12,7 +12,6 @@ WGL.getShader = function(shader)
 	gl.useProgram(shaderProgram);
 	shaders.setUniforms(shaderProgram, shader.uniforms);
 	shaders.setAttributes(shaderProgram, shader.attributes);
-	console.dir(shaderProgram);
 	return shaderProgram;
 },
 WGL.deInitializeGL = function()

@@ -13,17 +13,6 @@ var Tvs = ''+
                 'pos.y = yPoint/2.0+0.5;' +
  
 			'}';
-var Gvs = ''+
-			'attribute vec3 vertexPos;'+
-            'uniform mat4 perspective;'+
-            'varying vec3 pos;'+
- 
-			'void main() {'+
-                'vec3 camPos = vec3(0.0, 75.0, 25.0);'+
-				'gl_Position = perspective*vec4( vertexPos-camPos, 1.0 );'+
-                'pos = vertexPos;'+
- 
-			'}';
 var Tfs = ''+
 			'uniform float time;'+
 			'uniform vec2 resolution;'+
@@ -39,18 +28,9 @@ var Tfs = ''+
                 'gl_FragColor = endC * colorOffset;'+
  
 			'}';
-var Gfs = ''+
-			'uniform float time;'+
-			'uniform vec2 resolution;'+
-            'varying vec3 pos;'+
-			'void main( void ) {'+
-                'vec4 endC = vec4(cos(pos.x+time),sin(pos.y+time),tan(pos.z+time),1.0);'+
-                'gl_FragColor = endC;'+
- 
-			'}';
-function TerrainShader(vertex_shader, fragment_shader)
+function TerrainShader()
 {
-    this.program = createProgram( vertex_shader, fragment_shader );
+    this.program = createProgram( Tvs, Tfs );
     this.vertexBase_position    = null;
     this.vertexHeight_position  = null;
 

@@ -41,10 +41,6 @@ AudioScenes.CubeScene.prototype.parseSettings = function(preset)
 {
 	parseSettings(this,CubeSceneSetting, preset);
 },
-AudioScenes.CubeScene.prototype.parseSettings = function(preset)
-{
-	parseSettings(this,CubeSceneSetting, preset);
-},
 AudioScenes.CubeScene.prototype.clearBg = function()
 {
 },
@@ -122,7 +118,7 @@ AudioScenes.CubeScene.prototype.initUniforms = function()
 
 	//m4trixxx
 	gl.uniformMatrix4fv(this.currentProgram.projectionMatrix,
-		gl.FALSE, mat4.perspective(mat4.create(), 45, 16/9, 0, 100));
+		gl.FALSE, mat4.perspective(mat4.create(), 45, 16/9, 1, 100));
 
 	var worldMatrix = mat4.create();
 	var translateBy = vec3.create();

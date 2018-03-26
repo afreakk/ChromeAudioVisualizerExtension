@@ -1,6 +1,7 @@
 fun = {};
 fun.CanvasManager = function()
 {
+	this.activeShaders = [];
     this.init = function()
     {
         canvas = g.canvas;
@@ -9,6 +10,15 @@ fun.CanvasManager = function()
 	this.deInitialize = function(){
         window.removeEventListener( 'resize', this.onWindowResize);
 	};
+	this.setActiveShaders = function(activeShaders){
+		this.activeShaders = activeShaders;
+		for(var i = 0; i<this.activeShaders.length; i++){
+			if(!this.activeShaders[i]){
+				debugger;
+			}
+		}
+
+	}
     this.onWindowResize = function(event)
     {
         canvas.width = window.innerWidth;
@@ -20,34 +30,20 @@ fun.CanvasManager = function()
         window.gl.viewport( 0, 0, canvas.width, canvas.height );
         //terrainShader.setResolution(parameters.screenWidth,parameters.screenHeight);
         //generalshader.setResolution(parameters.screenWidth,parameters.screenHeight);
-        mat4.perspective(perspectiveMatrix, 1.65/2.0,  screenWidth/screenHeight, 0.1, 1000.0)
-        generalShader.setPerspective(perspectiveMatrix);
-        terrainShader.setPerspective(perspectiveMatrix);
+        mat4.perspective(perspectiveMatrix,
+			1.65/2.0,  screenWidth/screenHeight, 0.1, 1000.0);
+		for(var i = 0; i<this.activeShaders.length; i++){
+			this.activeShaders[i].setPerspective(perspectiveMatrix);
+		}
     }
 
-}
-fun.GLManager = function()
-{
-    this.initShaders = function()
-    {
-        var terrainVertex_shader    = Tvs;
-        var terrainFragment_shader  = Tfs;
-        terrainShader = new TerrainShader(terrainVertex_shader, terrainFragment_shader);
-        terrainShader.init();
-
-        var generalVertex_shader    = Gvs;
-        var generalFragment_shader  = Gfs;
-        
-        generalShader = new GeneralShader(generalVertex_shader, generalFragment_shader);
-        generalShader.init();
-    };
 }
 fun.SceneManager = function()
 {
     var scene = null;
-    this.init=function() 
+    this.init=function(sceneObj) 
     {
-        scene = new TryTerrainScene();
+        scene = new sceneObj();
         scene.init();
     };
     this.update=function(settings) 
