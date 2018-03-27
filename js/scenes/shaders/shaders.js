@@ -169,6 +169,60 @@ shaders.dancingCubeShader.attributes = [
 	'position',
 	'vertexNormal',
 ];
+/* xxx - 
+ * used in: xxx */
+shaders.xxx={};
+shaders.xxx.vShader = [
+'attribute vec4 position;',
+'attribute vec3 vertexNormal;',
+'uniform mat4 projectionMatrix;',
+'uniform vec4 worldPos;',
+'uniform vec4 space;',
+'uniform mat4 modelViewMatrix;',
+'uniform mat4 normalMatrix;',
+'uniform float spaceZOffset;',
+'varying highp vec3 vLighting;',
+'varying vec4 vPos;',
+'void main() {',
+'	vec4 pp = projectionMatrix*modelViewMatrix*position;',
+'	pp = vec4(sin(pp.x),cos(pp.y), sin(pp.z), (cos(pp.w)+spaceZOffset));',
+'	pp = pp*space;',
+'	gl_Position = pp;',
+'	vPos = vec4((pp.xyz), worldPos.w);',
+
+'   highp vec3 ambientLight = vec3(0.5, 0.5, 0.5);',
+'   highp vec3 directionalLightColor = vec3(1, 1, 1);',
+'   highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));',
+'   highp vec4 transformedNormal = normalMatrix * vec4(vertexNormal, 1.0);',
+'   highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);',
+'   vLighting = ambientLight + (directionalLightColor * directional);',
+'}'
+].join('\n'),
+shaders.xxx.fShader = [
+'uniform vec3 colorInfluence;',
+'uniform float cubeAlpha;',
+'varying highp vec3 vLighting;',
+'varying vec4 vPos;',
+'void main( void ) {',
+'	vec3 clr = vec3(colorInfluence.r*sin(vPos.x*0.01*vPos.w),colorInfluence.g*cos(vPos.y*0.01*vPos.w),colorInfluence.b*sin(vPos.z*0.01*vPos.w+0.34));',
+'	gl_FragColor = vec4( vLighting*clr, vPos.w*cubeAlpha );',
+'}'
+].join('\n'),
+
+shaders.xxx.uniforms = [
+	'cubeAlpha',
+	'projectionMatrix',
+	'modelViewMatrix',
+	'normalMatrix',
+	'colorInfluence',
+	'worldPos',
+	'space',
+	'spaceZOffset'
+],
+shaders.xxx.attributes = [
+	'position',
+	'vertexNormal',
+];
 
 shaders.setUniforms = function(program, uniforms)
 {
