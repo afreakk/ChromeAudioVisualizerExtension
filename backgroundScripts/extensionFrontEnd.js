@@ -208,7 +208,7 @@ wasError = function(id)
 openSceneShareWebSite = function(q)
 {
 	chrome.tabs.create({
-		url: "http://139.59.131.214:420/"
+		url: "http://audiovisualizer.net/"
 	});
 },
 jsInjectedQuery = "chrome.extension.sendMessage({ loaded: typeof window.g !== 'undefined'});";
