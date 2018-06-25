@@ -267,6 +267,7 @@ function onNewByteFrequencyData(msg){
 }
 //Invoked at script injection time
 (function(){
+	console.log('invoked at script injection time');
 	chrome.runtime.onConnect.addListener(
 		function(port){
 			initUndef(window, 'g', {});
