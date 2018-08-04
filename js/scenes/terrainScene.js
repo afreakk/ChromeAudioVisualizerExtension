@@ -40,7 +40,7 @@ AudioScenes.TerrainScene.prototype.clearBg = function()
 },
 AudioScenes.TerrainScene.prototype.update = function(){
 	if(!OV.transparentBackground)
-		gl.clearColor(1, 1, 1, 1;
+		gl.clearColor(1, 1, 1, 1);
 	else
 		gl.clearColor(0.1, 0.1, 0.1, 0.1);
 	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
