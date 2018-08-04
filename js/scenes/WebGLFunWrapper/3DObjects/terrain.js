@@ -7,12 +7,13 @@ function Terrain()
     var xMove = 0;
     var zMove = 0;
 	var stripGrid = null;
-    this.init=function(w, h, tileSize, zOffset)
+    this.init=function(settings)
     {
 		yBuffer     = gl.createBuffer();
 		baseBuffer  = gl.createBuffer();
 		indexBuffer = gl.createBuffer();
-		stripGrid   = new TriangleStripGrid(w, h, tileSize, zOffset);
+
+		stripGrid   = new TriangleStripGrid(settings.width, settings.height, settings.tileSize, settings.zOffset);
         gl.bindBuffer( gl.ARRAY_BUFFER, baseBuffer );
         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( stripGrid.getVerticesXZ() ),
 			gl.DYNAMIC_DRAW );
@@ -52,7 +53,7 @@ function Terrain()
 			settings.tileSize !== this.oldTileSize ||
 			settings.zOffset !== this.oldZOffset )
 		{
-			this.init(settings.width, settings.height, settings.tileSize, settings.zOffset);
+			this.init(settings);
 			this.oldWith = settings.width, this.oldHeight = settings.height,
 			this.oldTileSize = settings.tileSize, this.oldZOffset = settings.zOffset;
 		}

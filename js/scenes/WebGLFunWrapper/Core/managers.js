@@ -41,10 +41,10 @@ fun.CanvasManager = function()
 fun.SceneManager = function()
 {
     var scene = null;
-    this.init=function(sceneObj) 
+    this.init=function(sceneObj, settings) 
     {
         scene = new sceneObj();
-        scene.init();
+        scene.init(settings);
     };
     this.update=function(settings) 
     {

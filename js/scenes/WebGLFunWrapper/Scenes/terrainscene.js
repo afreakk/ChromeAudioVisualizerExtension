@@ -2,10 +2,10 @@ function TryTerrainScene()
 {
     var terrain = null;
     //var player    = null;
-    this.init = function()
+    this.init = function(settings)
     {
         terrain = new Terrain();
-        terrain.init();
+        terrain.init(settings);
 
    //     player = new Player();
     }

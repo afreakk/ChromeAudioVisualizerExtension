@@ -19,7 +19,7 @@ var sceneMgr = null;
 var terrain = {};
 
 
-terrain.init = function()
+terrain.init = function(settings)
 {
     terrain.canvasMgr = new fun.CanvasManager();
     terrain.canvasMgr.init();
@@ -32,7 +32,7 @@ terrain.init = function()
     timeMgr = new fun.TimeManager();
 
     sceneMgr = new fun.SceneManager();
-    sceneMgr.init(TryTerrainScene);
+    sceneMgr.init(TryTerrainScene, settings);
 
     key = new KeyManager();
     key.init();

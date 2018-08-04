@@ -24,7 +24,7 @@ AudioScenes.TerrainScene.prototype.cleanUp = function()
 AudioScenes.TerrainScene.prototype.init = function(){
 
 	WGL.init(),
-	terrain.init();
+	terrain.init(this.settings);
 
 },
 AudioScenes.TerrainScene.prototype.parseSettings = function(preset)
@@ -39,6 +39,11 @@ AudioScenes.TerrainScene.prototype.clearBg = function()
 {
 },
 AudioScenes.TerrainScene.prototype.update = function(){
+	if(!OV.transparentBackground)
+		gl.clearColor(1, 1, 1, 1;
+	else
+		gl.clearColor(0.1, 0.1, 0.1, 0.1);
+	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 	terrain.update(this.settings);
 };
 
