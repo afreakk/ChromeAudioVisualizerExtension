@@ -54,27 +54,22 @@ AudioScenes.ButterScene.prototype.update = function()
         this.lastPreset = this.settings.preset;
         clearInterval(this.timeout);
         this.timeout = undefined;
-        console.log('actually setting preset');
     }
     if (this.settings.cyclePresets) {
         if (!this.timeout){
             this.timeout = setTimeout(function(){
                 this.settings.preset = getRandomButterPresetName();
-                console.log('timeout expired switching preset');
             }.bind(this), this.settings.cycleSeconds * 1000);
-            console.log('setting timeout');
             this.lastCycleSeconds = this.settings.cycleSeconds;
         }
         else if (this.settings.cycleSeconds !== this.lastCycleSeconds) {
             clearInterval(this.timeout);
             this.timeout = undefined;
-            console.log('clearing timeout, because it was changed');
         }
     }
     else {
         clearInterval(this.timeout);
         this.timeout = undefined;
-        console.log('clearing timeout on purpose');
     }
     this.visualizer.render();
 };
