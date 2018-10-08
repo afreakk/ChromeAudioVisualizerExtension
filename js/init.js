@@ -157,7 +157,7 @@ exportToBase64 = function(){
 	g.exportOutput = b64;
 	g.gui.reCheckChildElements();
 },
-initCanvas = function(contextStr)
+initCanvas = function(contextStr, noContext)
 {
 	var className = "lerret";
 	deleteDomClass(className);
@@ -168,7 +168,9 @@ initCanvas = function(contextStr)
 	g.canvas.style.pointerEvents = "none";
 	g.canvas.className = className;
 	document.body.appendChild(g.canvas);
-    g.ctx = g.canvas.getContext(contextStr);
+	if (!noContext) {
+		g.ctx = g.canvas.getContext(contextStr);
+	}
 	return g.ctx;
 },
 

@@ -15,6 +15,8 @@ AV.scripts.scenes = [
 	"js/scenes/roundSpectrum.js",
 	"js/scenes/hexagonScene.js",
 	"js/scenes/seventiesScene.js",
+		'js/scenes/butter/bundle.js',
+		'js/scenes/butter.js',
 	"js/scenes/madnessScene.js",
 	"js/scenes/paintingScene.js",
 	"js/scenes/dancingCubes.js",

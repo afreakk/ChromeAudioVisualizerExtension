@@ -39,10 +39,17 @@ GUI.prototype =  {
 	},
 	initSetting: function(setting, settings)
 	{
+		if (setting === 'preset') {
+			//hack, for hiding this
+			return;
+		}
 		aLog("adding gui setting: "+setting);
 		var owner, attribName, availableValues;
-		if(	settings[setting].length &&
-			settings[setting].length == 3)
+		if (settings[setting].availableValues) {
+			owner = settings, attribName = settings[setting].attribName;
+			availableValues = settings[setting].availableValues;
+		}
+		else if(settings[setting].length &&	settings[setting].length == 3)
 		{
 			owner =	settings[setting][0] == "g.ctx" ? g.ctx:
 					settings[setting][0],

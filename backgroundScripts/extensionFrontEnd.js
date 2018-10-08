@@ -5,6 +5,7 @@ var ExtensionFrontEnd = function()
 	this.frequencyData = new Uint8Array(OV.fftSize);
 	this.onPortMessage = this.onPortMessage.bind(this);
 	this.onScriptsInjected = this.onScriptsInjected.bind(this);
+	this.captureForButter = false;
 };
 ExtensionFrontEnd.prototype.togglePauseContentScripts = function(tabId){
 	chrome.tabs.executeScript(tabId, { code: "togglePause();" });
@@ -100,9 +101,28 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 {
 	switch(msg)
 	{
+		case AV.butterOn:
+			this.captureForButter = true;
+			this.reInitializeAllTabs();
+			return
+		case AV.butterOff:
+			this.captureForButter = false;
+			this.reInitializeAllTabs();
+			return
 		case AV.music:
-			this.injectedTabs[port.name].analyzer.getByteFrequencyData(this.frequencyData);
-			this.injectedTabs[port.name].port.postMessage(this.frequencyData);
+			if (!this.captureForButter) {
+				this.injectedTabs[port.name].analyzer.getByteFrequencyData(this.frequencyData);
+				this.injectedTabs[port.name].port.postMessage(this.frequencyData);
+			}
+			else {
+				if (this.injectedTabs[port.name].audioProcessor) {
+					const obj = this.injectedTabs[port.name].audioProcessor.sampleAudio();
+					this.injectedTabs[port.name].port.postMessage(obj);
+				}
+				else {
+					console.log('audioprocessor on '+port.name+' undefined');
+				}
+			}
 			return;
 		case AV.openOptions:
 			openOptions();
@@ -118,14 +138,15 @@ ExtensionFrontEnd.prototype.onPortMessage = function(msg, port)
 			return;
 	}
 	if(msg[0] === AV.latencyHint){
-		storage.options.init(window.OV, function(){
-			var tabs = Object.keys(this.injectedTabs);//reinitialize on all tabs
-			for(var i = 0; i<tabs.length; i++){
-				if(this.injectedTabs[tabs[i]].stream && !this.injectedTabs[tabs[i]].isPaused){
-					this.initAudio(this.injectedTabs[tabs[i]].stream, tabs[i]);
-				}
-			}
-		}.bind(this), true);
+		storage.options.init(window.OV, this.reInitializeAllTabs.bind(this), true);
+	}
+},
+ExtensionFrontEnd.prototype.reInitializeAllTabs = function(){
+	var tabs = Object.keys(this.injectedTabs);//reinitialize on all tabs
+	for(var i = 0; i<tabs.length; i++){
+		if(this.injectedTabs[tabs[i]].sourceNode && !this.injectedTabs[tabs[i]].isPaused){
+			this.initAudio(this.injectedTabs[tabs[i]].stream, tabs[i]);
+		}
 	}
 },
 ExtensionFrontEnd.prototype.closeContext = function(id){
@@ -136,6 +157,10 @@ ExtensionFrontEnd.prototype.closeContext = function(id){
 ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 {
 	if(this.injectedTabs[id].context){
+		if (this.injectedTabs[id].audioProcessor) {
+			//this.injectedTabs[id].audioProcessor.disconnectAudio(this.injectedTabs[id].sourceNode);
+			//causes exception sometimes, think diconnect below should handle it ?
+		}
 		this.injectedTabs[id].sourceNode.disconnect();
 		this.closeContext(id).then(function(){
 			this.initAudio(stream, id);
@@ -143,14 +168,21 @@ ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 		return;
 	}
 	var audioCtxSettings = {latencyHint: OV.LatencyHint};
-	console.log(audioCtxSettings);
 	this.injectedTabs[id].context = new AudioContext(audioCtxSettings);
 	this.injectedTabs[id].sourceNode = this.injectedTabs[id].context.createMediaStreamSource(stream);
-	this.injectedTabs[id].analyzer = this.injectedTabs[id].context.createAnalyser();
-	this.injectedTabs[id].analyzer.fftSize = OV.fftSize;
-	this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].analyzer);
-	this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].context.destination);
-	this.injectedTabs[id].stream = stream;
+
+	if (!this.captureForButter) {
+		this.injectedTabs[id].analyzer = this.injectedTabs[id].context.createAnalyser();
+		this.injectedTabs[id].analyzer.fftSize = OV.fftSize;
+		this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].analyzer);
+		this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].context.destination);
+		this.injectedTabs[id].stream = stream;
+	}
+	else {
+		this.injectedTabs[id].audioProcessor = new ButterAudioProcessor(this.injectedTabs[id].context);
+		this.injectedTabs[id].sourceNode.connect(this.injectedTabs[id].context.destination);
+		this.injectedTabs[id].audioProcessor.connectAudio(this.injectedTabs[id].sourceNode);
+	}
 },
 ExtensionFrontEnd.prototype.connectToTab = function(id)
 {

@@ -6,6 +6,8 @@ AV.setFullScreen = "!";
 AV.disableFullScreen = "#";
 AV.latencyHint = "?";
 AV.openSceneShare = "^";
+AV.butterOn = "<";
+AV.butterOff = ">";
 
 //initial values, gets overriden by userdefined values
 OV = {};
