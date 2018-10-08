@@ -49,7 +49,9 @@ AudioScenes.ButterScene.prototype.clearBg = function()
 };
 AudioScenes.ButterScene.prototype.resizeCanvas = function()
 {
-    this.visualizer.setRendererSize(s.widthInHalf*2, s.heightInHalf*2);
+    if (this.visualizer) {
+        this.visualizer.setRendererSize(s.widthInHalf*2, s.heightInHalf*2);
+    }
 };
 AudioScenes.ButterScene.prototype.update = function()
 {
