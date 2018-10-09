@@ -79,7 +79,7 @@ function populateOptions($scope)
 						x.key = key
 						x.value = options[key];
 						if(x.key ===  "startupScene"){
-							x.dropDownValues = getAllSceneNames(customScenes);
+							x.dropDownValues = getAllSceneNames(customScenes).concat('Random');
 							x.type = "dropdown";
 						}
 						else if(x.key ===  "LatencyHint"){
