@@ -1,12 +1,11 @@
-var butterPresets = butter.getPresets();
-var butterPresetsName = Object.keys(butterPresets);
 var getRandomButterPresetName = function() {
+    var butterPresetsName = Object.keys(butter.getPresets());
     return butterPresetsName[parseInt(Math.random() * butterPresetsName.length-1)];
 }
 ButterSceneSettings = function()
 {
     this.presets = {
-        availableValues: butterPresetsName,
+        availableValues: Object.keys(butter.getPresets()),
         attribName: 'preset',
     };
     this.preset = getRandomButterPresetName();
@@ -29,6 +28,7 @@ AudioScenes.ButterScene.prototype.init = function(){
     }, function(){
         return Object.values(g.byteFrequency.timeByteArrayR||g.byteFrequency);
     },g.canvas, s.widthInHalf*2, s.heightInHalf*2);
+    this.lastPreset = undefined;
 
     this.visualizer.setRendererSize(s.widthInHalf*2, s.heightInHalf*2);
 };
@@ -56,7 +56,7 @@ AudioScenes.ButterScene.prototype.resizeCanvas = function()
 AudioScenes.ButterScene.prototype.update = function()
 {
     if (this.settings.preset !== this.lastPreset) {
-        this.visualizer.loadPreset(butterPresets[this.settings.preset], this.settings.blendLength);
+        this.visualizer.loadPreset(butter.getPresets()[this.settings.preset], this.settings.blendLength);
         this.lastPreset = this.settings.preset;
         clearInterval(this.timeout);
         this.timeout = undefined;
@@ -65,6 +65,8 @@ AudioScenes.ButterScene.prototype.update = function()
         if (!this.timeout){
             this.timeout = setTimeout(function(){
                 this.settings.preset = getRandomButterPresetName();
+                clearInterval(this.timeout);
+                this.timeout = undefined;
             }.bind(this), this.settings.cycleSeconds * 1000);
             this.lastCycleSeconds = this.settings.cycleSeconds;
         }
@@ -73,7 +75,7 @@ AudioScenes.ButterScene.prototype.update = function()
             this.timeout = undefined;
         }
     }
-    else {
+    else if(this.timeout) {
         clearInterval(this.timeout);
         this.timeout = undefined;
     }

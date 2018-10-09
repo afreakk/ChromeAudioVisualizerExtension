@@ -26,7 +26,7 @@ CustomSceneHandler.prototype.saveCustomScene = function(scene)
 {
 	var keyName = generateSaveName(scene);
 	var sceneSetting = scene.settings;
-	this.treatSetting(sceneSetting);
+	this.treatSetting(sceneSetting, scene);
 	storage.scenes.insert(keyName, sceneSetting,function(scenes)
 		{
 			var xscene = this.refreshCustomScenes(scenes);
@@ -51,7 +51,7 @@ CustomSceneHandler.prototype.exportToJson = function(scene)
 {
 	var keyName = generateSaveName(scene);
 	var sceneSetting = scene.settings;
-	this.treatSetting(sceneSetting);
+	this.treatSetting(sceneSetting, scene);
 	return {key: keyName, settings: sceneSetting};
 },
 CustomSceneHandler.prototype.refreshCustomScenes = function(scenes)
@@ -60,8 +60,13 @@ CustomSceneHandler.prototype.refreshCustomScenes = function(scenes)
 	this.presets = scenes;
 	return scene;
 },
-CustomSceneHandler.prototype.treatSetting = function(settings)
-{
+CustomSceneHandler.prototype.treatSetting = function(settings, scene)
+{	
+	if (scene.originalName === 'MilkDrop') {
+		//we dont want to store presets, its static anyways.. very hacky but yeah
+		//whatever
+		delete settings.presets;
+	}
 	for(var i in settings)
 	{
 		var x = [].concat(settings[i]);
