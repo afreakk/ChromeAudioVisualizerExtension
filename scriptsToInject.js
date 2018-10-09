@@ -2,6 +2,7 @@ AV.scripts = {};
 //commented out webgl scenes,
 //seems to be a bug in chrome extension/content script regarding webgl
 AV.scripts.scenes = [
+		'js/scenes/butter/bundle.js',
 	"js/scenes/shaders/shaders.js",
 	"js/scenes/sceneHelpers.js",
 	"js/scenes/colorMixScene.js",
@@ -15,8 +16,8 @@ AV.scripts.scenes = [
 	"js/scenes/roundSpectrum.js",
 	"js/scenes/hexagonScene.js",
 	"js/scenes/seventiesScene.js",
-		'js/scenes/butter/bundle.js',
 		'js/scenes/butter.js',
+		'js/scenes/butterVanilla.js',
 	"js/scenes/madnessScene.js",
 	"js/scenes/paintingScene.js",
 	"js/scenes/dancingCubes.js",
