@@ -34,7 +34,8 @@ AudioScenes.ButterScene.prototype.init = function(){
 };
 AudioScenes.ButterScene.prototype.cleanUp = function()
 {
-    clearInterval(this.timeout)
+    clearInterval(this.timeout);    
+    this.timeout = undefined;
     delete this.visualizer;
     g.port.postMessage(AV.butterOff);
 	initCanvas("2d");
