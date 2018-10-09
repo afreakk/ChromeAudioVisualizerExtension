@@ -1,6 +1,6 @@
 var getRandomButterPresetName = function() {
     var butterPresetsName = Object.keys(butter.getPresets());
-    return butterPresetsName[parseInt(Math.random() * butterPresetsName.length-1)];
+    return butterPresetsName[Math.floor(Math.random() * butterPresetsName.length)];
 }
 ButterSceneSettings = function()
 {
