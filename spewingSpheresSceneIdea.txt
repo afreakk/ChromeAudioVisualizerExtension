@@ -1,0 +1,16 @@
+// spewing cubes idea
+
+point:
+	moveToMiddle
+		transform:
+			x += math.cos(music)*cubeWidth*music    /x //so it moves less the more out it is
+			y += math.sin(music)*cubeWidth*music	/y
+			z += math.cos?(music)*cubeWidth*music	/z
+			x,y,z if > 0 -= someNumber else += someNumber // always goes towards middle, if not pushed more out by music
+	
+	point-Spawns:
+		cubes/spheres at rate*music (with spheres they could set sphere resolution with settings)
+			- that falls towards ground.. or could go anywhere, maybe gravity settings is a user setting
+		
+		cubes/spheres despawn after X seconds (chosen by setting)
+			or the oldest cube/sphere despawn when total cubes/spheres count is higher than user.setting (max cubes/spheres)

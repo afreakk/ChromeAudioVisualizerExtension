@@ -61,3 +61,5 @@ AV.scriptsToInject = ["settings/setting.js"]
 .concat(AV.scripts.appFramework)
 .concat(AV.scripts.scenes)
 .concat(["js/init.js"]);
+
+AV.stylesToInject = ["css/main.css"];

@@ -60,6 +60,12 @@ initGUI = function()
 		else
 			g.port.postMessage(AV.disableFullScreen);
 	});
+	initDBSetting(settingsFolder, OV, "FadeControls", function(newValue){
+		if(newValue)
+			addMenuFader();
+		else
+			removeMenuFader();
+	});
 	initDBSetting(settingsFolder, OV, "DrawMode");
 	initDBSetting(settingsFolder, OV, "ShowFps");
 	var currentLatencyHint = OV.LatencyHint;
@@ -234,6 +240,9 @@ startup = function(savedPresets)
 	window.g.port.postMessage(AV.music);
 	aLog("init finished, beginning sceneManager.update", 1);
 	setFps(OV.ShowFps);
+	if (OV.FadeControls) {
+		addMenuFader();
+	}
     g.sceneManager.update();
 },
 init = function()
@@ -279,3 +288,18 @@ function onNewByteFrequencyData(msg){
 	);
 })();
 //<---
+
+
+function addMenuFader() {
+	var xz = document.getElementsByClassName("dg ac");
+	if (xz.length === 1) {
+		xz[0].classList.add("controls_faderr")
+	}
+}
+
+function removeMenuFader() {
+	var xz = document.getElementsByClassName("dg ac");
+	if (xz.length === 1) {
+		xz[0].classList.remove("controls_faderr")
+	}
+}

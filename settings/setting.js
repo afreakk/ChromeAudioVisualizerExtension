@@ -19,3 +19,4 @@ OV.canvasZIndex = 2147483646;
 OV.FullScreen = false;
 OV.DrawMode = false;
 OV.LatencyHint = "playback";
+OV.FadeControls = false;

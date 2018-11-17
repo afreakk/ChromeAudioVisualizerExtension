@@ -1,0 +1,16 @@
+.controls_faderr {   
+    animation: 4s ease 0s normal forwards 1 controls_faderr_fadeout;
+}
+@keyframes controls_faderr_fadein{
+    0% { opacity:1; }
+}
+@keyframes controls_faderr_fadeout{
+    0% { opacity:1; }
+    66% { opacity:1; }
+    100% { opacity:0; }
+}
+
+
+.controls_faderr:hover {
+    animation: 1s ease 0s normal forwards 1 controls_faderr_fadein;
+}

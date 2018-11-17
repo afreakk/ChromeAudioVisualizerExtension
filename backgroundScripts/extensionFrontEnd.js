@@ -45,7 +45,9 @@ ExtensionFrontEnd.prototype._MainClickedCallback = function(tabId){
 
 	if(this.injectedTabs[tabId].injected==false){
 		var scriptInjector = new ScriptInjector(tabId);
+		var cssInjector = new ScriptInjector(tabId, true);
 		scriptInjector.injectScripts(AV.scriptsToInject, this.onScriptsInjected);
+		cssInjector.injectScripts(AV.stylesToInject, function(){});
 	}
 	else if(this.injectedTabs[tabId].isPaused === true){
 		this.captureAudioFromTab(tabId);
@@ -195,19 +197,26 @@ ExtensionFrontEnd.prototype.connectToTab = function(id)
 
 
 // ScriptInjector  -- begin
-ScriptInjector = function(tabId)
+ScriptInjector = function(tabId, isCss)
 {
 	this.tabId = tabId;
 	this.scriptsLoadedCallback = null;
 	this.scriptInjectCount = this.scriptInjectCount.bind(this);
+	this.isCss = isCss;
 };
 ScriptInjector.prototype.injectScripts = function(scripts, callback)
 {
 	this.scriptsLoadedCallback = callback;
 	this.scripts = scripts;
 	this.scriptsLoaded = 0;
-	for(var script of scripts)
-		chrome.tabs.executeScript(this.tabId, {file:script}, this.scriptInjectCount);
+	if (this.isCss) {
+		for(var script of scripts)
+			chrome.tabs.insertCSS(this.tabId, {file:script}, this.scriptInjectCount);
+	}
+	else {
+		for(var script of scripts)
+			chrome.tabs.executeScript(this.tabId, {file:script}, this.scriptInjectCount);
+	}
 },
 ScriptInjector.prototype.scriptInjectCount=function()
 {
