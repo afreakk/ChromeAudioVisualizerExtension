@@ -1,12 +1,12 @@
 
 TerrainSceneSetting = function()
 {
-	this.moveSpeed = 0.001554;
+	this.moveSpeed = 0.002554;
 	this.smoothing = 0.0029;
-	this.width = 325;
-	this.height = 200;
-	this.tileSize = 0.5;
-	this.zOffset = -30;
+	this.width = 160;
+	this.height = 100;
+	this.tileSize = 1.5;
+	this.zOffset = -30.05;
 	this.redOffset = 1.0;
 	this.greenOffset = 1.0;
 	this.blueOffset = 1.0;

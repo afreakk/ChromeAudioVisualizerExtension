@@ -6,6 +6,7 @@ GenericSceneSettings = function()
 	this.spectrumJumps = 1.0;
 	this.colorWidth = 0.1;
 	this.musicColorInfluenceReducer =20000;
+	this.opacity = 1.0;
 };
 AudioScenes.GenericScene = function()
 {
@@ -13,11 +14,11 @@ AudioScenes.GenericScene = function()
 };
 AudioScenes.GenericScene.prototype.getClr = function(rgbS,scaled_average_c)
 {
-    return rgbToHex(
-            (Math.sin(rgbS)/2.0+0.5)*scaled_average_c,
-            (Math.cos(rgbS)/2.0+0.5)*scaled_average_c,
-            (Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c
-            );
+    return "rgba("+
+            (Math.sin(rgbS)/2.0+0.5)*scaled_average_c + ", " +
+            (Math.cos(rgbS)/2.0+0.5)*scaled_average_c + ", " +
+			(Math.sin(rgbS+this.settings.colorOffset)/2.0+0.5)*scaled_average_c + ", " +
+			this.settings.opacity + ")";
 }
 AudioScenes.GenericScene.prototype.parseSettings = function(preset)
 {
