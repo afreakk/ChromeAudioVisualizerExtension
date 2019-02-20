@@ -189,7 +189,7 @@ ExtensionFrontEnd.prototype.initAudio = function(stream, id)
 ExtensionFrontEnd.prototype.connectToTab = function(id)
 {
 	console.log("connecting 2 tab: " + id);
-	this.injectedTabs[id].port = chrome.tabs.connect(id);
+	this.injectedTabs[id].port = chrome.tabs.connect(id, {name: id.toString()});
 	this.injectedTabs[id].port.name = id;
 	this.injectedTabs[id].port.onMessage.addListener(this.onPortMessage);
 },
