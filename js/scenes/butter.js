@@ -1,11 +1,30 @@
+var scenesToNotUseBecauseTheyLagg = [
+	"martin + flexi - diamond cutter [prismaticvortex.com] - camille - i wish i wish i wish i was constrained",
+	"martin - extreme heat",
+	"martin - The Bridge of Khazad-Dum",
+	"martin - witchcraft reloaded",
+	"sawtooth grin roam"
+];
+
+var prezetss = null;
+function getAllPrezets() {
+	if (!prezetss) {
+		prezetss = butter.getPresets();
+		for (var i = 0; i < scenesToNotUseBecauseTheyLagg.length; i++) {
+			delete prezetss[scenesToNotUseBecauseTheyLagg[i]];
+		}
+	}
+	return prezetss;
+}
+
 var getRandomButterPresetName = function() {
-    var butterPresetsName = Object.keys(butter.getPresets());
+    var butterPresetsName = Object.keys(getAllPrezets());
     return butterPresetsName[Math.floor(Math.random() * butterPresetsName.length)];
 }
 ButterSceneSettings = function()
 {
     this.presets = {
-        availableValues: Object.keys(butter.getPresets()),
+        availableValues: Object.keys(getAllPrezets()),
         attribName: 'preset',
     };
     this.preset = getRandomButterPresetName();
@@ -57,7 +76,7 @@ AudioScenes.ButterScene.prototype.resizeCanvas = function()
 AudioScenes.ButterScene.prototype.update = function()
 {
     if (this.settings.preset !== this.lastPreset) {
-        this.visualizer.loadPreset(butter.getPresets()[this.settings.preset], this.settings.blendLength);
+        this.visualizer.loadPreset(getAllPrezets()[this.settings.preset], this.settings.blendLength);
         this.lastPreset = this.settings.preset;
         clearInterval(this.timeout);
         this.timeout = undefined;

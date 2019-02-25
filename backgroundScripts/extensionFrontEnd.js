@@ -9,7 +9,7 @@ var ExtensionFrontEnd = function()
 };
 ExtensionFrontEnd.prototype.togglePauseContentScripts = function(tabId){
 	chrome.tabs.executeScript(tabId, { code: "togglePause();" });
-}
+},
 ExtensionFrontEnd.prototype.pauseTab = function(tabId)
 {
 	if(tabId in this.injectedTabs && this.injectedTabs[tabId].injected==true){
