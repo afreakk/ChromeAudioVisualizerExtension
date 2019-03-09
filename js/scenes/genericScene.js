@@ -1,11 +1,11 @@
 GenericSceneSettings = function()
 {
     this.colorStrength = 0.75;
-    this.colorOffset = Math.PI;
+    this.colorOffset = Math.PI*4;
 	this.barHeight = 1.0;
 	this.spectrumJumps = 1.0;
 	this.colorWidth = 0.1;
-	this.musicColorInfluenceReducer =20000;
+	this.musicColorInfluenceReducer =25000;
 	this.opacity = 1.0;
 };
 AudioScenes.GenericScene = function()
