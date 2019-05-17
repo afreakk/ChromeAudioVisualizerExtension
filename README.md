@@ -2,7 +2,7 @@
 ♬♫♪◖(●。●)◗♪♫♬ put on some music and turn your browsing session into a party! ┐(・。・┐) ♪  
 by pressing the av icon or default hotkey: 'Ctrl+Q'  
 install from the [Chrome webstore](https://chrome.google.com/webstore/detail/audiovisualizer/bojhikphaecldnbdekplmadjkflgbkfh)  
-or download the ZIP & [install the unpacked extension](http://superuser.com/a/247654)  
+or git clone & [install the unpacked extension](http://superuser.com/a/247654)  
 if you want to contribute, contact me: laderud(a-t)hotmail.com, for an explanation of the code :)
 
 To create your own scene from scratch, copy js/scenes/genericScene.js, to js/scenes/yourSceneName.js, search for and replace "GenericScene" with scene name of your chosing. Also set this.name = 'YourSceneName' where it says SpectrumAnalyziz. (this is the displayed name).    
