@@ -1,54 +1,48 @@
 {
-	"manifest_version": 2,
-	"name": "AudioVisualizer",
-	"description": "Audio Visualizer, works on any website. Press icon or 'Ctrl+Q' to start/stop.    ♪ ┐(・。・┐) ",
-	"version": "6.0.10",
-	"permissions": [
-		"tabCapture",
-		"tabs",
-		"activeTab",
-		"storage",
-		"<all_urls>"
-	],
-	"icons": {
-		"16": "gfx/icon16.png",
-		"48": "gfx/icon48.png",
-		"128": "gfx/icon128.png"
-	},
-	"options_page": "options/index.html",
-	"browser_action": {
-		"default_icon": {
-			"16": "gfx/icon16.png",
-			"48": "gfx/icon48.png",
-			"128": "gfx/icon128.png"
-		},
-		"default_title": "AudioVisualizer"
-	},
-	"commands": {
-		"open-options": {
-			"suggested_key": {
-				"default": "Alt+Q"
-			},
+    "manifest_version": 2,
+    "name": "AudioVisualizer",
+    "description": "Audio Visualizer, works on any website. Press icon or 'Ctrl+Q' to start/stop.    ♪ ┐(・。・┐) ",
+    "version": "6.0.11",
+    "permissions": ["tabCapture", "tabs", "activeTab", "storage", "<all_urls>"],
+    "icons": {
+        "16": "gfx/icon16.png",
+        "48": "gfx/icon48.png",
+        "128": "gfx/icon128.png"
+    },
+    "options_page": "options/index.html",
+    "browser_action": {
+        "default_icon": {
+            "16": "gfx/icon16.png",
+            "48": "gfx/icon48.png",
+            "128": "gfx/icon128.png"
+        },
+        "default_title": "AudioVisualizer"
+    },
+    "commands": {
+        "open-options": {
+            "suggested_key": {
+                "default": "Alt+Q"
+            },
             "description": "Opens Options"
-		},
-		"_execute_browser_action": {
-			"suggested_key": {
-				"default": "Ctrl+Q"
-			},
+        },
+        "_execute_browser_action": {
+            "suggested_key": {
+                "default": "Ctrl+Q"
+            },
             "description": "Begins the show"
-		}
-	},
-	"background": {
-		"scripts": [
-			"js/storageLayer.js",
-			"settings/setting.js",
-			"backgroundScripts/openOptions.js",
-			"backgroundScripts/butterAudioProcessor.js",
-			"backgroundScripts/onInstall.js",
-			"backgroundScripts/extensionFrontEnd.js",
-			"backgroundScripts/main.js",
-			"scriptsToInject.js"
-		],
-		"persistent": false
-	}
+        }
+    },
+    "background": {
+        "scripts": [
+            "js/storageLayer.js",
+            "settings/setting.js",
+            "backgroundScripts/openOptions.js",
+            "backgroundScripts/butterAudioProcessor.js",
+            "backgroundScripts/onInstall.js",
+            "backgroundScripts/extensionFrontEnd.js",
+            "backgroundScripts/main.js",
+            "scriptsToInject.js"
+        ],
+        "persistent": false
+    }
 }
