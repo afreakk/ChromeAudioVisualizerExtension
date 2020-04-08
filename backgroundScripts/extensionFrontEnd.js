@@ -12,9 +12,10 @@ var ExtensionFrontEnd = function () {
     (ExtensionFrontEnd.prototype.pauseTab = function (tabId) {
         if (tabId in this.injectedTabs && this.injectedTabs[tabId].injected == true) {
             this.togglePauseContentScripts(tabId);
-            this.injectedTabs[tabId].stream.getTracks().forEach(function (track) {
-                track.stop();
-            });
+            this.injectedTabs[tabId].stream &&
+                this.injectedTabs[tabId].stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
             this.closeContext(tabId);
             this.injectedTabs[tabId].isPaused = true;
         } else {
@@ -87,7 +88,7 @@ var ExtensionFrontEnd = function () {
         }
     }),
     (ExtensionFrontEnd.prototype.updateHandler = function (tabId, changeinfo, tab) {
-        if (tab.url.startsWith('chrome://')) return;
+        if (!tab.url || tab.url.startsWith('chrome://')) return;
         chrome.tabs.executeScript(
             tabId,
             {
@@ -157,6 +158,8 @@ var ExtensionFrontEnd = function () {
     if (!stream) {
         console.log(`tabid ${id} has no stream`);
         return;
+    } else {
+        console.log(`tabid ${id} has stream`);
     }
     if (this.injectedTabs[id].context) {
         if (this.injectedTabs[id].audioProcessor) {

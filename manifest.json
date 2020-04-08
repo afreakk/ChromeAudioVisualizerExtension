@@ -2,8 +2,8 @@
     "manifest_version": 2,
     "name": "AudioVisualizer",
     "description": "Audio Visualizer, works on any website. Press icon or 'Ctrl+Q' to start/stop.    ♪ ┐(・。・┐) ",
-    "version": "6.0.11",
-    "permissions": ["tabCapture", "tabs", "activeTab", "storage", "<all_urls>"],
+    "version": "6.0.12",
+    "permissions": ["activeTab", "storage", "tabCapture"],
     "icons": {
         "16": "gfx/icon16.png",
         "48": "gfx/icon48.png",
