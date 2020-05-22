@@ -12,4 +12,4 @@ Then do you own thing inside the update method, (all scenes within the AudioScen
 If you want to use WebGL, look at worldScene.js for inspiration, (the simple SpinningCube scene).   
 When done, I can merge your scene into the extension :)
 
-# Credits to [jberg](https://github.com/jberg) for [butterchurn](https://github.com/jberg/butterchurn) (milkdrop scenes)
+### Credits to [jberg](https://github.com/jberg) for [butterchurn](https://github.com/jberg/butterchurn) (milkdrop scenes)
