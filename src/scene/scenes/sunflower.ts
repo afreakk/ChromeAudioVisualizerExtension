@@ -1,6 +1,6 @@
-import { Scene } from '@/entrypoints/animation/scene/scene';
-import { AudioDataDto } from '@/utils/eventMessage';
-import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/utils/openGl/openGl';
+import { Scene } from '@/src/scene/scene';
+import { AudioDataDto } from '@/src/utils/eventMessage';
+import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 
 export class SunFlowerScene implements Scene {
     private canvas;

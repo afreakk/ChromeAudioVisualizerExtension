@@ -1,5 +1,5 @@
-import { Scene } from '@/entrypoints/animation/scene/scene';
-import { AudioDataDto } from "@/utils/eventMessage";
+import { Scene } from '@/src/scene/scene';
+import { AudioDataDto } from "@/src/utils/eventMessage";
 
 export class SceneManager {
     private scene: Scene | null = null;

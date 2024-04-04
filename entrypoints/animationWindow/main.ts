@@ -1,9 +1,37 @@
-import { messageAction, GenericEvent, messageTarget, AudioDataEvent } from '@/utils/eventMessage';
-import { Scene } from '@/entrypoints/animation/scene/scene';
-import { SceneManager } from '@/entrypoints/animation/scene/sceneManager';
-import { SunFlowerScene } from '@/entrypoints/animation/scene/scenes/sunflower';
-import { SynthBars } from '@/entrypoints/animation/scene/scenes/synthBars';
-import { DancingHorizon } from '@/entrypoints/animation/scene/scenes/dancingHorizon';
+import { messageAction, GenericEvent, messageTarget, AudioDataEvent } from '@/src/utils/eventMessage';
+import { Scene } from '@/src/scene/scene';
+import { SceneManager } from '@/src/scene/sceneManager';
+import { SunFlowerScene } from '@/src/scene/scenes/sunflower';
+import { SynthBars } from '@/src/scene/scenes/synthBars';
+import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon';
+import * as dat from 'dat.gui';
+
+var settings = {
+    scene: 'Forest',
+    lighting: 'Daytime',
+    animate: true
+};
+
+// Available options for the dropdown menus
+var sceneOptions = ['Forest', 'Desert', 'City'];
+var lightingOptions = ['Daytime', 'Nighttime'];
+
+// Create a new dat.GUI instance
+var gui = new dat.GUI();
+
+// Create a folder named 'Scenes'
+var scenesFolder = gui.addFolder('Scenes');
+
+// Add dropdowns for scene and lighting options
+scenesFolder.add(settings, 'scene', sceneOptions);
+scenesFolder.add(settings, 'lighting', lightingOptions);
+
+// Add a checkbox to toggle animation
+scenesFolder.add(settings, 'animate');
+
+// Open the 'Scenes' folder by default
+scenesFolder.open();
+// gui.destroy();
 
 const canvas = document.createElement('canvas');
 canvas.width = window.innerWidth;

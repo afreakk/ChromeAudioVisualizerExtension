@@ -1,6 +1,6 @@
-import { Scene } from '@/entrypoints/animation/scene/scene';
-import { AudioDataDto } from '@/utils/eventMessage';
-import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/utils/openGl/openGl';
+import { Scene } from '@/src/scene/scene';
+import { AudioDataDto } from '@/src/utils/eventMessage';
+import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 
 export class DancingHorizon implements Scene {
     private canvas;
@@ -150,7 +150,7 @@ export class DancingHorizon implements Scene {
 
                    
                     // Audio flicker
-                    color += audioValue * 0.06 * sin(uv.y * 20.0 + timeGain);
+                    color += audioValue * 0.06 * sin(uv.y * 20.0 + timeGain * 5.9) * horizonColor;
 
 
                   gl_FragColor = vec4(color, 1.0);

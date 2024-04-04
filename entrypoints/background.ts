@@ -1,6 +1,6 @@
 export default defineBackground(async () => {
 
-  const { StartStreamEvent, messageTarget, messageAction, GenericEvent } = await import('@/utils/eventMessage');
+  const { StartStreamEvent, messageTarget, messageAction, GenericEvent } = await import('@/src/utils/eventMessage');
   let streaming = false;
   let createdWindowId: number;
   let tabId: number;
@@ -29,7 +29,7 @@ export default defineBackground(async () => {
 
     // Create the animation window
     let win = await chrome.windows.create({
-      url: chrome.runtime.getURL('animation.html'),
+      url: chrome.runtime.getURL('animationWindow.html'),
       type: 'popup',
       width: 1600,
       height: 900
@@ -49,7 +49,7 @@ export default defineBackground(async () => {
       );
       if (!offscreenDocument) {
         await chrome.offscreen.createDocument({
-          url: 'offscreen.html',
+          url: 'offscreenWindow.html',
           reasons: [chrome.offscreen.Reason.USER_MEDIA],
           justification: "play sound effects",
         });

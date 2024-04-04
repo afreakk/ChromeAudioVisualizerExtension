@@ -1,4 +1,4 @@
-import { AudioDataDto } from "@/utils/eventMessage";
+import { AudioDataDto } from "@/src/utils/eventMessage";
 export interface Scene {
     build(): void;
     updateParams(params: any): void;
