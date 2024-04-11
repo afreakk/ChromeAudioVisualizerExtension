@@ -1,4 +1,4 @@
-import { StartStreamEvent, GenericEvent, AudioDataEvent, AudioDataDto, messageAction, messageTarget, AudioDataEvent, AudioDataEvent, AudioDataDto } from '@/src/utils/eventMessage';
+import { StartStreamEvent, GenericEvent, AudioDataEvent, AudioDataDto, messageAction, messageTarget } from '@/src/utils/eventMessage';
 
 chrome.runtime.onMessage.addListener((message: StartStreamEvent, sender, sendResponse) => {
   if (message.target === messageTarget.offscreen && message.action === messageAction.startStream) {

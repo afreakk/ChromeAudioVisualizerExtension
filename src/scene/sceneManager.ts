@@ -1,5 +1,6 @@
 import { Scene } from '@/src/scene/scene';
 import { AudioDataDto } from "@/src/utils/eventMessage";
+import { SceneSetting } from '@/src/scene/sceneSetting';
 
 export class SceneManager {
     private scene: Scene | null = null;
@@ -18,6 +19,17 @@ export class SceneManager {
             return;
         }
         this.scene.updateAudioData(data);
+    }
+    updateSettings(settings: SceneSetting) {
+        // Return if there is no scene 
+        if (!this.scene) {
+            return;
+        }
+        // Return if the scene is still being built
+        if (this.buildingScene) {
+            return;
+        }
+        this.scene.updateSettings(settings);
     }
 
     setScene(scene: Scene) {

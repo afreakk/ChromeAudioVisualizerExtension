@@ -1,6 +1,8 @@
 import { Scene } from '@/src/scene/scene';
+import { SceneSetting } from '@/src/scene/sceneSetting';
 import { AudioDataDto } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
+import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
 
 export class DancingHorizon implements Scene {
     private canvas;
@@ -188,7 +190,7 @@ export class DancingHorizon implements Scene {
         this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
 
     }
-    updateParams(params: any): void {
+    updateSettings(settings: DancingHorizonSetting): void {
         throw new Error('Method not implemented.');
     }
     updateAudioData(data: AudioDataDto): void {

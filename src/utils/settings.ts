@@ -12,3 +12,6 @@ export function loadSettings<T>(settingsName: string): T {
 export function saveSettings<T>(settingsName: string, settings: T): void {
     localStorage.setItem(keyGenerator(settingsName), JSON.stringify(settings));
 }
+export function checkClassType<T>(object: any, constructor: { new(...args: any[]): T }): object is T {
+    return object instanceof constructor;
+}

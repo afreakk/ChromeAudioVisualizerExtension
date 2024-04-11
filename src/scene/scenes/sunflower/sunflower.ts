@@ -1,8 +1,9 @@
 import { Scene } from '@/src/scene/scene';
 import { AudioDataDto } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
+import { SceneSetting } from '../../sceneSetting';
 
-export class SynthBars implements Scene {
+export class SunFlower implements Scene {
     private canvas;
     private gl;
     private audioTexture: WebGLTexture | null = null;
@@ -37,46 +38,51 @@ export class SynthBars implements Scene {
                 uniform float time;
                 uniform sampler2D audioTexture;
 
-                const float segs = 40.0;
+                // Parameters
+                const float radius = 0.2;
+                const float barHeight = 0.9;
+                const float PI = 3.141592653589793;
                 float random(vec2 co) {
                   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
                 }
+                const vec3 innerColor = vec3(1.0, 1.0, 0.0);
                 void main() {
                   vec2 fragCoord = gl_FragCoord.xy;
                   vec2 uv = fragCoord.xy / resolution.xy;
 
-                  float bands = segs * resolution.x / resolution.y * 0.5;
-                  vec2 p;
-                  p.x = floor(uv.x * bands) / bands;
-                  p.y = floor(uv.y * segs) / segs;
+                  // Center the coordinates
+                  vec2 centeredUV = uv * 2.0 - 1.0;
+                  centeredUV.x *= resolution.x / resolution.y;
 
-                  float fft = texture2D(audioTexture, vec2(p.x, 0.0)).x;
-
-                  // color
-                  vec3 color = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 1.0), sqrt(uv.y));
-
-                  // mask for bar graph
-                  float mask = (p.y < fft) ? 1.0 : 0.1;
-
-                  // led shape
-                  vec2 d = fract((uv - p) * vec2(bands, segs)) - 0.5;
-                  float led = smoothstep(0.5, 0.35, abs(d.x)) * smoothstep(0.5, 0.35, abs(d.y));
-                  vec3 ledColor = led*color*mask;
-
-                  // Horizontal line
-                  float lineSpeed = 0.2;
-                  float lineThickness = 0.005;
-                  float linePosition = mod(time * lineSpeed, 1.0);
-                  float distanceFromLine = abs(uv.y - linePosition);
-                  if(distanceFromLine < lineThickness) {
-                    ledColor += 0.1;
+                  // Flip the Y axis to create symmetry
+                  if (centeredUV.x >= 0.0)
+                  {
+                    centeredUV.y = -centeredUV.y;
                   }
 
-                  // White noice for
+                  // Noice
                   float noise = random(uv + time);
-                  ledColor += noise * 0.06;
 
-                  gl_FragColor = vec4(ledColor, 1.0);
+                  // Convert UV to polar coordinates
+                  float angle = atan(centeredUV.x, centeredUV.y);
+                  if(angle < 0.0) angle += 1.0 * PI;
+
+                  float dist = length(centeredUV);
+                  float index = angle / (1.0 * PI);
+                  float audioValue = texture2D(audioTexture, vec2(index, 0.0)).x;
+                  if (audioValue < 0.01)
+                  {
+                    audioValue = 0.01 + sin(noise) * 0.01;
+                  }
+
+
+                  float dynamicMidRadius = radius + audioValue * barHeight * 0.5;
+                  float dynamicOuterRadius = radius + audioValue * barHeight;
+                  vec3 outerColor = mix(vec3(1.0, 0.4, 0.0), vec3(1.0, 0.0, 0.6), smoothstep(radius, dynamicOuterRadius, dist));;
+                  vec3 color = mix(innerColor, outerColor, smoothstep(radius, dynamicMidRadius, dist));
+                  color *= 1.0 - smoothstep(dynamicMidRadius, dynamicOuterRadius, dist);
+
+                  gl_FragColor = vec4(color, 1.0); // Color based on intensit
                 }
             `;
 
@@ -110,7 +116,7 @@ export class SynthBars implements Scene {
         this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
 
     }
-    updateParams(params: any): void {
+    updateSettings(settings: SceneSetting): void {
         throw new Error('Method not implemented.');
     }
     updateAudioData(data: AudioDataDto): void {
