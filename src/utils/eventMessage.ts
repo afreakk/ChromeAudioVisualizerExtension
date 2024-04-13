@@ -9,8 +9,8 @@ export enum messageAction {
     startStream = "start-stream",
     stopStream = "stop-stream",
     updateAudioData = "start-animation",
-    changeScene = "change-scene",
-    updateSceneSettings = "update-scene-settings",
+    setScene = "set-scene",
+    setSceneSettings = "set-scene-settings",
 }
 export class AudioDataDto {
     timeByteArray: number[];
@@ -54,22 +54,7 @@ export class AudioDataEvent extends GenericEvent {
         };
     }
 }
-export class ChangeSceneEvent extends GenericEvent {
-    sceneKey: string;
-
-    constructor(target: messageTarget, action: messageAction, sceneKey: string) {
-        super(target, action);
-        this.sceneKey = sceneKey;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            sceneKey: this.sceneKey,
-        };
-    }
-} export class StartStreamEvent extends GenericEvent {
+export class StartStreamEvent extends GenericEvent {
     streamId: string;
 
     constructor(target: messageTarget, action: messageAction, streamId: string) {

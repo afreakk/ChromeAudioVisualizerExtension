@@ -6,9 +6,6 @@ export class SceneManager {
     private scene: Scene | null = null;
     private buildingScene = false;
 
-    constructor(scene: Scene) {
-        this.setScene(scene);
-    }
     updateAudioData(data: AudioDataDto) {
         // Return if there is no scene 
         if (!this.scene) {
@@ -32,7 +29,7 @@ export class SceneManager {
         this.scene.updateSettings(settings);
     }
 
-    setScene(scene: Scene) {
+    setScene(scene: Scene, settings: SceneSetting) {
         let newScene = scene;
         this.buildingScene = true;
         try {
@@ -49,6 +46,7 @@ export class SceneManager {
         }
         finally {
             this.buildingScene = false;
+            this.updateSettings(settings);
         }
     }
 

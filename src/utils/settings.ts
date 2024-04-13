@@ -2,10 +2,10 @@ function keyGenerator(name: string): string {
     return `audio-visualizer-settings-${name}`;
 }
 
-export function loadSettings<T>(settingsName: string): T {
+export function loadSettings<T>(settingsName: string): T | null {
     const settingsJson = localStorage.getItem(keyGenerator(settingsName));
     if (settingsJson === null) {
-        throw new Error(`Settings not found: ${settingsName}`);
+        return null;
     }
     return JSON.parse(settingsJson) as T;
 }

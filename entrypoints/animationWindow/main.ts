@@ -1,12 +1,16 @@
-import { messageAction, GenericEvent, messageTarget, AudioDataEvent, ChangeSceneEvent } from '@/src/utils/eventMessage';
+import { messageAction, GenericEvent, messageTarget, AudioDataEvent } from '@/src/utils/eventMessage';
 import { Scene } from '@/src/scene/scene';
 import { SceneManager } from '@/src/scene/sceneManager';
 import { SunFlower } from '@/src/scene/scenes/sunflower/sunflower';
 import { SynthBars } from '@/src/scene/scenes/synthBars/synthBars';
 import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon/dancingHorizon';
-import { SettingsUi } from '@/src/userInterface/settings';
+import { SettingsUi } from '@/src/userInterface/settings/settings';
+import { SceneSetting } from '@/src/scene/sceneSetting';
+import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
+import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
 
 
+// Create canvas for animation
 const canvas = document.createElement('canvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -16,35 +20,38 @@ canvas.style.top = '0';
 canvas.style.zIndex = '-1';
 document.body.insertBefore(canvas, document.body.firstChild);
 
-
+// Send message to background to notify that animation window is created
 const animationWindowCreated = new GenericEvent(messageTarget.background, messageAction.animationWindowCreated);
 chrome.runtime.sendMessage(animationWindowCreated.toMessage());
+
+// Initialize scenes
 const scenesMap = new Map<string, Scene>();
 scenesMap.set("SunFlower", new SunFlower(canvas));
 scenesMap.set("SynthBars", new SynthBars(canvas));
 scenesMap.set("DancingHorizon", new DancingHorizon(canvas));
-const firstSceneName = scenesMap.keys().next().value;
 
-const settingsUi = new SettingsUi(scenesMap, false);
-
-let firstScene = scenesMap.get(firstSceneName) as Scene;
-const sceneManager = new SceneManager(firstScene);
+// Initialize scene manager
+const sceneManager = new SceneManager();
 
 // Change scene from animation window UI
-window.addEventListener(messageAction.changeScene, (event) => {
-    const sceneKey = event.detail.sceneKey;
-    sceneManager.setScene(scenesMap.get(sceneKey) as Scene);
+window.addEventListener(messageAction.setScene, (event) => {
+    const sceneEvent = event.detail.event as SetSceneEvent;
+    sceneManager.setScene(scenesMap.get(sceneEvent.sceneName) as Scene, sceneEvent.sceneSettings as SceneSetting);
 });
 // Change scene from external UI
-chrome.runtime.onMessage.addListener((message: ChangeSceneEvent) => {
-    if (message.target === messageTarget.animation && message.action === messageAction.changeScene) {
-        sceneManager.setScene(scenesMap.get(message.sceneKey) as Scene);
+chrome.runtime.onMessage.addListener((message: SetSceneEvent) => {
+    if (message.target === messageTarget.animation && message.action === messageAction.setScene) {
+        sceneManager.setScene(scenesMap.get(message.sceneName) as Scene, message.sceneSettings);
     }
 });
 // Update scene settings
-chrome.runtime.onMessage.addListener((message) => {
-    if (message.target === messageTarget.animation && message.action === messageAction.updateSceneSettings) {
-        sceneManager.updateSettings(message.settings);
+window.addEventListener(messageAction.setSceneSettings, (event) => {
+    const sceneSettingsEvent = event.detail.event as SetSceneSettingsEvent;
+    sceneManager.updateSettings(sceneSettingsEvent.sceneSettings);
+});
+chrome.runtime.onMessage.addListener((message: SetSceneSettingsEvent) => {
+    if (message.target === messageTarget.animation && message.action === messageAction.setSceneSettings) {
+        sceneManager.updateSettings(message.sceneSettings);
     }
 });
 // Update audio data
@@ -53,6 +60,9 @@ chrome.runtime.onMessage.addListener((message: AudioDataEvent) => {
         sceneManager.updateAudioData(message.audioData);
     }
 });
+
+// Initialize settings UI
+const settingsUi = new SettingsUi(scenesMap, false);
 function render() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;

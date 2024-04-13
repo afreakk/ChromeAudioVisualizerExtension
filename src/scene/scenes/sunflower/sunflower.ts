@@ -1,7 +1,8 @@
 import { Scene } from '@/src/scene/scene';
 import { AudioDataDto } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
-import { SceneSetting } from '../../sceneSetting';
+import { SunFlowerSetting } from './setting';
+import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
 
 export class SunFlower implements Scene {
     private canvas;
@@ -10,6 +11,14 @@ export class SunFlower implements Scene {
     private audioTextureUniformLocation: WebGLUniformLocation | null = null;
     private resolutionUniformLocation: WebGLUniformLocation | null = null;
     private timeUniformLocation: WebGLUniformLocation | null = null;
+    private radiusUniformLocation: WebGLUniformLocation | null = null;
+    private sizeUniformLocation: WebGLUniformLocation | null = null;
+    private innerColorUniformLocation: WebGLUniformLocation | null = null;
+    private midColorUniformLocation: WebGLUniformLocation | null = null;
+    private outerColorUniformLocation: WebGLUniformLocation | null = null;
+    private innerRadiusGainUniformLocation: WebGLUniformLocation | null = null;
+    private midRadiusGainUniformLocation: WebGLUniformLocation | null = null;
+    private outerRadiusGainUniformLocation: WebGLUniformLocation | null = null;
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
     private audioData: AudioDataDto;
@@ -35,20 +44,27 @@ export class SunFlower implements Scene {
             `
                 precision mediump float;
                 uniform vec2 resolution;
+                uniform vec3 innerColor;
+                uniform vec3 midColor;
+                uniform vec3 outerColor;
+
+                uniform float innerRadiusGain;
+                uniform float midRadiusGain;
+                uniform float outerRadiusGain;
+                uniform float radius;
+                uniform float size;
                 uniform float time;
                 uniform sampler2D audioTexture;
 
                 // Parameters
-                const float radius = 0.2;
-                const float barHeight = 0.9;
                 const float PI = 3.141592653589793;
                 float random(vec2 co) {
                   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
                 }
-                const vec3 innerColor = vec3(1.0, 1.0, 0.0);
                 void main() {
                   vec2 fragCoord = gl_FragCoord.xy;
                   vec2 uv = fragCoord.xy / resolution.xy;
+                  uv.y -= 0.1;
 
                   // Center the coordinates
                   vec2 centeredUV = uv * 2.0 - 1.0;
@@ -76,11 +92,14 @@ export class SunFlower implements Scene {
                   }
 
 
-                  float dynamicMidRadius = radius + audioValue * barHeight * 0.5;
-                  float dynamicOuterRadius = radius + audioValue * barHeight;
-                  vec3 outerColor = mix(vec3(1.0, 0.4, 0.0), vec3(1.0, 0.0, 0.6), smoothstep(radius, dynamicOuterRadius, dist));;
-                  vec3 color = mix(innerColor, outerColor, smoothstep(radius, dynamicMidRadius, dist));
-                  color *= 1.0 - smoothstep(dynamicMidRadius, dynamicOuterRadius, dist);
+                  float dynamicInnerRadius = radius + audioValue * size * innerRadiusGain;
+                  float dynamicMidRadius = radius + audioValue * size * midRadiusGain;
+                  float dynamicOuterRadius = radius + audioValue * size * outerRadiusGain;
+                  float dynamicEndRadius = radius + audioValue * size;
+
+                  vec3 color = mix(midColor, outerColor, smoothstep(dynamicMidRadius, dynamicOuterRadius, dist));
+                  color = mix(innerColor, color, smoothstep(dynamicInnerRadius, dynamicMidRadius, dist));
+                  color *= 1.0 - smoothstep(dynamicMidRadius, dynamicEndRadius, dist);
 
                   gl_FragColor = vec4(color, 1.0); // Color based on intensit
                 }
@@ -114,10 +133,32 @@ export class SunFlower implements Scene {
         this.gl.enableVertexAttribArray(position);
         this.resolutionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'resolution');
         this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
+        this.radiusUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "radius");
+        this.sizeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "size");
+        this.innerColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "innerColor");
+        this.midColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "midColor");
+        this.outerColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "outerColor");
+        this.innerRadiusGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "innerRadiusGain");
+        this.midRadiusGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "midRadiusGain");
+        this.outerRadiusGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "outerRadiusGain");
 
     }
-    updateSettings(settings: SceneSetting): void {
-        throw new Error('Method not implemented.');
+    updateSettings(settings: SunFlowerSetting): void {
+        if (!this.gl) {
+            return;
+        }
+        this.gl.uniform1f(this.innerRadiusGainUniformLocation, settings.innerRadiusGain);
+        this.gl.uniform1f(this.midRadiusGainUniformLocation, settings.midRadiusGain);
+        this.gl.uniform1f(this.outerRadiusGainUniformLocation, settings.outerRadiusGain);
+        this.gl.uniform1f(this.radiusUniformLocation, settings.radius);
+        this.gl.uniform1f(this.sizeUniformLocation, settings.size);
+        const innerColor = hexToRGBNormalized(settings.innerColor);
+        const midColor = hexToRGBNormalized(settings.midColor);
+        const outerColor = hexToRGBNormalized(settings.outerColor);
+
+        this.gl.uniform3fv(this.innerColorUniformLocation, innerColor);
+        this.gl.uniform3fv(this.midColorUniformLocation, midColor);
+        this.gl.uniform3fv(this.outerColorUniformLocation, outerColor);
     }
     updateAudioData(data: AudioDataDto): void {
         this.audioData = data;
