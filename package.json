@@ -20,6 +20,7 @@
     "wxt": "^0.17.0"
   },
   "dependencies": {
+    "butterchurn": "^2.6.7",
     "dat.gui": "^0.7.9",
     "gl-matrix": "^3.4.3"
   }
