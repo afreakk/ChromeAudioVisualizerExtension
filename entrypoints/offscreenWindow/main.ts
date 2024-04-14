@@ -39,16 +39,13 @@ async function startStream(streamId: string) {
   analyserR.smoothingTimeConstant = 0.0;
   analyserR.fftSize = 2048;
 
-
-
-
-
   source.connect(analyser);
 
-  const splitter = audioContext.createChannelSplitter(2);  // Assuming stereo input
+  const splitter = audioContext.createChannelSplitter(2);
   source.connect(splitter);
   splitter.connect(analyserL, 0, 0);  // Connect left channel
   splitter.connect(analyserR, 1, 0);  // Connect right channel
+
   analyser.connect(audioContext.destination);
 
   const dataArray = new Uint8Array(bufferLength);
