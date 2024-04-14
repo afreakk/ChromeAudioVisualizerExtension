@@ -34,9 +34,9 @@ chrome.runtime.sendMessage(animationWindowCreated.toMessage());
 
 // Initialize scenes
 const scenesMap = new Map<string, Scene>();
-// scenesMap.set('SunFlower', new SunFlower(canvas));
-// scenesMap.set('SynthBars', new SynthBars(canvas));
-// scenesMap.set('DancingHorizon', new DancingHorizon(canvas));
+scenesMap.set('SunFlower', new SunFlower(canvas));
+scenesMap.set('SynthBars', new SynthBars(canvas));
+scenesMap.set('DancingHorizon', new DancingHorizon(canvas));
 scenesMap.set('Butterchurn', new Butterchurn(canvas));
 
 // Initialize scene manager

@@ -10,7 +10,11 @@ export class Butterchurn implements Scene {
     constructor(canvas: HTMLCanvasElement) {
         this.audioData = new AudioDataDto([], [], []);
         this.canvas = canvas;
-        this.visualizer = butterchurn.createVisualizer(null, canvas, {
+        this.lastTime = +Date.now();
+
+    }
+    build(): void {
+        this.visualizer = butterchurn.createVisualizer(null, this.canvas, {
             width: 800,
             height: 600,
             mesh_width: 64,
@@ -18,12 +22,11 @@ export class Butterchurn implements Scene {
             pixelRatio: window.devicePixelRatio || 1,
             textureRatio: 1,
         });
-        this.lastTime = +Date.now();
     }
-    build(): void {}
-    updateSettings(settings: SceneSetting): void {}
+    updateSettings(settings: SceneSetting): void { }
     updateAudioData(data: AudioDataDto): void {
         this.audioData = data;
+        console.log('Butterchurn audio data', data);
     }
     render(): void {
         const currentTime = +Date.now();
@@ -38,5 +41,8 @@ export class Butterchurn implements Scene {
             },
         });
     }
-    clean(): void {}
+    clean(): void {
+        this.visualizer.stop();
+    }
+
 }

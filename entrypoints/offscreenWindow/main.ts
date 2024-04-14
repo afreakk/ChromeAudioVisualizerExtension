@@ -26,23 +26,47 @@ async function startStream(streamId: string) {
   audioContext = new AudioContext();
   const source = audioContext.createMediaStreamSource(stream);
   const analyser = audioContext.createAnalyser();
-
   analyser.fftSize = 2048;
   const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
+
+  const analyserL = audioContext.createAnalyser();
+  const bufferLengthL = analyserL.frequencyBinCount;
+  analyserL.smoothingTimeConstant = 0.0;
+  analyserL.fftSize = 2048;
+
+  const analyserR = audioContext.createAnalyser();
+  const bufferLengthR = analyserR.frequencyBinCount;
+  analyserR.smoothingTimeConstant = 0.0;
+  analyserR.fftSize = 2048;
+
+
+
+
 
   source.connect(analyser);
+
+  const splitter = audioContext.createChannelSplitter(2);  // Assuming stereo input
+  source.connect(splitter);
+  splitter.connect(analyserL, 0, 0);  // Connect left channel
+  splitter.connect(analyserR, 1, 0);  // Connect right channel
   analyser.connect(audioContext.destination);
 
+  const dataArray = new Uint8Array(bufferLength);
+  const dataArrayR = new Uint8Array(bufferLengthL);
+  const dataArrayL = new Uint8Array(bufferLengthR);
   const updateAudioDataEvent = () => {
     if (!window.captureIsActive) {
       return;
     }
 
     analyser.getByteFrequencyData(dataArray);
+    analyserL.getByteFrequencyData(dataArrayL);
+    analyserR.getByteFrequencyData(dataArrayR);
 
     const data = Array.from(dataArray.slice(0, 256));
-    const audioData = new AudioDataDto(data, data, data);
+    const dataL = Array.from(dataArrayL.slice(0, 256));
+    const dataR = Array.from(dataArrayR.slice(0, 256));
+    const audioData = new AudioDataDto(data, dataL, dataR);
     const audioDataMessage = new AudioDataEvent(messageTarget.animation, messageAction.updateAudioData, audioData);
     chrome.runtime.sendMessage(audioDataMessage.toMessage());
 
