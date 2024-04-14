@@ -1,8 +1,8 @@
 import { Scene } from '@/src/scene/scene';
-import { SceneSetting } from '@/src/scene/sceneSetting';
 import { AudioDataDto } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
+import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
 
 export class DancingHorizon implements Scene {
     private canvas;
@@ -10,6 +10,18 @@ export class DancingHorizon implements Scene {
     private audioTexture: WebGLTexture | null = null;
     private audioTextureUniformLocation: WebGLUniformLocation | null = null;
     private resolutionUniformLocation: WebGLUniformLocation | null = null;
+    private horizonColorNightUniformLocation: WebGLUniformLocation | null = null;
+    private horizonColorDayUniformLocation: WebGLUniformLocation | null = null;
+    private skyColorNightUniformLocation: WebGLUniformLocation | null = null;
+    private skyColorDayUniformLocation: WebGLUniformLocation | null = null;
+    private oceanColorNightUniformLocation: WebGLUniformLocation | null = null;
+    private oceanColorDayUniformLocation: WebGLUniformLocation | null = null;
+    private moonColorUniformLocation: WebGLUniformLocation | null = null;
+    private sunColorUniformLocation: WebGLUniformLocation | null = null;
+    private timeGainUniformLocation: WebGLUniformLocation | null = null;
+    private noiseGainUniformLocation: WebGLUniformLocation | null = null;
+    private cloudGainUniformLocation: WebGLUniformLocation | null = null;
+    private cloudDensityUniformLocation: WebGLUniformLocation | null = null;
     private timeUniformLocation: WebGLUniformLocation | null = null;
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
@@ -37,8 +49,59 @@ export class DancingHorizon implements Scene {
                 precision mediump float;
                 uniform vec2 resolution;
                 uniform float time;
+                uniform vec3 horizonColorNight;
+                uniform vec3 horizonColorDay;
+                uniform vec3 skyColorNight;
+                uniform vec3 skyColorDay;
+                uniform vec3 oceanColorNight;
+                uniform vec3 oceanColorDay;
+                uniform vec3 moonColor;
+                uniform vec3 sunColor;
+                uniform float timeGain;
+                uniform float noiseGain;
+                uniform float cloudGain;
+                uniform float cloudDensity;
                 uniform sampler2D audioTexture;
 
+                float rand(vec2 co) {
+                    return fract(fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453));
+                }
+
+                float interpolate(float a, float b, float x) {
+                    return mix(a, b, smoothstep(0.0, 1.0, x));
+                }
+
+                float valueNoise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+
+                    float a = rand(i);
+                    float b = rand(i + vec2(1.0, 0.0));
+                    float c = rand(i + vec2(0.0, 1.0));
+                    float d = rand(i + vec2(1.0, 1.0));
+
+                    // Interpolate along x
+                    float ab = interpolate(a, b, f.x);
+                    float cd = interpolate(c, d, f.x);
+
+                    // Interpolate along y
+                    return interpolate(ab, cd, f.y);
+                }
+
+                float fbm(vec2 position) {
+                    float total = 0.0;
+                    float persistence = 0.5;
+                    float frequency = 1.0;
+                    float amplitude = 1.0;
+
+                    for (int i = 0; i < 4; i++) {
+                        total += valueNoise(position * frequency) * amplitude;
+                        frequency *= 2.0;
+                        amplitude *= persistence;
+                    }
+
+                    return clamp(total, 0.0, 1.0);
+                }
                 float waveEffect(vec2 uv, float time)
                 {
                     float wave = sin(uv.x + time) * 0.5 + 0.5;
@@ -79,9 +142,9 @@ export class DancingHorizon implements Scene {
                 {
                     vec2 fragCoord = gl_FragCoord.xy;
                     // Day/nigth cycle
-                    float timeGain = time * 0.1 + PI; 
+                    float timeGainer = time * timeGain; 
 
-                    float dayNigthCycle = smoothstep(-1.0, 1.0, sin(timeGain));
+                    float dayNigthCycle = smoothstep(-1.0, 1.0, sin(timeGainer));
                     
                     // Coords
                     vec2 uv = fragCoord/resolution.xy;
@@ -90,14 +153,16 @@ export class DancingHorizon implements Scene {
                     vec2 centeredCoords = uv * 2.0 - 1.0;
                     
                     // Colors
-                    float starValue = starIntensity(uv) * smoothstep(0.6, 0.4, dayNigthCycle);
-                    vec3 horizonColor = mix(vec3(0.9, 0.5, 1.0), vec3(1.0, 1.0, 0.0), smoothstep(0.4, 0.6, dayNigthCycle));   
-                    vec3 nightSkyColor = mix(vec3(0.051, 0.067, 0.090) * 1.0, vec3(1.0), starValue * smoothstep(horizonLine, horizonLine + 0.1, uv.y));
-                    vec3 daySkyColor = vec3(0.255, 0.412, 0.882);
-                    vec3 oceanColor = mix(vec3(0.02, 0.05, 0.1) * (2.0 + dayNigthCycle * 3.0), vec3(1.0), starValue * 0.15);
-                    vec3 moonColor = vec3(1.0, 0.98, 0.85);
-                    vec3 sunColor = vec3(1.0, 0.95, 0.45);   
-                    vec3 skyColor = mix(nightSkyColor, daySkyColor, dayNigthCycle);
+                    float dayNightValue = smoothstep(0.4, 0.6, dayNigthCycle);
+                    float starValue = starIntensity(uv);
+                    vec3 nightSkyColor = mix(skyColorNight, vec3(1.0), starValue * smoothstep(horizonLine, horizonLine + 0.1, uv.y));
+                    vec3 colorOceanNigth = mix(oceanColorNight, vec3(1.0), starValue * 0.15);
+
+                    vec3 colorMoon = moonColor;
+                    vec3 colorSun = sunColor;
+                    vec3 skyColor = mix(nightSkyColor, skyColorDay, dayNigthCycle);
+                    vec3 oceanColor  = mix(colorOceanNigth, oceanColorDay, dayNigthCycle);
+                    vec3 horizonColor = mix(horizonColorNight, horizonColorDay, dayNightValue);   
                     
                     // Audio animation
                     float audioValue = texture2D(audioTexture, vec2(uv.x, 0.0)).x;
@@ -109,7 +174,7 @@ export class DancingHorizon implements Scene {
                     
                     // Moon
                     float moonSize = 0.15;
-                    vec2 moonPos = vec2(-cos(timeGain + PI), sin(timeGain + PI));
+                    vec2 moonPos = vec2(-cos(timeGainer + PI), sin(timeGainer + PI));
                     float diminishMoonGain = 1.0 - smoothstep(0.4, 1.0, moonPos.y) * 0.3;
                     float moonReflectSize = moonSize * diminishMoonGain;
                     moonPos.y += horizonLine - 0.5;
@@ -118,13 +183,13 @@ export class DancingHorizon implements Scene {
                     moonReflectPos.y *= diminishMoonGain;
 
 
-                    skyColor = circle(skyColor, moonColor, moonPos, centeredCoords, moonSize, audioValue * 0.05,  wave * 0.012);
-                    oceanColor = mix(oceanColor, circle(oceanColor, moonColor, moonReflectPos, centeredCoords, moonReflectSize, audioValue * 0.05,  reflectWave * 0.012), 0.2);
+                    skyColor = circle(skyColor, colorMoon, moonPos, centeredCoords, moonSize, audioValue * 0.05,  wave * 0.012);
+                    oceanColor = mix(oceanColor, circle(oceanColor, colorMoon, moonReflectPos, centeredCoords, moonReflectSize, audioValue * 0.05,  reflectWave * 0.012), 0.2);
 
 
                     // Sun
                     float sunSize = 0.2;
-                    vec2 sunPos = vec2(-cos(timeGain) * 1.0, sin(timeGain));
+                    vec2 sunPos = vec2(-cos(timeGainer) * 1.0, sin(timeGainer));
                     float diminishSunGain = 1.0 - smoothstep(0.4, 1.0, sunPos.y) * 0.3;
                     float sunReflectSize = sunSize * diminishSunGain;
                     sunPos.y -= (0.5 - horizonLine) * 2.0;
@@ -132,14 +197,23 @@ export class DancingHorizon implements Scene {
                     sunReflectPos.y = -(0.5 - horizonLine) * 4.0 - sunPos.y;
                     sunReflectPos.y *= diminishSunGain;
 
-                    skyColor = circle(skyColor, sunColor, sunPos, centeredCoords, sunSize, audioValue * 0.05,  wave * 0.012);
-                    oceanColor = mix(oceanColor, circle(oceanColor, sunColor, sunReflectPos, centeredCoords, sunReflectSize , audioValue * 0.05,  reflectWave * 0.012), 0.2);
+                    skyColor = circle(skyColor, colorSun, sunPos, centeredCoords, sunSize, audioValue * 0.05,  wave * 0.012);
+                    oceanColor = mix(oceanColor, circle(oceanColor, colorSun, sunReflectPos, centeredCoords, sunReflectSize , audioValue * 0.05,  reflectWave * 0.012), 0.2);
                     
                     // Illumination
-                    skyColor += illumination(sunColor, sunPos, centeredCoords, 0.25, dayNigthCycle);
-                    oceanColor += illumination(sunColor, sunReflectPos, centeredCoords, 0.25, dayNigthCycle);
-                    skyColor += illumination(moonColor, moonPos, centeredCoords, 0.1, 1.0 - dayNigthCycle);
-                    oceanColor += illumination(moonColor, moonReflectPos, centeredCoords, 0.1, 1.0 - dayNigthCycle);
+                    skyColor += illumination(colorSun, sunPos, centeredCoords, 0.25, dayNigthCycle);
+                    oceanColor += illumination(colorSun, sunReflectPos, centeredCoords, 0.25, dayNigthCycle);
+                    skyColor += illumination(colorMoon, moonPos, centeredCoords, 0.15, 1.0 - dayNigthCycle);
+                    oceanColor += illumination(colorMoon, moonReflectPos, centeredCoords, 0.15, 1.0 - dayNigthCycle);
+
+
+                    // Clouds
+                    vec2 pos = fragCoord/resolution.xy;
+                    pos.x += time * 0.03;
+                    pos.y = pos.y * 2.0 + time * 0.01;
+                    float n = fbm(pos * cloudDensity); 
+                    skyColor = mix(skyColor, vec3(1.0), n * cloudGain);
+                    oceanColor = mix(oceanColor, vec3(1.0), n * cloudGain * 0.33);
                     
                     // Horizon
                     float audioGain = audioValue * 0.2;
@@ -152,10 +226,9 @@ export class DancingHorizon implements Scene {
 
                    
                     // Audio flicker
-                    color += audioValue * 0.06 * sin(uv.y * 20.0 + timeGain * 5.9) * horizonColor;
+                    color = mix(color, horizonColor, audioValue * sin(uv.y * 2.0 + timeGainer * 10.0) * noiseGain * 0.5);
 
-
-                  gl_FragColor = vec4(color, 1.0);
+                    gl_FragColor = vec4(color, 1.0);
                 }
             `;
 
@@ -188,10 +261,48 @@ export class DancingHorizon implements Scene {
         this.gl.enableVertexAttribArray(position);
         this.resolutionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'resolution');
         this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
+        this.horizonColorNightUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'horizonColorNight');
+        this.horizonColorDayUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'horizonColorDay');
+        this.skyColorNightUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'skyColorNight');
+        this.skyColorDayUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'skyColorDay');
+        this.oceanColorNightUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'oceanColorNight');
+        this.oceanColorDayUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'oceanColorDay');
+        this.moonColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'moonColor');
+        this.sunColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'sunColor');
+        this.timeGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'timeGain');
+        this.noiseGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'noiseGain');
+        this.cloudGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'cloudGain');
+        this.cloudDensityUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'cloudDensity');
 
     }
     updateSettings(settings: DancingHorizonSetting): void {
-        throw new Error('Method not implemented.');
+        if (!this.gl) {
+            return;
+        }
+        this.gl.useProgram(this.shaderProgram);
+
+        this.gl.uniform1f(this.noiseGainUniformLocation, settings.noiseGain);
+        this.gl.uniform1f(this.timeGainUniformLocation, settings.timeGain);
+        this.gl.uniform1f(this.cloudGainUniformLocation, settings.cloudGain);
+        this.gl.uniform1f(this.cloudDensityUniformLocation, settings.cloudDensity);
+
+        // Colors
+        const horizonColorNight = hexToRGBNormalized(settings.horizonColorNight);
+        this.gl.uniform3fv(this.horizonColorNightUniformLocation, horizonColorNight);
+        const horizonColorDay = hexToRGBNormalized(settings.horizonColorDay);
+        this.gl.uniform3fv(this.horizonColorDayUniformLocation, horizonColorDay);
+        const skyColorNight = hexToRGBNormalized(settings.skyColorNight);
+        this.gl.uniform3fv(this.skyColorNightUniformLocation, skyColorNight);
+        const skyColorDay = hexToRGBNormalized(settings.skyColorDay);
+        this.gl.uniform3fv(this.skyColorDayUniformLocation, skyColorDay);
+        const oceanColorNight = hexToRGBNormalized(settings.oceanColorNight);
+        this.gl.uniform3fv(this.oceanColorNightUniformLocation, oceanColorNight);
+        const oceanColorDay = hexToRGBNormalized(settings.oceanColorDay);
+        this.gl.uniform3fv(this.oceanColorDayUniformLocation, oceanColorDay);
+        const moonColor = hexToRGBNormalized(settings.moonColor);
+        this.gl.uniform3fv(this.moonColorUniformLocation, moonColor);
+        const sunColor = hexToRGBNormalized(settings.sunColor);
+        this.gl.uniform3fv(this.sunColorUniformLocation, sunColor);
     }
     updateAudioData(data: AudioDataDto): void {
         this.audioData = data;

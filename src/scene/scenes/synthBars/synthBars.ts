@@ -1,5 +1,4 @@
 import { Scene } from '@/src/scene/scene';
-import { SceneSetting } from '@/src/scene/sceneSetting';
 import { AudioDataDto } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 import { SynthBarsSetting } from './setting';
@@ -15,7 +14,7 @@ export class SynthBars implements Scene {
     private bottomColorUniformLocation: WebGLUniformLocation | null = null;
     private topColorUniformLocation: WebGLUniformLocation | null = null;
     private numberOfbarsUniformLocation: WebGLUniformLocation | null = null;
-    private noiceGainUniformLocation: WebGLUniformLocation | null = null;
+    private noiseGainUniformLocation: WebGLUniformLocation | null = null;
 
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
@@ -45,7 +44,7 @@ export class SynthBars implements Scene {
                 uniform vec3 bottomColor;
                 uniform vec3 topColor;
                 uniform float numberOfbars;
-                uniform float noiceGain;
+                uniform float noiseGain;
                 uniform float time;
                 uniform sampler2D audioTexture;
 
@@ -80,11 +79,11 @@ export class SynthBars implements Scene {
                   float linePosition = mod(time * lineSpeed, 1.0);
                   float distanceFromLine = abs(uv.y - linePosition);
                   if(distanceFromLine < lineThickness) {
-                    ledColor += 0.1 * noiceGain;
+                    ledColor += 0.1 * noiseGain;
                   }
 
                   float noise = random(uv + time);
-                  ledColor += noise * 0.12 * noiceGain;
+                  ledColor += noise * 0.12 * noiseGain;
 
                   gl_FragColor = vec4(ledColor, 1.0);
                 }
@@ -119,7 +118,7 @@ export class SynthBars implements Scene {
         this.resolutionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'resolution');
         this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
         this.numberOfbarsUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "numberOfbars");
-        this.noiceGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "noiceGain");
+        this.noiseGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "noiseGain");
         this.bottomColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "bottomColor");
         this.topColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "topColor");
 
@@ -129,7 +128,7 @@ export class SynthBars implements Scene {
             return;
         }
         this.gl.useProgram(this.shaderProgram);
-        this.gl.uniform1f(this.noiceGainUniformLocation, settings.noiceGain);
+        this.gl.uniform1f(this.noiseGainUniformLocation, settings.noiseGain);
         this.gl.uniform1f(this.numberOfbarsUniformLocation, settings.numberOfbars);
         const bottomColor = hexToRGBNormalized(settings.bottomColor);
         const topColor = hexToRGBNormalized(settings.topColor);

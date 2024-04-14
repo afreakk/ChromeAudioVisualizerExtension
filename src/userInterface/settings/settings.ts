@@ -133,8 +133,8 @@ export class SettingsUi {
                 this.setSceneSettings(synthbarSettings, sceneName);
             });
 
-            this.settingsFolder.add(synthbarSettings, 'noiceGain', 0.0, 1.0).onChange((value: number) => {
-                synthbarSettings.noiceGain = value;
+            this.settingsFolder.add(synthbarSettings, 'noiseGain', 0.0, 1.0).onChange((value: number) => {
+                synthbarSettings.noiseGain = value;
                 this.setSceneSettings(synthbarSettings, sceneName);
             });
             this.settingsFolder.add(synthbarSettings, 'numberOfbars', 5.0, 80.0).onChange((value: number) => {
@@ -144,9 +144,67 @@ export class SettingsUi {
 
             return synthbarSettings;
         } else if (scene instanceof DancingHorizon) {
-            this.settingsFolder.add({ density: 50 }, 'density', 10, 100).name('Bar Density');
-            this.settingsFolder.add({ animate: true }, 'animate').name('Animate Bars');
-            const dancingHorizonSettings = settings ? settings as DancingHorizonSetting : new DancingHorizonSetting();
+            let dancingHorizonSettings = settings ? settings as DancingHorizonSetting : new DancingHorizonSetting();
+            this.setSceneSettings(dancingHorizonSettings, sceneName);
+
+
+            this.settingsFolder.add({
+                reset: () => {
+                    dancingHorizonSettings = new DancingHorizonSetting();
+                    this.setSceneSettings(dancingHorizonSettings, sceneName);
+                    this.buildSettings(sceneName);
+                }
+            }, 'reset').name('Reset Settings');
+
+            this.settingsFolder.addColor(dancingHorizonSettings, 'horizonColorNight').onChange((value: string) => {
+                dancingHorizonSettings.horizonColorNight = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'horizonColorDay').onChange((value: string) => {
+                dancingHorizonSettings.horizonColorDay = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'skyColorNight').onChange((value: string) => {
+                dancingHorizonSettings.skyColorNight = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'skyColorDay').onChange((value: string) => {
+                dancingHorizonSettings.skyColorDay = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'oceanColorNight').onChange((value: string) => {
+                dancingHorizonSettings.oceanColorNight = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'oceanColorDay').onChange((value: string) => {
+                dancingHorizonSettings.oceanColorDay = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'moonColor').onChange((value: string) => {
+                dancingHorizonSettings.moonColor = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.addColor(dancingHorizonSettings, 'sunColor').onChange((value: string) => {
+                dancingHorizonSettings.sunColor = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.add(dancingHorizonSettings, 'timeGain', 0.1, 1.0).onChange((value: number) => {
+                dancingHorizonSettings.timeGain = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.add(dancingHorizonSettings, 'noiseGain', 0.0, 1.0).onChange((value: number) => {
+                dancingHorizonSettings.noiseGain = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.add(dancingHorizonSettings, 'cloudDensity', 0.0, 10.0).onChange((value: number) => {
+                dancingHorizonSettings.cloudDensity = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+            this.settingsFolder.add(dancingHorizonSettings, 'cloudGain', 0.0, 1.0).onChange((value: number) => {
+                dancingHorizonSettings.cloudGain = value;
+                this.setSceneSettings(dancingHorizonSettings, sceneName);
+            });
+
             return dancingHorizonSettings;
         }
         return {};
