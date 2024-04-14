@@ -114,10 +114,34 @@ export class SettingsUi {
             });
             return sunFlowerSettings;
         } else if (scene instanceof SynthBars) {
-            // Example settings for SynthBars
-            this.settingsFolder.add({ density: 50 }, 'density', 10, 100).name('Bar Density');
-            this.settingsFolder.add({ animate: true }, 'animate').name('Animate Bars');
-            const synthbarSettings = settings ? settings as SynthBarsSetting : new SynthBarsSetting();
+            let synthbarSettings = settings ? settings as SynthBarsSetting : new SynthBarsSetting();
+            this.settingsFolder.add({
+                reset: () => {
+                    synthbarSettings = new SynthBarsSetting();
+                    this.setSceneSettings(synthbarSettings, sceneName);
+                    this.buildSettings(sceneName);
+                }
+            }, 'reset').name('Reset Settings');
+
+
+            this.settingsFolder.addColor(synthbarSettings, 'bottomColor').onChange((value: string) => {
+                synthbarSettings.bottomColor = value;
+                this.setSceneSettings(synthbarSettings, sceneName);
+            });
+            this.settingsFolder.addColor(synthbarSettings, 'topColor').onChange((value: string) => {
+                synthbarSettings.topColor = value;
+                this.setSceneSettings(synthbarSettings, sceneName);
+            });
+
+            this.settingsFolder.add(synthbarSettings, 'noiceGain', 0.0, 1.0).onChange((value: number) => {
+                synthbarSettings.noiceGain = value;
+                this.setSceneSettings(synthbarSettings, sceneName);
+            });
+            this.settingsFolder.add(synthbarSettings, 'numberOfbars', 5.0, 80.0).onChange((value: number) => {
+                synthbarSettings.numberOfbars = value;
+                this.setSceneSettings(synthbarSettings, sceneName);
+            });
+
             return synthbarSettings;
         } else if (scene instanceof DancingHorizon) {
             this.settingsFolder.add({ density: 50 }, 'density', 10, 100).name('Bar Density');

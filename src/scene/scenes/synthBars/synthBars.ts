@@ -2,6 +2,8 @@ import { Scene } from '@/src/scene/scene';
 import { SceneSetting } from '@/src/scene/sceneSetting';
 import { AudioDataDto } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
+import { SynthBarsSetting } from './setting';
+import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
 
 export class SynthBars implements Scene {
     private canvas;
@@ -10,6 +12,11 @@ export class SynthBars implements Scene {
     private audioTextureUniformLocation: WebGLUniformLocation | null = null;
     private resolutionUniformLocation: WebGLUniformLocation | null = null;
     private timeUniformLocation: WebGLUniformLocation | null = null;
+    private bottomColorUniformLocation: WebGLUniformLocation | null = null;
+    private topColorUniformLocation: WebGLUniformLocation | null = null;
+    private numberOfbarsUniformLocation: WebGLUniformLocation | null = null;
+    private noiceGainUniformLocation: WebGLUniformLocation | null = null;
+
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
     private audioData: AudioDataDto;
@@ -35,10 +42,13 @@ export class SynthBars implements Scene {
             `
                 precision mediump float;
                 uniform vec2 resolution;
+                uniform vec3 bottomColor;
+                uniform vec3 topColor;
+                uniform float numberOfbars;
+                uniform float noiceGain;
                 uniform float time;
                 uniform sampler2D audioTexture;
 
-                const float segs = 40.0;
                 float random(vec2 co) {
                   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
                 }
@@ -46,21 +56,21 @@ export class SynthBars implements Scene {
                   vec2 fragCoord = gl_FragCoord.xy;
                   vec2 uv = fragCoord.xy / resolution.xy;
 
-                  float bands = segs * resolution.x / resolution.y * 0.5;
+                  float numberOfbarsWidth = floor(numberOfbars * resolution.x / resolution.y * 0.5);
                   vec2 p;
-                  p.x = floor(uv.x * bands) / bands;
-                  p.y = floor(uv.y * segs) / segs;
+                  p.x = floor(uv.x * numberOfbarsWidth) / numberOfbarsWidth;
+                  p.y = floor(uv.y * numberOfbars) / numberOfbars;
 
                   float fft = texture2D(audioTexture, vec2(p.x, 0.0)).x;
 
                   // color
-                  vec3 color = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 1.0), sqrt(uv.y));
+                  vec3 color = mix(bottomColor, topColor, sqrt(uv.y));
 
                   // mask for bar graph
                   float mask = (p.y < fft) ? 1.0 : 0.1;
 
                   // led shape
-                  vec2 d = fract((uv - p) * vec2(bands, segs)) - 0.5;
+                  vec2 d = fract((uv - p) * vec2(numberOfbarsWidth, numberOfbars)) - 0.5;
                   float led = smoothstep(0.5, 0.35, abs(d.x)) * smoothstep(0.5, 0.35, abs(d.y));
                   vec3 ledColor = led*color*mask;
 
@@ -70,12 +80,11 @@ export class SynthBars implements Scene {
                   float linePosition = mod(time * lineSpeed, 1.0);
                   float distanceFromLine = abs(uv.y - linePosition);
                   if(distanceFromLine < lineThickness) {
-                    ledColor += 0.1;
+                    ledColor += 0.1 * noiceGain;
                   }
 
-                  // White noice for
                   float noise = random(uv + time);
-                  ledColor += noise * 0.06;
+                  ledColor += noise * 0.12 * noiceGain;
 
                   gl_FragColor = vec4(ledColor, 1.0);
                 }
@@ -109,10 +118,23 @@ export class SynthBars implements Scene {
         this.gl.enableVertexAttribArray(position);
         this.resolutionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'resolution');
         this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
+        this.numberOfbarsUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "numberOfbars");
+        this.noiceGainUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "noiceGain");
+        this.bottomColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "bottomColor");
+        this.topColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "topColor");
 
     }
-    updateSettings(settings: SceneSetting): void {
-        throw new Error('Method not implemented.');
+    updateSettings(settings: SynthBarsSetting): void {
+        if (!this.gl) {
+            return;
+        }
+        this.gl.useProgram(this.shaderProgram);
+        this.gl.uniform1f(this.noiceGainUniformLocation, settings.noiceGain);
+        this.gl.uniform1f(this.numberOfbarsUniformLocation, settings.numberOfbars);
+        const bottomColor = hexToRGBNormalized(settings.bottomColor);
+        const topColor = hexToRGBNormalized(settings.topColor);
+        this.gl.uniform3fv(this.bottomColorUniformLocation, bottomColor);
+        this.gl.uniform3fv(this.topColorUniformLocation, topColor);
     }
     updateAudioData(data: AudioDataDto): void {
         this.audioData = data;

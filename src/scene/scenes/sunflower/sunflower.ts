@@ -147,6 +147,7 @@ export class SunFlower implements Scene {
         if (!this.gl) {
             return;
         }
+        this.gl.useProgram(this.shaderProgram);
         this.gl.uniform1f(this.innerRadiusGainUniformLocation, settings.innerRadiusGain);
         this.gl.uniform1f(this.midRadiusGainUniformLocation, settings.midRadiusGain);
         this.gl.uniform1f(this.outerRadiusGainUniformLocation, settings.outerRadiusGain);
