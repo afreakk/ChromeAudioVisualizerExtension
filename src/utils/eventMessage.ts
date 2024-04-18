@@ -5,13 +5,15 @@ export enum messageTarget {
     animation = "animation",
 }
 export enum messageAction {
-    animationWindowCreated = "animation-window-created",
     initiateStream = "initiate-stream",
     startStream = "start-stream",
     stopStream = "stop-stream",
     updateAudioData = "start-animation",
+    openSettingsWindow = "open-settings-window",
+    closeSettingsWindow = "close-settings-window",
     setScene = "set-scene",
     setSceneSettings = "set-scene-settings",
+    toggleFullScreen = "toggle-full-screen",
 }
 export enum streamType {
     butterChurn = "butterChurn",
@@ -91,7 +93,6 @@ export class StartStreamEvent extends GenericEvent {
         super(target, action);
         this.streamType = streamType;
     }
-
     override toMessage() {
         return {
             target: this.target,

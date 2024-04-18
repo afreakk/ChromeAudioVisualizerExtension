@@ -1,7 +1,11 @@
+import { SettingsWindowEvent } from '@/src/userInterface/settings/events/SettingsWindowEvent';
+import { GenericEvent } from '@/src/utils/eventMessage';
+
 export default defineBackground(async () => {
   const { InitiateStreamEvent, messageTarget, messageAction, GenericEvent } = await import('@/src/utils/eventMessage');
   let streaming = false;
-  let createdWindowId: number | null = null;
+  let animationWindowId: number | null = null;
+  let settingsWindowId: number | null = null;
   let tabId: number;
   async function initiateStream() {
     const streamId = await chrome.tabCapture.getMediaStreamId({
@@ -46,14 +50,42 @@ export default defineBackground(async () => {
       width: 1600,
       height: 900
     });
-    createdWindowId = win.id as number;
+    animationWindowId = win.id as number;
 
   });
 
-  // Listen for the window being closed
+  chrome.runtime.onMessage.addListener(async (message: SettingsWindowEvent) => {
+    if (message.target === messageTarget.background && message.action === messageAction.openSettingsWindow) {
+      let win = await chrome.windows.create({
+        url: chrome.runtime.getURL('settingsWindow.html'),
+        type: 'popup',
+        width: 400,
+        height: 600
+      });
+      settingsWindowId = win.id as number;
+
+      const closeSettingsInAnimation = new SettingsWindowEvent(messageTarget.animation, messageAction.openSettingsWindow);
+      chrome.runtime.sendMessage(closeSettingsInAnimation.toMessage());
+    }
+  });
+  // Listen for the settings-window being closed
   chrome.windows.onRemoved.addListener((windowId) => {
-    if (windowId === createdWindowId) {
-      createdWindowId = null;
+    if (windowId === settingsWindowId) {
+      settingsWindowId = null;
+
+      const closeSettingsWindow = new SettingsWindowEvent(messageTarget.animation, messageAction.closeSettingsWindow);
+      chrome.runtime.sendMessage(closeSettingsWindow.toMessage());
+    }
+  });
+  // Listen for the animation-window being closed
+  chrome.windows.onRemoved.addListener((windowId) => {
+    if (windowId === animationWindowId) {
+      animationWindowId = null;
+      if (settingsWindowId) {
+        chrome.windows.remove(settingsWindowId, () => {
+          console.log('Window with ID', windowId, 'has been closed.');
+        });
+      }
       if (streaming) {
         stopStream();
         return;

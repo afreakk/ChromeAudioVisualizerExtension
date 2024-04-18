@@ -30,6 +30,11 @@ export class SceneManager {
     }
 
     setScene(scene: IScene, settings: ISceneSetting) {
+        // Return if the scene is already set
+        if (this.scene instanceof scene.constructor) {
+            return;
+        }
+
         let newScene = scene;
         this.buildingScene = true;
         try {
