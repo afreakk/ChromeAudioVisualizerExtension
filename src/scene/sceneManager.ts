@@ -1,12 +1,12 @@
-import { Scene } from '@/src/scene/scene';
-import { AudioDataDto } from "@/src/utils/eventMessage";
-import { SceneSetting } from '@/src/scene/sceneSetting';
+import { IScene } from '@/src/scene/scene';
+import { ISceneSetting } from '@/src/scene/sceneSetting';
+import { IAudioDataDto, StartStreamEvent, messageAction, messageTarget, streamType } from '@/src/utils/eventMessage';
 
 export class SceneManager {
-    private scene: Scene | null = null;
+    private scene: IScene | null = null;
     private buildingScene = false;
 
-    updateAudioData(data: AudioDataDto) {
+    updateAudioData(data: IAudioDataDto) {
         // Return if there is no scene 
         if (!this.scene) {
             return;
@@ -17,7 +17,7 @@ export class SceneManager {
         }
         this.scene.updateAudioData(data);
     }
-    updateSettings(settings: SceneSetting) {
+    updateSettings(settings: ISceneSetting) {
         // Return if there is no scene 
         if (!this.scene) {
             return;
@@ -29,7 +29,7 @@ export class SceneManager {
         this.scene.updateSettings(settings);
     }
 
-    setScene(scene: Scene, settings: SceneSetting) {
+    setScene(scene: IScene, settings: ISceneSetting) {
         let newScene = scene;
         this.buildingScene = true;
         try {
@@ -45,6 +45,12 @@ export class SceneManager {
             console.error("Error building scene:", error);
         }
         finally {
+            const animationWindowCreated = new StartStreamEvent(
+                messageTarget.offscreen,
+                messageAction.startStream,
+                this.scene ? this.scene.streamType : streamType.normal
+            );
+            chrome.runtime.sendMessage(animationWindowCreated.toMessage());
             this.buildingScene = false;
             this.updateSettings(settings);
         }

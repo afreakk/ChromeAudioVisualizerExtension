@@ -1,6 +1,6 @@
-import { SceneSetting } from '@/src/scene/sceneSetting';
+import { ISceneSetting } from '@/src/scene/sceneSetting';
 
-export class SunFlowerSetting implements SceneSetting {
+export class SunFlowerSetting implements ISceneSetting {
     public innerColor: string = '#FFD700';
     public midColor: string = '#FF4500';
     public outerColor: string = '#6A5ACD';

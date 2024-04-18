@@ -1,19 +1,35 @@
-import { StartStreamEvent, GenericEvent, AudioDataEvent, AudioDataDto, messageAction, messageTarget } from '@/src/utils/eventMessage';
+import { StartStreamEvent, GenericEvent, AudioDataEvent, NormalAudioDataDto, ButterChurnAudioDataDto, messageAction, messageTarget, streamType, InitiateStreamEvent } from '@/src/utils/eventMessage';
 
-chrome.runtime.onMessage.addListener((message: StartStreamEvent, sender, sendResponse) => {
+let currentStreamType: streamType | null = null;
+let stream: MediaStream | null = null;
+let audioContext: AudioContext | null = null;
+
+let numSamplesNormal = 2048;
+let numSamplesButterChurn = 1024;
+let analyserNormal: AnalyserNode | null = null;
+let analyserButterChurn: AnalyserNode | null = null;
+let analyserButterChurnL: AnalyserNode | null = null;
+let analyserButterChurnR: AnalyserNode | null = null;
+
+chrome.runtime.onMessage.addListener((message: StartStreamEvent) => {
   if (message.target === messageTarget.offscreen && message.action === messageAction.startStream) {
-
-    startStream(message.streamId);
+    currentStreamType = message.streamType;
+    startStream();
   }
 });
-chrome.runtime.onMessage.addListener((message: GenericEvent, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: InitiateStreamEvent) => {
+  if (message.target === messageTarget.offscreen && message.action === messageAction.initiateStream) {
+
+    window.captureIsActive = true;
+    initiateStream(message.streamId);
+  }
+});
+chrome.runtime.onMessage.addListener((message: GenericEvent) => {
   if (message.target === messageTarget.offscreen && message.action === messageAction.stopStream) {
     stopStream();
   }
 });
-let stream: MediaStream | null = null;
-let audioContext: AudioContext | null = null;
-async function startStream(streamId: string) {
+async function initiateStream(streamId: string) {
   stream = await navigator.mediaDevices.getUserMedia({
     audio: {
       mandatory: {
@@ -22,61 +38,77 @@ async function startStream(streamId: string) {
       }
     },
   });
-  window.location.hash = 'recording';
   audioContext = new AudioContext();
+
   const source = audioContext.createMediaStreamSource(stream);
-  const analyser = audioContext.createAnalyser();
-  analyser.fftSize = 2048;
-  const bufferLength = analyser.frequencyBinCount;
+  // Create the normal analyser
+  analyserNormal = audioContext.createAnalyser();
+  analyserNormal.fftSize = numSamplesNormal;
+  source.connect(analyserNormal);
+  // Connect the normal analyser to the destination
+  analyserNormal.connect(audioContext.destination);
 
-  const analyserL = audioContext.createAnalyser();
-  const bufferLengthL = analyserL.frequencyBinCount;
-  analyserL.smoothingTimeConstant = 0.0;
-  analyserL.fftSize = 2048;
+  // Create the butterchurn analysers
+  analyserButterChurn = audioContext.createAnalyser();
+  analyserButterChurn.smoothingTimeConstant = 0.0;
+  analyserButterChurn.fftSize = numSamplesButterChurn;
 
-  const analyserR = audioContext.createAnalyser();
-  const bufferLengthR = analyserR.frequencyBinCount;
-  analyserR.smoothingTimeConstant = 0.0;
-  analyserR.fftSize = 2048;
+  analyserButterChurnL = audioContext.createAnalyser();
+  analyserButterChurnL.smoothingTimeConstant = 0.0;
+  analyserButterChurnL.fftSize = numSamplesButterChurn;
 
-  source.connect(analyser);
+  analyserButterChurnR = audioContext.createAnalyser();
+  analyserButterChurnR.smoothingTimeConstant = 0.0;
+  analyserButterChurnR.fftSize = numSamplesButterChurn;
+
+  source.connect(analyserButterChurn);
 
   const splitter = audioContext.createChannelSplitter(2);
+
   source.connect(splitter);
-  splitter.connect(analyserL, 0, 0);  // Connect left channel
-  splitter.connect(analyserR, 1, 0);  // Connect right channel
+  splitter.connect(analyserButterChurnL, 0);
+  splitter.connect(analyserButterChurnR, 1);
+}
 
-  analyser.connect(audioContext.destination);
-
-  const dataArray = new Uint8Array(bufferLength);
-  const dataArrayR = new Uint8Array(bufferLengthL);
-  const dataArrayL = new Uint8Array(bufferLengthR);
+async function startStream() {
   const updateAudioDataEvent = () => {
     if (!window.captureIsActive) {
       return;
     }
+    if (currentStreamType === streamType.normal && analyserNormal !== null) {
+      const dataArray = new Uint8Array(numSamplesNormal / 4)
+      analyserNormal.getByteFrequencyData(dataArray);
 
-    analyser.getByteFrequencyData(dataArray);
-    analyserL.getByteFrequencyData(dataArrayL);
-    analyserR.getByteFrequencyData(dataArrayR);
+      const data = Array.from(dataArray);
+      const audioData = new NormalAudioDataDto(data);
+      const audioDataMessage = new AudioDataEvent(messageTarget.animation, messageAction.updateAudioData, audioData);
+      chrome.runtime.sendMessage(audioDataMessage.toMessage());
+    }
+    else if (currentStreamType === streamType.butterChurn && analyserButterChurn !== null && analyserButterChurnL !== null && analyserButterChurnR !== null) {
+      const dataArray = new Uint8Array(numSamplesButterChurn)
+      const dataArrayL = new Uint8Array(numSamplesButterChurn);
+      const dataArrayR = new Uint8Array(numSamplesButterChurn);
+      analyserButterChurn.getByteTimeDomainData(dataArray);
+      analyserButterChurnL.getByteTimeDomainData(dataArrayL);
+      analyserButterChurnR.getByteTimeDomainData(dataArrayR);
 
-    const data = Array.from(dataArray.slice(0, 256));
-    const dataL = Array.from(dataArrayL.slice(0, 256));
-    const dataR = Array.from(dataArrayR.slice(0, 256));
-    const audioData = new AudioDataDto(data, dataL, dataR);
-    const audioDataMessage = new AudioDataEvent(messageTarget.animation, messageAction.updateAudioData, audioData);
-    chrome.runtime.sendMessage(audioDataMessage.toMessage());
+      const data = Array.from(dataArray);
+      const dataL = Array.from(dataArrayL);
+      const dataR = Array.from(dataArrayR);
+      const audioData = new ButterChurnAudioDataDto(data, dataL, dataR);
+      const audioDataMessage = new AudioDataEvent(messageTarget.animation, messageAction.updateAudioData, audioData);
+      chrome.runtime.sendMessage(audioDataMessage.toMessage());
+    }
 
     // 1000/10 = 100 frames per second
     setTimeout(updateAudioDataEvent, 10);
   };
 
-  window.captureIsActive = true;
-  // window.location.hash = 'recording';
   updateAudioDataEvent();
 }
 
 function stopStream() {
+  window.captureIsActive = false;
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
     console.log("Stream stopped.");
@@ -85,6 +117,4 @@ function stopStream() {
     audioContext.close(); // Properly closes the audio context
     console.log("Audio context closed.");
   }
-  window.captureIsActive = false; // Ensure the loop is stopped
-
 }

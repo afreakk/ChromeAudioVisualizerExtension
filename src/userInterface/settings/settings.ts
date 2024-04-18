@@ -6,8 +6,8 @@ import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon/dancingHorizon
 import { DancingHorizonSetting } from "@/src/scene/scenes/dancingHorizon/setting";
 import { SynthBarsSetting } from "@/src/scene/scenes/synthBars/setting";
 import { SunFlowerSetting } from "@/src/scene/scenes/sunflower/setting";
-import { Scene } from '@/src/scene/scene';
-import { SceneSetting } from '@/src/scene/sceneSetting';
+import { IScene } from '@/src/scene/scene';
+import { ISceneSetting } from '@/src/scene/sceneSetting';
 import { loadSettings, saveSettings } from '@/src/utils/settings';
 import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
 import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
@@ -17,11 +17,11 @@ import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent'
 export class SettingsUi {
     private gui: dat.GUI;
     private isExternalUI: boolean = false;
-    private sceneMap: Map<string, Scene>;
+    private sceneMap: Map<string, IScene>;
     private sceneFolder: any = null;
     private settingsFolder: any = null;
 
-    constructor(scenesMap: Map<string, Scene>, isExternalUI: boolean) {
+    constructor(scenesMap: Map<string, IScene>, isExternalUI: boolean) {
         this.gui = new dat.GUI();
         this.isExternalUI = isExternalUI;
         this.sceneMap = scenesMap;
@@ -55,7 +55,7 @@ export class SettingsUi {
         chrome.runtime.sendMessage(sceneEventMessage.toMessage());
     }
 
-    private buildSettings(sceneName: string): SceneSetting {
+    private buildSettings(sceneName: string): ISceneSetting {
         const scene = this.sceneMap.get(sceneName);
         // Remove the existing settings folder if it exists
         if (this.settingsFolder) {
@@ -67,7 +67,7 @@ export class SettingsUi {
         this.settingsFolder.open();
 
 
-        const settings = loadSettings<SceneSetting>(sceneName);
+        const settings = loadSettings<ISceneSetting>(sceneName);
         if (scene instanceof SunFlower) {
             let sunFlowerSettings = settings ? settings as SunFlowerSetting : new SunFlowerSetting();
             this.settingsFolder.add({
@@ -210,7 +210,7 @@ export class SettingsUi {
         return {};
     }
 
-    private setSceneSettings(sceneSettings: SceneSetting, sceneName: string) {
+    private setSceneSettings(sceneSettings: ISceneSetting, sceneName: string) {
         // Store the settings in local storage
         saveSettings(sceneName, sceneSettings);
 

@@ -1,10 +1,10 @@
-import { Scene } from '@/src/scene/scene';
-import { AudioDataDto } from '@/src/utils/eventMessage';
+import { IScene } from '@/src/scene/scene';
+import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
 import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
 
-export class DancingHorizon implements Scene {
+export class DancingHorizon implements IScene {
     private canvas;
     private gl;
     private audioTexture: WebGLTexture | null = null;
@@ -25,13 +25,21 @@ export class DancingHorizon implements Scene {
     private timeUniformLocation: WebGLUniformLocation | null = null;
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
-    private audioData: AudioDataDto;
-    constructor(canvas: HTMLCanvasElement) {
-        this.audioData = new AudioDataDto([], [], []);
-        this.canvas = canvas;
-        this.gl = canvas.getContext('webgl');
+    private audioData: NormalAudioDataDto;
+    constructor() {
+        this.audioData = new NormalAudioDataDto([]);
     }
+    streamType = streamType.normal;
     build(): void {
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.canvas.style.position = 'fixed';
+        this.canvas.style.left = '0';
+        this.canvas.style.top = '0';
+        this.canvas.style.zIndex = '-1';
+        document.body.insertBefore(this.canvas, document.body.firstChild);
+        this.gl = this.canvas.getContext('webgl');
         if (!this.gl) {
             console.error('Unable to initialize WebGL. Your browser may not support it.');
             return;
@@ -304,19 +312,23 @@ export class DancingHorizon implements Scene {
         const sunColor = hexToRGBNormalized(settings.sunColor);
         this.gl.uniform3fv(this.sunColorUniformLocation, sunColor);
     }
-    updateAudioData(data: AudioDataDto): void {
+    updateAudioData(data: NormalAudioDataDto): void {
         this.audioData = data;
     }
     render(): void {
         if (!this.gl) {
             return;
         }
-
         // Update canvas size and viewport
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        // Update audio texture
+
+        // Bind texture
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
+        this.gl.uniform1i(this.audioTextureUniformLocation, 0);
         bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl);
+
         // Update resolution
         this.gl.uniform2f(this.resolutionUniformLocation, this.gl.canvas.width, this.gl.canvas.height);
 
@@ -324,14 +336,8 @@ export class DancingHorizon implements Scene {
         const timeInSeconds = performance.now() / 1000.0;
         this.gl.uniform1f(this.timeUniformLocation, timeInSeconds);
 
-        // Bind texture
-        this.gl.activeTexture(this.gl.TEXTURE0);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
-        this.gl.uniform1i(this.audioTextureUniformLocation, 0);
-
         // Draw the quad
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-
     }
     clean(): void {
         if (!this.gl) {
@@ -360,5 +366,6 @@ export class DancingHorizon implements Scene {
         this.gl.bindTexture(this.gl.TEXTURE_2D, null);
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.canvas.remove();
     }
 }

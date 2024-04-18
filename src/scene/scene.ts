@@ -1,9 +1,10 @@
-import { AudioDataDto } from "@/src/utils/eventMessage";
-import { SceneSetting } from "./sceneSetting";
-export interface Scene {
+import { IAudioDataDto, streamType } from "@/src/utils/eventMessage";
+import { ISceneSetting } from "./sceneSetting";
+export interface IScene {
+    streamType: streamType;
     build(): void;
-    updateSettings(settings: SceneSetting): void;
-    updateAudioData(data: AudioDataDto): void;
+    updateSettings(settings: ISceneSetting): void;
+    updateAudioData(data: IAudioDataDto): void;
     render(): void;
     clean(): void;
 }

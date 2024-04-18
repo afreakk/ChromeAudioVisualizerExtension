@@ -1,2 +1,2 @@
-export interface SceneSetting {
+export interface ISceneSetting {
 }

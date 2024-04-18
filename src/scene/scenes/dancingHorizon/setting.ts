@@ -1,7 +1,7 @@
-import { SceneSetting } from '@/src/scene/sceneSetting';
+import { ISceneSetting } from '@/src/scene/sceneSetting';
 
 
-export class DancingHorizonSetting implements SceneSetting {
+export class DancingHorizonSetting implements ISceneSetting {
     public horizonColorNight: string = '#FFDAB9';
     public horizonColorDay: string = '#800080';
     public skyColorNight: string = '#191970';

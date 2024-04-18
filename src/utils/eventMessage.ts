@@ -6,13 +6,27 @@ export enum messageTarget {
 }
 export enum messageAction {
     animationWindowCreated = "animation-window-created",
+    initiateStream = "initiate-stream",
     startStream = "start-stream",
     stopStream = "stop-stream",
     updateAudioData = "start-animation",
     setScene = "set-scene",
     setSceneSettings = "set-scene-settings",
 }
-export class AudioDataDto {
+export enum streamType {
+    butterChurn = "butterChurn",
+    normal = "singleChannel",
+}
+export interface IAudioDataDto {
+    timeByteArray: number[];
+}
+export class NormalAudioDataDto implements IAudioDataDto {
+    timeByteArray: number[];
+    constructor(timeByteArray: number[]) {
+        this.timeByteArray = timeByteArray;
+    }
+}
+export class ButterChurnAudioDataDto implements IAudioDataDto {
     timeByteArray: number[];
     timeByteArrayLeft: number[];
     timeByteArrayRight: number[];
@@ -39,9 +53,9 @@ export class GenericEvent {
     }
 }
 export class AudioDataEvent extends GenericEvent {
-    audioData: AudioDataDto;
+    audioData: IAudioDataDto;
 
-    constructor(target: messageTarget, action: messageAction, audioData: AudioDataDto) {
+    constructor(target: messageTarget, action: messageAction, audioData: IAudioDataDto) {
         super(target, action);
         this.audioData = audioData;
     }
@@ -54,7 +68,7 @@ export class AudioDataEvent extends GenericEvent {
         };
     }
 }
-export class StartStreamEvent extends GenericEvent {
+export class InitiateStreamEvent extends GenericEvent {
     streamId: string;
 
     constructor(target: messageTarget, action: messageAction, streamId: string) {
@@ -67,6 +81,22 @@ export class StartStreamEvent extends GenericEvent {
             target: this.target,
             action: this.action,
             streamId: this.streamId,
+        };
+    }
+}
+export class StartStreamEvent extends GenericEvent {
+    streamType: streamType;
+
+    constructor(target: messageTarget, action: messageAction, streamType: streamType) {
+        super(target, action);
+        this.streamType = streamType;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            streamType: this.streamType,
         };
     }
 }

@@ -4,13 +4,13 @@ import {
     messageTarget,
     AudioDataEvent,
 } from '@/src/utils/eventMessage';
-import { Scene } from '@/src/scene/scene';
+import { IScene } from '@/src/scene/scene';
 import { SceneManager } from '@/src/scene/sceneManager';
 import { SunFlower } from '@/src/scene/scenes/sunflower/sunflower';
 import { SynthBars } from '@/src/scene/scenes/synthBars/synthBars';
 import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon/dancingHorizon';
 import { SettingsUi } from '@/src/userInterface/settings/settings';
-import { SceneSetting } from '@/src/scene/sceneSetting';
+import { ISceneSetting } from '@/src/scene/sceneSetting';
 import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
 import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
 import { Butterchurn } from '@/src/scene/scenes/butterchurn/butterchurn';
@@ -33,11 +33,11 @@ const animationWindowCreated = new GenericEvent(
 chrome.runtime.sendMessage(animationWindowCreated.toMessage());
 
 // Initialize scenes
-const scenesMap = new Map<string, Scene>();
-scenesMap.set('SunFlower', new SunFlower(canvas));
-scenesMap.set('SynthBars', new SynthBars(canvas));
-scenesMap.set('DancingHorizon', new DancingHorizon(canvas));
-scenesMap.set('Butterchurn', new Butterchurn(canvas));
+const scenesMap = new Map<string, IScene>();
+scenesMap.set('SunFlower', new SunFlower());
+scenesMap.set('SynthBars', new SynthBars());
+scenesMap.set('DancingHorizon', new DancingHorizon());
+scenesMap.set('Butterchurn', new Butterchurn());
 
 // Initialize scene manager
 const sceneManager = new SceneManager();
@@ -46,8 +46,8 @@ const sceneManager = new SceneManager();
 window.addEventListener(messageAction.setScene, (event) => {
     const sceneEvent = event.detail.event as SetSceneEvent;
     sceneManager.setScene(
-        scenesMap.get(sceneEvent.sceneName) as Scene,
-        sceneEvent.sceneSettings as SceneSetting
+        scenesMap.get(sceneEvent.sceneName) as IScene,
+        sceneEvent.sceneSettings as ISceneSetting
     );
 });
 // Change scene from external UI
@@ -57,7 +57,7 @@ chrome.runtime.onMessage.addListener((message: SetSceneEvent) => {
         message.action === messageAction.setScene
     ) {
         sceneManager.setScene(
-            scenesMap.get(message.sceneName) as Scene,
+            scenesMap.get(message.sceneName) as IScene,
             message.sceneSettings
         );
     }

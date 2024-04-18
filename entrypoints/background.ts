@@ -1,15 +1,15 @@
 export default defineBackground(async () => {
-
-  const { StartStreamEvent, messageTarget, messageAction, GenericEvent } = await import('@/src/utils/eventMessage');
+  const { InitiateStreamEvent, messageTarget, messageAction, GenericEvent } = await import('@/src/utils/eventMessage');
   let streaming = false;
-  let createdWindowId: number;
+  let createdWindowId: number | null = null;
   let tabId: number;
   async function startRecording() {
     const streamId = await chrome.tabCapture.getMediaStreamId({
       targetTabId: tabId
     });
+    console.log('streamId', streamId);
 
-    const startStreamMessage = new StartStreamEvent(messageTarget.offscreen, messageAction.startStream, streamId);
+    const startStreamMessage = new InitiateStreamEvent(messageTarget.offscreen, messageAction.initiateStream, streamId);
     chrome.runtime.sendMessage(startStreamMessage.toMessage());
     streaming = true;
   }
@@ -17,7 +17,6 @@ export default defineBackground(async () => {
     const stopStreamMessage = new GenericEvent(messageTarget.offscreen, messageAction.stopStream);
     chrome.runtime.sendMessage(stopStreamMessage.toMessage());
     streaming = false;
-    // chrome.action.setIcon({ path: 'icons/not-recording.png' });
   }
 
   chrome.action.onClicked.addListener(async (tab) => {
@@ -27,6 +26,20 @@ export default defineBackground(async () => {
     tabId = tab.id as number;
     streaming = true;
 
+
+    const existingContexts = await chrome.runtime.getContexts({});
+    const offscreenDocument = existingContexts.find(
+      (c) => c.contextType === 'OFFSCREEN_DOCUMENT'
+    );
+    if (!offscreenDocument) {
+      await chrome.offscreen.createDocument({
+        url: 'offscreenWindow.html',
+        reasons: [chrome.offscreen.Reason.USER_MEDIA],
+        justification: "play sound effects",
+      });
+    }
+    await startRecording();
+
     // Create the animation window
     let win = await chrome.windows.create({
       url: chrome.runtime.getURL('animationWindow.html'),
@@ -35,28 +48,9 @@ export default defineBackground(async () => {
       height: 900
     });
     createdWindowId = win.id as number;
-    console.log('created window', createdWindowId);
 
   });
 
-  // Start recording when animation window is created
-  chrome.runtime.onMessage.addListener(async (message: GenericEvent, sender, sendResponse) => {
-    if (message.target === messageTarget.background && message.action === messageAction.animationWindowCreated) {
-
-      const existingContexts = await chrome.runtime.getContexts({});
-      const offscreenDocument = existingContexts.find(
-        (c) => c.contextType === 'OFFSCREEN_DOCUMENT'
-      );
-      if (!offscreenDocument) {
-        await chrome.offscreen.createDocument({
-          url: 'offscreenWindow.html',
-          reasons: [chrome.offscreen.Reason.USER_MEDIA],
-          justification: "play sound effects",
-        });
-      }
-      await startRecording();
-    }
-  });
   // Listen for the window being closed
   chrome.windows.onRemoved.addListener((windowId) => {
     if (windowId === createdWindowId) {
