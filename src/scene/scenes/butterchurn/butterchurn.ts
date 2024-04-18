@@ -43,6 +43,9 @@ export class Butterchurn implements IScene {
         const dataR = new Uint8Array(this.audioData.timeByteArrayRight);
         const currentTime = +Date.now();
         const elapsedTime = (currentTime - this.lastTime) / 1000;
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.visualizer.setRendererSize(this.canvas.width, this.canvas.height);
         this.lastTime = currentTime;
         this.visualizer.render({
             elapsedTime: elapsedTime,
@@ -51,6 +54,7 @@ export class Butterchurn implements IScene {
                 timeByteArrayL: dataL,
                 timeByteArrayR: dataR,
             },
+            width: this.canvas.width,
         });
     }
     clean(): void {

@@ -151,6 +151,8 @@ export class SynthBars implements IScene {
             return;
         }
         // Update canvas size and viewport
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
