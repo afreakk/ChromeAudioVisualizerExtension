@@ -3,9 +3,9 @@ import { ISceneSetting } from '@/src/scene/sceneSetting';
 import { ButterChurnAudioDataDto, IAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import butterchurn from 'butterchurn';
 export class Butterchurn implements IScene {
-    private canvas;
+    private canvas: HTMLCanvasElement | null = null;
     private audioData: ButterChurnAudioDataDto;
-    private visualizer: any;
+    private visualizer: any = null;
     private lastTime: any;
     constructor() {
         this.audioData = new ButterChurnAudioDataDto([], [], []);
@@ -38,6 +38,10 @@ export class Butterchurn implements IScene {
 
     }
     render(): void {
+        if (this.canvas === null) {
+            return;
+        }
+
         const data = new Uint8Array(this.audioData.timeByteArray);
         const dataL = new Uint8Array(this.audioData.timeByteArrayLeft);
         const dataR = new Uint8Array(this.audioData.timeByteArrayRight);
@@ -58,6 +62,9 @@ export class Butterchurn implements IScene {
         });
     }
     clean(): void {
+        if (this.canvas === null) {
+            return;
+        }
         this.canvas.remove();
     }
 

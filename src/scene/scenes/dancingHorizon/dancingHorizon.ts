@@ -5,8 +5,8 @@ import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting
 import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
 
 export class DancingHorizon implements IScene {
-    private canvas;
-    private gl;
+    private canvas: HTMLCanvasElement | null = null;
+    private gl: WebGLRenderingContext | null = null;
     private audioTexture: WebGLTexture | null = null;
     private audioTextureUniformLocation: WebGLUniformLocation | null = null;
     private resolutionUniformLocation: WebGLUniformLocation | null = null;
@@ -316,6 +316,9 @@ export class DancingHorizon implements IScene {
         this.audioData = data;
     }
     render(): void {
+        if (this.canvas === null) {
+            return;
+        }
         if (!this.gl) {
             return;
         }
@@ -342,6 +345,9 @@ export class DancingHorizon implements IScene {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
     clean(): void {
+        if (this.canvas === null) {
+            return;
+        }
         if (!this.gl) {
             return;
         }
