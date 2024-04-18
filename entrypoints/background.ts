@@ -3,17 +3,16 @@ export default defineBackground(async () => {
   let streaming = false;
   let createdWindowId: number | null = null;
   let tabId: number;
-  async function startRecording() {
+  async function initiateStream() {
     const streamId = await chrome.tabCapture.getMediaStreamId({
       targetTabId: tabId
     });
-    console.log('streamId', streamId);
 
     const startStreamMessage = new InitiateStreamEvent(messageTarget.offscreen, messageAction.initiateStream, streamId);
     chrome.runtime.sendMessage(startStreamMessage.toMessage());
     streaming = true;
   }
-  function stopRecording() {
+  function stopStream() {
     const stopStreamMessage = new GenericEvent(messageTarget.offscreen, messageAction.stopStream);
     chrome.runtime.sendMessage(stopStreamMessage.toMessage());
     streaming = false;
@@ -38,7 +37,7 @@ export default defineBackground(async () => {
         justification: "play sound effects",
       });
     }
-    await startRecording();
+    await initiateStream();
 
     // Create the animation window
     let win = await chrome.windows.create({
@@ -56,7 +55,7 @@ export default defineBackground(async () => {
     if (windowId === createdWindowId) {
       createdWindowId = null;
       if (streaming) {
-        stopRecording();
+        stopStream();
         return;
       }
     }

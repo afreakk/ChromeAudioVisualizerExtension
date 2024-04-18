@@ -14,7 +14,7 @@ import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent'
 
 
 
-export class SettingsUi {
+export class SettingsUserInterface {
     private gui: dat.GUI;
     private isExternalUI: boolean = false;
     private sceneMap: Map<string, IScene>;

@@ -9,28 +9,11 @@ import { SceneManager } from '@/src/scene/sceneManager';
 import { SunFlower } from '@/src/scene/scenes/sunflower/sunflower';
 import { SynthBars } from '@/src/scene/scenes/synthBars/synthBars';
 import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon/dancingHorizon';
-import { SettingsUi } from '@/src/userInterface/settings/settings';
+import { SettingsUserInterface } from '@/src/userInterface/settings/settings';
 import { ISceneSetting } from '@/src/scene/sceneSetting';
 import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
 import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
 import { Butterchurn } from '@/src/scene/scenes/butterchurn/butterchurn';
-
-// Create canvas for animation
-const canvas = document.createElement('canvas');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-canvas.style.position = 'fixed';
-canvas.style.left = '0';
-canvas.style.top = '0';
-canvas.style.zIndex = '-1';
-document.body.insertBefore(canvas, document.body.firstChild);
-
-// Send message to background to notify that animation window is created
-const animationWindowCreated = new GenericEvent(
-    messageTarget.background,
-    messageAction.animationWindowCreated
-);
-chrome.runtime.sendMessage(animationWindowCreated.toMessage());
 
 // Initialize scenes
 const scenesMap = new Map<string, IScene>();
@@ -86,10 +69,8 @@ chrome.runtime.onMessage.addListener((message: AudioDataEvent) => {
 });
 
 // Initialize settings UI
-const settingsUi = new SettingsUi(scenesMap, false);
+const settingsUserInterface = new SettingsUserInterface(scenesMap, false);
 function render() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
     sceneManager.renderScene();
     requestAnimationFrame(render);
 }
