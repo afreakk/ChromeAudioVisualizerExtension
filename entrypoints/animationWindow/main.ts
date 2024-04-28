@@ -16,10 +16,12 @@ import { Butterchurn } from '@/src/scene/scenes/butterchurn/butterchurn';
 import { sceneNames } from '@/src/scene/sceneNames';
 import { SettingsWindowEvent } from '@/src/userInterface/settings/events/SettingsWindowEvent';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
+import { FrostFire } from '@/src/scene/scenes/frostfire/frostfire';
 
 // Initialize scenes
 const scenesMap = new Map<string, IScene>();
 scenesMap.set(sceneNames.SunFlower.toString(), new SunFlower());
+scenesMap.set(sceneNames.FrostFire.toString(), new FrostFire());
 scenesMap.set(sceneNames.SynthBars.toString(), new SynthBars());
 scenesMap.set(sceneNames.DancingHorizon.toString(), new DancingHorizon());
 scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());

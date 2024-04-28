@@ -12,6 +12,8 @@ import { dancingHorizonSettings } from './sceneSettings/dancingHorizonSettings';
 import { setSceneSettings } from './settingsManager';
 import { sceneNames } from '@/src/scene/sceneNames';
 import { SettingsWindowEvent } from './events/SettingsWindowEvent';
+import { FrostFireSetting } from '@/src/scene/scenes/frostfire/settings';
+import { frostFireSettings } from './sceneSettings/frostfireSettings';
 
 export class SettingsUserInterface {
     private gui: dat.GUI | null = null;
@@ -122,6 +124,18 @@ export class SettingsUserInterface {
             synthBarSettings(sceneName, synthbarSetting, this.sceneSettingsFolder, this.isExternalUI);
 
             return synthbarSetting;
+        } else if (sceneName === sceneNames.FrostFire.toString()) {
+            let frostFireSetting = settings ? settings as FrostFireSetting : new FrostFireSetting();
+            this.sceneSettingsFolder.add({
+                reset: () => {
+                    frostFireSetting = new FrostFireSetting();
+                    setSceneSettings(frostFireSetting, sceneName, this.isExternalUI);
+                    this.buildSettings(sceneName);
+                }
+            }, 'reset').name('Reset Settings');
+            frostFireSettings(sceneName, frostFireSetting, this.sceneSettingsFolder, this.isExternalUI);
+
+            return frostFireSetting;
         } else if (sceneName === sceneNames.DancingHorizon.toString()) {
             let dancingHorizonSetting = settings ? settings as DancingHorizonSetting : new DancingHorizonSetting();
             setSceneSettings(dancingHorizonSetting, sceneName, this.isExternalUI);
