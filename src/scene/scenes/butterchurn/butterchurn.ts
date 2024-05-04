@@ -1,12 +1,19 @@
 import { IScene } from '@/src/scene/scene';
 import { ISceneSetting } from '@/src/scene/sceneSetting';
-import { ButterChurnAudioDataDto, IAudioDataDto, streamType } from '@/src/utils/eventMessage';
+import {
+    ButterChurnAudioDataDto,
+    IAudioDataDto,
+    streamType,
+} from '@/src/utils/eventMessage';
 import butterchurn from 'butterchurn';
+import butterchurnPresets from 'butterchurn-presets';
+
 export class Butterchurn implements IScene {
     private canvas: HTMLCanvasElement | null = null;
     private audioData: ButterChurnAudioDataDto;
     private visualizer: any = null;
     private lastTime: any;
+    private lol: boolean = true;
     constructor() {
         this.audioData = new ButterChurnAudioDataDto([], [], []);
     }
@@ -30,16 +37,21 @@ export class Butterchurn implements IScene {
             textureRatio: 1,
         });
     }
-    updateSettings(settings: ISceneSetting): void { }
+    updateSettings(settings: ISceneSetting): void {}
     updateAudioData(data: ButterChurnAudioDataDto): void {
         if (data.timeByteArrayLeft !== undefined) {
             this.audioData = data;
         }
-
     }
     render(): void {
         if (this.canvas === null) {
             return;
+        }
+        if (this.lol === true) {
+            this.lol = false;
+            const presets = butterchurnPresets.getPresets();
+            const preset = presets[Object.keys(presets)[0]];
+            this.visualizer.loadPreset(preset, 0.0); // 2nd argument is the number of seconds to blend presets
         }
 
         const data = new Uint8Array(this.audioData.timeByteArray);
@@ -67,5 +79,4 @@ export class Butterchurn implements IScene {
         }
         this.canvas.remove();
     }
-
 }

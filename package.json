@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "butterchurn": "^2.6.7",
+    "butterchurn-presets": "^2.4.7",
     "dat.gui": "^0.7.9",
     "gl-matrix": "^3.4.3"
   }
