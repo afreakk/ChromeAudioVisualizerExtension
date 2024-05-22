@@ -7,7 +7,7 @@ export default defineConfig({
     manifest: {
         permissions: ["tabCapture", "offscreen", "tabs", "activeTab"],
         action: {
-            default_icon: "wxt.svg"
+            default_icon: "icon/icon256.png"
         }
     },
 });
