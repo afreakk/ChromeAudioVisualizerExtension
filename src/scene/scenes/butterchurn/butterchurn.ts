@@ -50,7 +50,15 @@ export class Butterchurn implements IScene {
         if (this.lol === true) {
             this.lol = false;
             const presets = butterchurnPresets.getPresets();
-            const preset = presets[Object.keys(presets)[0]];
+            let preset;
+            let i = 1;
+            do {
+                const name = Object.keys(presets)[i];
+                console.log(name);
+                preset = presets[name];
+                console.log(preset.init_eqs);
+                i++;
+            } while (false);
             this.visualizer.loadPreset(preset, 0.0); // 2nd argument is the number of seconds to blend presets
         }
 
