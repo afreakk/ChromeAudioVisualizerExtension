@@ -5,9 +5,9 @@ export default defineConfig({
         startUrls: ['https://soundcloud.com/ferzrrn/sets/synthwave'],
     },
     manifest: {
-        permissions: ["tabCapture", "offscreen", "tabs", "activeTab"],
+        permissions: ['tabCapture', 'offscreen', 'tabs', 'activeTab'],
         action: {
             default_icon: "icon/icon256.png"
-        }
+        },
     },
 });
