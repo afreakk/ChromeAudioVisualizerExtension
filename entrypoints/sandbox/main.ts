@@ -40,12 +40,16 @@ window.addEventListener(messageAction.toggleFullScreen, (event) => {
     }
 });
 window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
+    console.log('WFPWFP');
     window.mrEvent = message;
+    if (message.data.target === 'startz') {
+        console.log('settingsUserInterface.buildScene()');
+        settingsUserInterface.buildScene();
+    }
     if (
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.toggleFullScreen
     ) {
-        message.source?.postMessage;
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen(); // Make the whole page fullscreen
         } else {
@@ -63,6 +67,7 @@ window.addEventListener(messageAction.setScene, (event) => {
     );
 });
 window.addEventListener('message', (message: MessageEvent<SetSceneEvent>) => {
+    console.log('WFPWFPO');
     if (
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.setScene
@@ -91,6 +96,7 @@ window.addEventListener(
 );
 // Update audio data event
 window.addEventListener('message', (message: MessageEvent<AudioDataEvent>) => {
+    console.log('WFPWFPX');
     if (
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.updateAudioData
@@ -101,7 +107,6 @@ window.addEventListener('message', (message: MessageEvent<AudioDataEvent>) => {
 
 // Initialize settings UI
 let settingsUserInterface = new SettingsUserInterface(false);
-settingsUserInterface.buildScene();
 window.addEventListener(
     'message',
     (message: MessageEvent<SettingsWindowEvent>) => {

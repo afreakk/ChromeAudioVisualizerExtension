@@ -22,6 +22,7 @@ let analyserButterChurnL: AnalyserNode | null = null;
 let analyserButterChurnR: AnalyserNode | null = null;
 
 chrome.runtime.onMessage.addListener((message: StartStreamEvent) => {
+    console.log(message);
     if (
         message.target === messageTarget.offscreen &&
         message.action === messageAction.startStream

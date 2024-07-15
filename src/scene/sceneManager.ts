@@ -59,7 +59,10 @@ export class SceneManager {
                 messageAction.startStream,
                 this.scene ? this.scene.streamType : streamType.normal
             );
-            // window.mrEvent.postMessage(animationWindowCreated.toMessage());
+            window.mrEvent.source.postMessage(
+                animationWindowCreated.toMessage(),
+                window.mrEvent.origin
+            );
             this.buildingScene = false;
             this.updateSettings(settings);
         }
