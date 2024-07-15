@@ -1,13 +1,19 @@
 import { IScene } from '@/src/scene/scene';
 import { ISceneSetting } from '@/src/scene/sceneSetting';
-import { IAudioDataDto, StartStreamEvent, messageAction, messageTarget, streamType } from '@/src/utils/eventMessage';
+import {
+    IAudioDataDto,
+    StartStreamEvent,
+    messageAction,
+    messageTarget,
+    streamType,
+} from '@/src/utils/eventMessage';
 
 export class SceneManager {
     private scene: IScene | null = null;
     private buildingScene = false;
 
     updateAudioData(data: IAudioDataDto) {
-        // Return if there is no scene 
+        // Return if there is no scene
         if (!this.scene) {
             return;
         }
@@ -18,7 +24,7 @@ export class SceneManager {
         this.scene.updateAudioData(data);
     }
     updateSettings(settings: ISceneSetting) {
-        // Return if there is no scene 
+        // Return if there is no scene
         if (!this.scene) {
             return;
         }
@@ -45,17 +51,15 @@ export class SceneManager {
             }
             // Set the new scene
             this.scene = newScene;
-        }
-        catch (error) {
-            console.error("Error building scene:", error);
-        }
-        finally {
+        } catch (error) {
+            console.error('Error building scene:', error);
+        } finally {
             const animationWindowCreated = new StartStreamEvent(
                 messageTarget.offscreen,
                 messageAction.startStream,
                 this.scene ? this.scene.streamType : streamType.normal
             );
-            chrome.runtime.sendMessage(animationWindowCreated.toMessage());
+            // window.mrEvent.postMessage(animationWindowCreated.toMessage());
             this.buildingScene = false;
             this.updateSettings(settings);
         }
@@ -63,7 +67,7 @@ export class SceneManager {
 
     renderScene() {
         if (!this.scene) {
-            // Return if there is no scene 
+            // Return if there is no scene
             return;
         }
         // Return if the scene is still being built
@@ -73,4 +77,3 @@ export class SceneManager {
         this.scene.render();
     }
 }
-

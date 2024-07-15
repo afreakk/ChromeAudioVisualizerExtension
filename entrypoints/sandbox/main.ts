@@ -27,6 +27,7 @@ scenesMap.set(sceneNames.DancingHorizon.toString(), new DancingHorizon());
 scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
 // Initialize scene manager
 const sceneManager = new SceneManager();
+window.mrEvent = null;
 
 // Fullscreen event
 window.addEventListener(messageAction.toggleFullScreen, (event) => {
@@ -38,11 +39,13 @@ window.addEventListener(messageAction.toggleFullScreen, (event) => {
         }
     }
 });
-chrome.runtime.onMessage.addListener((message: GenericEvent) => {
+window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
+    window.mrEvent = message;
     if (
-        message.target === messageTarget.animation &&
-        message.action === messageAction.toggleFullScreen
+        message.data.target === messageTarget.animation &&
+        message.data.action === messageAction.toggleFullScreen
     ) {
+        message.source?.postMessage;
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen(); // Make the whole page fullscreen
         } else {
@@ -59,14 +62,14 @@ window.addEventListener(messageAction.setScene, (event) => {
         sceneEvent.sceneSettings as ISceneSetting
     );
 });
-chrome.runtime.onMessage.addListener((message: SetSceneEvent) => {
+window.addEventListener('message', (message: MessageEvent<SetSceneEvent>) => {
     if (
-        message.target === messageTarget.animation &&
-        message.action === messageAction.setScene
+        message.data.target === messageTarget.animation &&
+        message.data.action === messageAction.setScene
     ) {
         sceneManager.setScene(
-            scenesMap.get(message.sceneName) as IScene,
-            message.sceneSettings
+            scenesMap.get(message.data.sceneName) as IScene,
+            message.data.sceneSettings
         );
     }
 });
@@ -75,36 +78,44 @@ window.addEventListener(messageAction.setSceneSettings, (event) => {
     const sceneSettingsEvent = event.detail.event as SetSceneSettingsEvent;
     sceneManager.updateSettings(sceneSettingsEvent.sceneSettings);
 });
-chrome.runtime.onMessage.addListener((message: SetSceneSettingsEvent) => {
-    if (
-        message.target === messageTarget.animation &&
-        message.action === messageAction.setSceneSettings
-    ) {
-        sceneManager.updateSettings(message.sceneSettings);
+window.addEventListener(
+    'message',
+    (message: MessageEvent<SetSceneSettingsEvent>) => {
+        if (
+            message.data.target === messageTarget.animation &&
+            message.data.action === messageAction.setSceneSettings
+        ) {
+            sceneManager.updateSettings(message.data.sceneSettings);
+        }
     }
-});
+);
 // Update audio data event
-chrome.runtime.onMessage.addListener((message: AudioDataEvent) => {
+window.addEventListener('message', (message: MessageEvent<AudioDataEvent>) => {
     if (
-        message.target === messageTarget.animation &&
-        message.action === messageAction.updateAudioData
+        message.data.target === messageTarget.animation &&
+        message.data.action === messageAction.updateAudioData
     ) {
-        sceneManager.updateAudioData(message.audioData);
+        sceneManager.updateAudioData(message.data.audioData);
     }
 });
 
 // Initialize settings UI
 let settingsUserInterface = new SettingsUserInterface(false);
 settingsUserInterface.buildScene();
-chrome.runtime.onMessage.addListener((message: SettingsWindowEvent) => {
-    if (message.target === messageTarget.animation) {
-        if (message.action === messageAction.openSettingsWindow) {
-            settingsUserInterface.destroy();
-        } else if (message.action === messageAction.closeSettingsWindow) {
-            settingsUserInterface.buildScene();
+window.addEventListener(
+    'message',
+    (message: MessageEvent<SettingsWindowEvent>) => {
+        if (message.data.target === messageTarget.animation) {
+            if (message.data.action === messageAction.openSettingsWindow) {
+                settingsUserInterface.destroy();
+            } else if (
+                message.data.action === messageAction.closeSettingsWindow
+            ) {
+                settingsUserInterface.buildScene();
+            }
         }
     }
-});
+);
 function render() {
     sceneManager.renderScene();
     requestAnimationFrame(render);
