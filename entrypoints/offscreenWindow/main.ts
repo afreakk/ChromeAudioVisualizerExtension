@@ -21,17 +21,23 @@ let analyserButterChurn: AnalyserNode | null = null;
 let analyserButterChurnL: AnalyserNode | null = null;
 let analyserButterChurnR: AnalyserNode | null = null;
 
+const interval = setInterval(function () {
+    console.log('yooo');
+    // method to be executed;
+}, 5000);
 chrome.runtime.onMessage.addListener((message: StartStreamEvent) => {
     console.log(message);
     if (
         message.target === messageTarget.offscreen &&
         message.action === messageAction.startStream
     ) {
+        console.log('start-stream--');
         currentStreamType = message.streamType;
         startStream();
     }
 });
 chrome.runtime.onMessage.addListener((message: InitiateStreamEvent) => {
+    console.log(message);
     if (
         message.target === messageTarget.offscreen &&
         message.action === messageAction.initiateStream
@@ -41,6 +47,7 @@ chrome.runtime.onMessage.addListener((message: InitiateStreamEvent) => {
     }
 });
 chrome.runtime.onMessage.addListener((message: GenericEvent) => {
+    console.log(message);
     if (
         message.target === messageTarget.offscreen &&
         message.action === messageAction.stopStream

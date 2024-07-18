@@ -40,7 +40,6 @@ window.addEventListener(messageAction.toggleFullScreen, (event) => {
     }
 });
 window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
-    console.log('WFPWFP');
     window.mrEvent = message;
     if (message.data.target === 'startz') {
         console.log('settingsUserInterface.buildScene()');
@@ -50,6 +49,7 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.toggleFullScreen
     ) {
+        console.log('sandbox toggleFullScreen');
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen(); // Make the whole page fullscreen
         } else {
@@ -67,11 +67,11 @@ window.addEventListener(messageAction.setScene, (event) => {
     );
 });
 window.addEventListener('message', (message: MessageEvent<SetSceneEvent>) => {
-    console.log('WFPWFPO');
     if (
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.setScene
     ) {
+        console.log('sandbox setScene');
         sceneManager.setScene(
             scenesMap.get(message.data.sceneName) as IScene,
             message.data.sceneSettings
@@ -96,11 +96,11 @@ window.addEventListener(
 );
 // Update audio data event
 window.addEventListener('message', (message: MessageEvent<AudioDataEvent>) => {
-    console.log('WFPWFPX');
     if (
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.updateAudioData
     ) {
+        console.log('sandbox updateAudioData');
         sceneManager.updateAudioData(message.data.audioData);
     }
 });

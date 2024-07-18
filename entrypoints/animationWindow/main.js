@@ -1,19 +1,18 @@
-console.log(document.getElementById('theFrame')?.contentWindow.postMessage);
 chrome.runtime.onMessage.addListener((message) => {
-    console.log('hi');
+    console.log('from offscreen, passsing on to sandbox');
     document
         .getElementById('theFrame')
         ?.contentWindow?.postMessage(message, '*');
 });
 
-setTimeout(() => {
-    console.log('WW');
+window.addEventListener('load', function () {
+    console.log('onload, sending start');
     document
         .getElementById('theFrame')
         ?.contentWindow?.postMessage({ target: 'startz' }, '*');
-}, 50);
+});
 
 window.addEventListener('message', function (e) {
-    console.log('ho');
+    console.log('from sandbox, sending to offscreen', e.data);
     chrome.runtime.sendMessage(e.data);
 });
