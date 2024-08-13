@@ -37,7 +37,7 @@ export class Butterchurn implements IScene {
             textureRatio: 1,
         });
     }
-    updateSettings(settings: ISceneSetting): void {}
+    updateSettings(settings: ISceneSetting): void { }
     updateAudioData(data: ButterChurnAudioDataDto): void {
         if (data.timeByteArrayLeft !== undefined) {
             this.audioData = data;
@@ -54,9 +54,7 @@ export class Butterchurn implements IScene {
             let i = 1;
             do {
                 const name = Object.keys(presets)[i];
-                console.log(name);
                 preset = presets[name];
-                console.log(preset.init_eqs);
                 i++;
             } while (false);
             this.visualizer.loadPreset(preset, 0.0); // 2nd argument is the number of seconds to blend presets
