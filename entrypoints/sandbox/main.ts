@@ -29,16 +29,7 @@ scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
 const sceneManager = new SceneManager();
 window.sandboxEventMessageHolder = null;
 
-// Fullscreen event
-window.addEventListener(messageAction.toggleFullScreen, (event) => {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen(); // Make the whole page fullscreen
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen(); // Exit fullscreen mode
-        }
-    }
-});
+
 window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
     window.sandboxEventMessageHolder = message;
     if (message.data.target === 'animationWindowReadyEvent') {
@@ -49,15 +40,21 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.toggleFullScreen
     ) {
-        console.log('sandbox toggleFullScreen');
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen(); // Make the whole page fullscreen
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen(); // Exit fullscreen mode
-            }
-        }
+        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
+
+        window.sandboxEventMessageHolder.source.postMessage(
+            fullScreenEventMessage.toMessage(),
+            window.sandboxEventMessageHolder.origin
+        );
     }
+});
+window.addEventListener(messageAction.toggleFullScreen, (event) => {
+    const toggleFullScreenViaOffscreen = new GenericEvent(messageTarget.offscreen, messageAction.toggleFullScreen);
+
+    window.sandboxEventMessageHolder.source.postMessage(
+        toggleFullScreenViaOffscreen.toMessage(),
+        window.sandboxEventMessageHolder.origin
+    );
 });
 window.addEventListener(messageAction.setScene, (event) => {
     const sceneEvent = event.detail.event as SetSceneEvent;
@@ -71,7 +68,6 @@ window.addEventListener('message', (message: MessageEvent<SetSceneEvent>) => {
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.setScene
     ) {
-        console.log('sandbox setScene');
         sceneManager.setScene(
             scenesMap.get(message.data.sceneName) as IScene,
             message.data.sceneSettings
