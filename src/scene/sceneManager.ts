@@ -59,9 +59,9 @@ export class SceneManager {
                 messageAction.startStream,
                 this.scene ? this.scene.streamType : streamType.normal
             );
-            window.mrEvent.source.postMessage(
+            window.sandboxEventMessageHolder.source.postMessage(
                 animationWindowCreated.toMessage(),
-                window.mrEvent.origin
+                window.sandboxEventMessageHolder.origin
             );
             this.buildingScene = false;
             this.updateSettings(settings);

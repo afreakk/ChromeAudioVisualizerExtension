@@ -62,7 +62,6 @@ export default defineBackground(async () => {
 
     chrome.runtime.onMessage.addListener(
         async (message: SettingsWindowEvent) => {
-            console.log('jo', message);
             if (
                 message.target === messageTarget.background &&
                 message.action === messageAction.openSettingsWindow

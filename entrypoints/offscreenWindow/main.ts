@@ -21,12 +21,9 @@ let analyserButterChurn: AnalyserNode | null = null;
 let analyserButterChurnL: AnalyserNode | null = null;
 let analyserButterChurnR: AnalyserNode | null = null;
 
-const interval = setInterval(function () {
-    console.log('yooo');
-    // method to be executed;
-}, 5000);
+
 chrome.runtime.onMessage.addListener((message: StartStreamEvent) => {
-    console.log(message);
+    console.log("startStreamEvent");
     if (
         message.target === messageTarget.offscreen &&
         message.action === messageAction.startStream

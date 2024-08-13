@@ -27,7 +27,7 @@ scenesMap.set(sceneNames.DancingHorizon.toString(), new DancingHorizon());
 scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
 // Initialize scene manager
 const sceneManager = new SceneManager();
-window.mrEvent = null;
+window.sandboxEventMessageHolder = null;
 
 // Fullscreen event
 window.addEventListener(messageAction.toggleFullScreen, (event) => {
@@ -40,9 +40,9 @@ window.addEventListener(messageAction.toggleFullScreen, (event) => {
     }
 });
 window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
-    window.mrEvent = message;
-    if (message.data.target === 'startz') {
-        console.log('settingsUserInterface.buildScene()');
+    window.sandboxEventMessageHolder = message;
+    if (message.data.target === 'animationWindowReadyEvent') {
+        console.log('animationWindowReadyEvent');
         settingsUserInterface.buildScene();
     }
     if (
@@ -100,7 +100,6 @@ window.addEventListener('message', (message: MessageEvent<AudioDataEvent>) => {
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.updateAudioData
     ) {
-        console.log('sandbox updateAudioData');
         sceneManager.updateAudioData(message.data.audioData);
     }
 });

@@ -38,7 +38,11 @@ export class SettingsUserInterface {
             this.generalSettingsFolder.add({
                 openInWindow: () => {
                     const openSettingsWindowEvent = new SettingsWindowEvent(messageTarget.background, messageAction.openSettingsWindow);
-                    chrome.runtime.sendMessage(openSettingsWindowEvent.toMessage());
+
+                    window.sandboxEventMessageHolder.source.postMessage(
+                        openSettingsWindowEvent.toMessage(),
+                        window.sandboxEventMessageHolder.origin
+                    );
                 }
             }, 'openInWindow').name('Open settings in Window');
         }

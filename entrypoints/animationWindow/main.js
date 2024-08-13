@@ -1,18 +1,16 @@
 chrome.runtime.onMessage.addListener((message) => {
-    console.log('from offscreen, passsing on to sandbox');
     document
         .getElementById('theFrame')
         ?.contentWindow?.postMessage(message, '*');
 });
 
-window.addEventListener('load', function () {
+window.addEventListener('load', function() {
     console.log('onload, sending start');
     document
         .getElementById('theFrame')
-        ?.contentWindow?.postMessage({ target: 'startz' }, '*');
+        ?.contentWindow?.postMessage({ target: 'animationWindowReadyEvent' }, '*');
 });
 
-window.addEventListener('message', function (e) {
-    console.log('from sandbox, sending to offscreen', e.data);
+window.addEventListener('message', function(e) {
     chrome.runtime.sendMessage(e.data);
 });
