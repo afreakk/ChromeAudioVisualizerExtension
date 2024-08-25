@@ -1,8 +1,12 @@
 import * as dat from 'dat.gui';
-import { GenericEvent, messageAction, messageTarget } from '@/src/utils/eventMessage';
-import { DancingHorizonSetting } from "@/src/scene/scenes/dancingHorizon/setting";
-import { SynthBarsSetting } from "@/src/scene/scenes/synthBars/setting";
-import { SunFlowerSetting } from "@/src/scene/scenes/sunflower/setting";
+import {
+    GenericEvent,
+    messageAction,
+    messageTarget,
+} from '@/src/utils/eventMessage';
+import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
+import { SynthBarsSetting } from '@/src/scene/scenes/synthBars/setting';
+import { SunFlowerSetting } from '@/src/scene/scenes/sunflower/setting';
 import { ISceneSetting } from '@/src/scene/sceneSetting';
 import { loadSettings } from '@/src/utils/settings';
 import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
@@ -14,6 +18,8 @@ import { sceneNames } from '@/src/scene/sceneNames';
 import { SettingsWindowEvent } from './events/SettingsWindowEvent';
 import { FrostFireSetting } from '@/src/scene/scenes/frostfire/settings';
 import { frostFireSettings } from './sceneSettings/frostfireSettings';
+import { ButterchurnSettings } from '@/src/scene/scenes/butterchurn/setting';
+import { buildButterchurnSetting } from './sceneSettings/butterchurnSettings';
 
 export class SettingsUserInterface {
     private gui: dat.GUI | null = null;
@@ -29,35 +35,50 @@ export class SettingsUserInterface {
         for (const scene in sceneNames) {
             this.sceneNames.push(scene);
         }
-
     }
     public buildScene() {
         this.gui = new dat.GUI();
-        this.generalSettingsFolder = this.gui.addFolder("General Settings");
+        this.generalSettingsFolder = this.gui.addFolder('General Settings');
         if (!this.isExternalUI) {
-            this.generalSettingsFolder.add({
-                openInWindow: () => {
-                    const openSettingsWindowEvent = new SettingsWindowEvent(messageTarget.background, messageAction.openSettingsWindow);
+            this.generalSettingsFolder
+                .add(
+                    {
+                        openInWindow: () => {
+                            const openSettingsWindowEvent =
+                                new SettingsWindowEvent(
+                                    messageTarget.background,
+                                    messageAction.openSettingsWindow
+                                );
 
-                    window.sandboxEventMessageHolder.source.postMessage(
-                        openSettingsWindowEvent.toMessage(),
-                        window.sandboxEventMessageHolder.origin
-                    );
-                }
-            }, 'openInWindow').name('Open settings in Window');
+                            window.sandboxEventMessageHolder.source.postMessage(
+                                openSettingsWindowEvent.toMessage(),
+                                window.sandboxEventMessageHolder.origin
+                            );
+                        },
+                    },
+                    'openInWindow'
+                )
+                .name('Open settings in Window');
         }
-        this.generalSettingsFolder.add({
-            toggleFullScreen: () => {
-                this.toggleFullScreen();
-            }
-        }, 'toggleFullScreen').name('Toggle Fullscreen');
+        this.generalSettingsFolder
+            .add(
+                {
+                    toggleFullScreen: () => {
+                        this.toggleFullScreen();
+                    },
+                },
+                'toggleFullScreen'
+            )
+            .name('Toggle Fullscreen');
         this.generalSettingsFolder.open();
 
         const selection = {
             selectedSceneName: this.sceneNames[0].toString(),
         };
-        this.sceneFolder = this.gui.addFolder("Scenes");
-        const sceneSelector = this.sceneFolder.add(selection, 'selectedSceneName', sceneNames).name('Select Scene');
+        this.sceneFolder = this.gui.addFolder('Scenes');
+        const sceneSelector = this.sceneFolder
+            .add(selection, 'selectedSceneName', sceneNames)
+            .name('Select Scene');
 
         sceneSelector.onChange((selectedSceneName: string) => {
             this.setScene(selectedSceneName);
@@ -68,11 +89,17 @@ export class SettingsUserInterface {
         this.setScene(selection.selectedSceneName);
     }
     private toggleFullScreen() {
-        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
+        const fullScreenEventMessage = new GenericEvent(
+            messageTarget.animation,
+            messageAction.toggleFullScreen
+        );
         if (!this.isExternalUI) {
-            const fullScreenEvent = new CustomEvent(messageAction.toggleFullScreen, {
-                detail: { event: fullScreenEventMessage.toMessage() }
-            });
+            const fullScreenEvent = new CustomEvent(
+                messageAction.toggleFullScreen,
+                {
+                    detail: { event: fullScreenEventMessage.toMessage() },
+                }
+            );
             window.dispatchEvent(fullScreenEvent);
         } else {
             chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
@@ -80,10 +107,15 @@ export class SettingsUserInterface {
     }
     private setScene(sceneName: string) {
         const settings = this.buildSettings(sceneName);
-        const sceneEventMessage = new SetSceneEvent(messageTarget.animation, messageAction.setScene, sceneName, settings);
+        const sceneEventMessage = new SetSceneEvent(
+            messageTarget.animation,
+            messageAction.setScene,
+            sceneName,
+            settings
+        );
         if (!this.isExternalUI) {
             const changeSceneEvent = new CustomEvent(messageAction.setScene, {
-                detail: { event: sceneEventMessage.toMessage() }
+                detail: { event: sceneEventMessage.toMessage() },
             });
             window.dispatchEvent(changeSceneEvent);
         } else {
@@ -101,59 +133,156 @@ export class SettingsUserInterface {
         this.sceneSettingsFolder = this.sceneFolder.addFolder('Scene Settings');
         this.sceneSettingsFolder.open();
 
-
         const settings = loadSettings<ISceneSetting>(sceneName);
         if (sceneName === sceneNames.SunFlower.toString()) {
-            let sunFlowerSetting = settings ? settings as SunFlowerSetting : new SunFlowerSetting();
-            this.sceneSettingsFolder.add({
-                reset: () => {
-                    sunFlowerSetting = new SunFlowerSetting();
-                    setSceneSettings(sunFlowerSetting, sceneName, this.isExternalUI);
-                    this.buildSettings(sceneName);
-                }
-            }, 'reset').name('Reset Settings');
+            let sunFlowerSetting = settings
+                ? (settings as SunFlowerSetting)
+                : new SunFlowerSetting();
+            this.sceneSettingsFolder
+                .add(
+                    {
+                        reset: () => {
+                            sunFlowerSetting = new SunFlowerSetting();
+                            setSceneSettings(
+                                sunFlowerSetting,
+                                sceneName,
+                                this.isExternalUI
+                            );
+                            this.buildSettings(sceneName);
+                        },
+                    },
+                    'reset'
+                )
+                .name('Reset Settings');
 
-            sunFlowerSettings(sceneName, sunFlowerSetting, this.sceneSettingsFolder, this.isExternalUI);
+            sunFlowerSettings(
+                sceneName,
+                sunFlowerSetting,
+                this.sceneSettingsFolder,
+                this.isExternalUI
+            );
 
             return sunFlowerSetting;
         } else if (sceneName === sceneNames.SynthBars.toString()) {
-            let synthbarSetting = settings ? settings as SynthBarsSetting : new SynthBarsSetting();
-            this.sceneSettingsFolder.add({
-                reset: () => {
-                    synthbarSetting = new SynthBarsSetting();
-                    setSceneSettings(synthbarSetting, sceneName, this.isExternalUI);
-                    this.buildSettings(sceneName);
-                }
-            }, 'reset').name('Reset Settings');
-            synthBarSettings(sceneName, synthbarSetting, this.sceneSettingsFolder, this.isExternalUI);
+            let synthbarSetting = settings
+                ? (settings as SynthBarsSetting)
+                : new SynthBarsSetting();
+            this.sceneSettingsFolder
+                .add(
+                    {
+                        reset: () => {
+                            synthbarSetting = new SynthBarsSetting();
+                            setSceneSettings(
+                                synthbarSetting,
+                                sceneName,
+                                this.isExternalUI
+                            );
+                            this.buildSettings(sceneName);
+                        },
+                    },
+                    'reset'
+                )
+                .name('Reset Settings');
+            synthBarSettings(
+                sceneName,
+                synthbarSetting,
+                this.sceneSettingsFolder,
+                this.isExternalUI
+            );
 
             return synthbarSetting;
         } else if (sceneName === sceneNames.FrostFire.toString()) {
-            let frostFireSetting = settings ? settings as FrostFireSetting : new FrostFireSetting();
-            this.sceneSettingsFolder.add({
-                reset: () => {
-                    frostFireSetting = new FrostFireSetting();
-                    setSceneSettings(frostFireSetting, sceneName, this.isExternalUI);
-                    this.buildSettings(sceneName);
-                }
-            }, 'reset').name('Reset Settings');
-            frostFireSettings(sceneName, frostFireSetting, this.sceneSettingsFolder, this.isExternalUI);
+            let frostFireSetting = settings
+                ? (settings as FrostFireSetting)
+                : new FrostFireSetting();
+            this.sceneSettingsFolder
+                .add(
+                    {
+                        reset: () => {
+                            frostFireSetting = new FrostFireSetting();
+                            setSceneSettings(
+                                frostFireSetting,
+                                sceneName,
+                                this.isExternalUI
+                            );
+                            this.buildSettings(sceneName);
+                        },
+                    },
+                    'reset'
+                )
+                .name('Reset Settings');
+            frostFireSettings(
+                sceneName,
+                frostFireSetting,
+                this.sceneSettingsFolder,
+                this.isExternalUI
+            );
 
             return frostFireSetting;
         } else if (sceneName === sceneNames.DancingHorizon.toString()) {
-            let dancingHorizonSetting = settings ? settings as DancingHorizonSetting : new DancingHorizonSetting();
-            setSceneSettings(dancingHorizonSetting, sceneName, this.isExternalUI);
+            let dancingHorizonSetting = settings
+                ? (settings as DancingHorizonSetting)
+                : new DancingHorizonSetting();
+            setSceneSettings(
+                dancingHorizonSetting,
+                sceneName,
+                this.isExternalUI
+            );
 
-            this.sceneSettingsFolder.add({
-                reset: () => {
-                    dancingHorizonSetting = new DancingHorizonSetting();
-                    setSceneSettings(dancingHorizonSetting, sceneName, this.isExternalUI);
-                    this.buildSettings(sceneName);
-                }
-            }, 'reset').name('Reset Settings');
-            dancingHorizonSettings(sceneName, dancingHorizonSetting, this.sceneSettingsFolder, this.isExternalUI);
+            this.sceneSettingsFolder
+                .add(
+                    {
+                        reset: () => {
+                            dancingHorizonSetting = new DancingHorizonSetting();
+                            setSceneSettings(
+                                dancingHorizonSetting,
+                                sceneName,
+                                this.isExternalUI
+                            );
+                            this.buildSettings(sceneName);
+                        },
+                    },
+                    'reset'
+                )
+                .name('Reset Settings');
+            dancingHorizonSettings(
+                sceneName,
+                dancingHorizonSetting,
+                this.sceneSettingsFolder,
+                this.isExternalUI
+            );
 
             return dancingHorizonSetting;
+        } else if (sceneName === sceneNames.Butterchurn.toString()) {
+            let butterChurnSettings = settings
+                ? (settings as ButterchurnSettings)
+                : new ButterchurnSettings();
+            setSceneSettings(butterChurnSettings, sceneName, this.isExternalUI);
+
+            this.sceneSettingsFolder
+                .add(
+                    {
+                        reset: () => {
+                            butterChurnSettings = new ButterchurnSettings();
+                            setSceneSettings(
+                                butterChurnSettings,
+                                sceneName,
+                                this.isExternalUI
+                            );
+                            this.buildSettings(sceneName);
+                        },
+                    },
+                    'reset'
+                )
+                .name('Reset Settings');
+            buildButterchurnSetting(
+                sceneName,
+                butterChurnSettings,
+                this.sceneSettingsFolder,
+                this.isExternalUI
+            );
+
+            return butterChurnSettings;
         }
         return {};
     }

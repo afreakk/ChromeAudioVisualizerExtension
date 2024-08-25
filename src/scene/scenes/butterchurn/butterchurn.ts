@@ -1,5 +1,5 @@
 import { IScene } from '@/src/scene/scene';
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import { ButterchurnSettings, getRandomPreset } from './setting';
 import {
     ButterChurnAudioDataDto,
     IAudioDataDto,
@@ -7,13 +7,15 @@ import {
 } from '@/src/utils/eventMessage';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
+const presets = butterchurnPresets.getPresets();
 
 export class Butterchurn implements IScene {
     private canvas: HTMLCanvasElement | null = null;
     private audioData: ButterChurnAudioDataDto;
     private visualizer: any = null;
     private lastTime: any;
-    private lol: boolean = true;
+    private lastCycleSeconds: number = 0;
+    private cyclePresetInterval: NodeJS.Timeout | null = null;
     constructor() {
         this.audioData = new ButterChurnAudioDataDto([], [], []);
     }
@@ -37,7 +39,22 @@ export class Butterchurn implements IScene {
             textureRatio: 1,
         });
     }
-    updateSettings(settings: ISceneSetting): void { }
+    updateSettings(settings: ButterchurnSettings): void {
+        const preset = presets[settings.preset];
+        this.visualizer.loadPreset(preset, settings.blendLength); // 2nd argument is the number of seconds to blend presets
+        if (!settings.cyclePresets) {
+            clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
+        } else if (
+            settings.cycleSeconds != this.lastCycleSeconds ||
+            this.cyclePresetInterval === null
+        ) {
+            this.lastCycleSeconds = settings.cycleSeconds;
+            this.cyclePresetInterval = setInterval(() => {
+                settings.preset = getRandomPreset();
+                this.updateSettings(settings);
+            }, settings.cycleSeconds * 1000);
+        }
+    }
     updateAudioData(data: ButterChurnAudioDataDto): void {
         if (data.timeByteArrayLeft !== undefined) {
             this.audioData = data;
@@ -46,18 +63,6 @@ export class Butterchurn implements IScene {
     render(): void {
         if (this.canvas === null) {
             return;
-        }
-        if (this.lol === true) {
-            this.lol = false;
-            const presets = butterchurnPresets.getPresets();
-            let preset;
-            let i = 1;
-            do {
-                const name = Object.keys(presets)[i];
-                preset = presets[name];
-                i++;
-            } while (false);
-            this.visualizer.loadPreset(preset, 0.0); // 2nd argument is the number of seconds to blend presets
         }
 
         const data = new Uint8Array(this.audioData.timeByteArray);
