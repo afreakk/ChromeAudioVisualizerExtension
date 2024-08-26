@@ -48,6 +48,7 @@ export class Butterchurn implements IScene {
             settings.cycleSeconds != this.lastCycleSeconds ||
             this.cyclePresetInterval === null
         ) {
+            clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
             this.lastCycleSeconds = settings.cycleSeconds;
             this.cyclePresetInterval = setInterval(() => {
                 settings.preset = getRandomPreset();
