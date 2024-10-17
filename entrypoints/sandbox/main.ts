@@ -20,15 +20,14 @@ import { FrostFire } from '@/src/scene/scenes/frostfire/frostfire';
 
 // Initialize scenes
 const scenesMap = new Map<string, IScene>();
+scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
 scenesMap.set(sceneNames.SunFlower.toString(), new SunFlower());
 scenesMap.set(sceneNames.FrostFire.toString(), new FrostFire());
 scenesMap.set(sceneNames.SynthBars.toString(), new SynthBars());
 scenesMap.set(sceneNames.DancingHorizon.toString(), new DancingHorizon());
-scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
 // Initialize scene manager
 const sceneManager = new SceneManager();
 window.sandboxEventMessageHolder = null;
-
 
 window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
     window.sandboxEventMessageHolder = message;
@@ -40,7 +39,10 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
         message.data.target === messageTarget.animation &&
         message.data.action === messageAction.toggleFullScreen
     ) {
-        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
+        const fullScreenEventMessage = new GenericEvent(
+            messageTarget.animation,
+            messageAction.toggleFullScreen
+        );
 
         window.sandboxEventMessageHolder.source.postMessage(
             fullScreenEventMessage.toMessage(),
@@ -49,7 +51,10 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
     }
 });
 window.addEventListener(messageAction.toggleFullScreen, (event) => {
-    const toggleFullScreenViaOffscreen = new GenericEvent(messageTarget.offscreen, messageAction.toggleFullScreen);
+    const toggleFullScreenViaOffscreen = new GenericEvent(
+        messageTarget.offscreen,
+        messageAction.toggleFullScreen
+    );
 
     window.sandboxEventMessageHolder.source.postMessage(
         toggleFullScreenViaOffscreen.toMessage(),
