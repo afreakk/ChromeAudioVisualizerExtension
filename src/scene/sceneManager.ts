@@ -11,6 +11,12 @@ import {
 export class SceneManager {
     private scene: IScene | null = null;
     private buildingScene = false;
+    private latencyStats = {
+        count: 0,
+        total: 0,
+        min: Infinity,
+        max: -Infinity,
+    };
 
     updateAudioData(data: IAudioDataDto) {
         // Return if there is no scene
@@ -21,6 +27,33 @@ export class SceneManager {
         if (this.buildingScene) {
             return;
         }
+        
+        // Measure latency if timestamp is available
+        if (data.timestamp !== undefined) {
+            const now = Date.now(); // Use Date.now() for cross-context synchronization
+            const latency = now - data.timestamp;
+            
+            // Update stats
+            this.latencyStats.count++;
+            this.latencyStats.total += latency;
+            this.latencyStats.min = Math.min(this.latencyStats.min, latency);
+            this.latencyStats.max = Math.max(this.latencyStats.max, latency);
+            
+            // Log every 60 frames (approximately once per second at 60fps)
+            if (this.latencyStats.count % 60 === 0) {
+                const avg = this.latencyStats.total / this.latencyStats.count;
+                console.log(`Audio latency stats (last 60 frames): avg=${avg.toFixed(2)}ms, min=${this.latencyStats.min.toFixed(2)}ms, max=${this.latencyStats.max.toFixed(2)}ms`);
+                
+                // Reset stats for next batch
+                this.latencyStats = {
+                    count: 0,
+                    total: 0,
+                    min: Infinity,
+                    max: -Infinity,
+                };
+            }
+        }
+        
         this.scene.updateAudioData(data);
     }
     updateSettings(settings: ISceneSetting) {
@@ -59,9 +92,9 @@ export class SceneManager {
                 messageAction.startStream,
                 this.scene ? this.scene.streamType : streamType.normal
             );
-            window.sandboxEventMessageHolder.source.postMessage(
+            window.sandboxEventMessageHolder?.source?.postMessage(
                 animationWindowCreated.toMessage(),
-                window.sandboxEventMessageHolder.origin
+                { targetOrigin: window.sandboxEventMessageHolder.origin }
             );
             this.buildingScene = false;
             this.updateSettings(settings);

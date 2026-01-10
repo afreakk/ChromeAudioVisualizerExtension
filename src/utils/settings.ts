@@ -2,16 +2,16 @@ function keyGenerator(name: string): string {
     return `audio-visualizer-settings-${name}`;
 }
 
-let x = {};
+const settingsCache: Record<string, string> = {};
 export function loadSettings<T>(settingsName: string): T | null {
-    const settingsJson = x[settingsName];
+    const settingsJson = settingsCache[settingsName];
     if (settingsJson === undefined) {
         return null;
     }
     return JSON.parse(settingsJson) as T;
 }
 export function saveSettings<T>(settingsName: string, settings: T): void {
-    x[settingsName] = JSON.stringify(settings);
+    settingsCache[settingsName] = JSON.stringify(settings);
     // localStorage.setItem(keyGenerator(settingsName), JSON.stringify(settings));
 }
 export function checkClassType<T>(

@@ -86,9 +86,14 @@ export class Butterchurn implements IScene {
         });
     }
     clean(): void {
+        if (this.cyclePresetInterval) {
+            clearInterval(this.cyclePresetInterval);
+            this.cyclePresetInterval = null;
+        }
         if (this.canvas === null) {
             return;
         }
         this.canvas.remove();
+        this.canvas = null;
     }
 }

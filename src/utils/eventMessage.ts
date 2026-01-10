@@ -14,6 +14,7 @@ export enum messageAction {
     setScene = "set-scene",
     setSceneSettings = "set-scene-settings",
     toggleFullScreen = "toggle-full-screen",
+    setFps = "set-fps",
 }
 export enum streamType {
     butterChurn = "butterChurn",
@@ -21,21 +22,26 @@ export enum streamType {
 }
 export interface IAudioDataDto {
     timeByteArray: number[];
+    timestamp?: number; // Timestamp when audio was captured (performance.now())
 }
 export class NormalAudioDataDto implements IAudioDataDto {
     timeByteArray: number[];
-    constructor(timeByteArray: number[]) {
+    timestamp?: number;
+    constructor(timeByteArray: number[], timestamp?: number) {
         this.timeByteArray = timeByteArray;
+        this.timestamp = timestamp;
     }
 }
 export class ButterChurnAudioDataDto implements IAudioDataDto {
     timeByteArray: number[];
     timeByteArrayLeft: number[];
     timeByteArrayRight: number[];
-    constructor(timeByteArray: number[], dataLeft: number[], dataRight: number[]) {
+    timestamp?: number;
+    constructor(timeByteArray: number[], dataLeft: number[], dataRight: number[], timestamp?: number) {
         this.timeByteArray = timeByteArray;
         this.timeByteArrayLeft = dataLeft;
         this.timeByteArrayRight = dataRight;
+        this.timestamp = timestamp;
     }
 }
 export class GenericEvent {
@@ -98,6 +104,22 @@ export class StartStreamEvent extends GenericEvent {
             target: this.target,
             action: this.action,
             streamType: this.streamType,
+        };
+    }
+}
+export class SetFpsEvent extends GenericEvent {
+    fps: number;
+
+    constructor(target: messageTarget, action: messageAction, fps: number) {
+        super(target, action);
+        this.fps = fps;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            fps: this.fps,
         };
     }
 }

@@ -2,7 +2,7 @@
     "name": "audiovisualizer",
     "description": "Visualizes music in a cool way",
     "private": true,
-    "version": "10.0.0",
+    "version": "11.0.0",
     "type": "module",
     "scripts": {
         "dev": "wxt",
@@ -15,7 +15,7 @@
         "postinstall": "wxt prepare"
     },
     "devDependencies": {
-        "@types/chrome": "^0.0.263",
+        "@types/chrome": "^0.1.32",
         "typescript": "^5.5.3",
         "wxt": "^0.18.14"
     },
