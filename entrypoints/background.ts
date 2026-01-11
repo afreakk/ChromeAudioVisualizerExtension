@@ -8,13 +8,10 @@ export default defineBackground(async () => {
     let settingsWindowId: number | null = null;
     let tabId: number;
     
-    async function initiateStream(tabId: number) {
+    async function initiateStream(targetTabId: number) {
         const streamId = await chrome.tabCapture.getMediaStreamId({
-            targetTabId: tabId,
+            targetTabId: targetTabId,
         });
-
-        // Store tabId in chrome.storage to survive hot-reloads
-        await chrome.storage.local.set({ tabId: tabId });
 
         const startStreamMessage = new InitiateStreamEvent(
             messageTarget.offscreen,
@@ -24,15 +21,14 @@ export default defineBackground(async () => {
         chrome.runtime.sendMessage(startStreamMessage.toMessage());
         streaming = true;
     }
-    
-    // Re-initiate stream after hot-reload using stored tabId
+
+    // Re-initiate stream after hot-reload by finding an audible tab
     async function reinitiateStream() {
-        const stored = await chrome.storage.local.get('tabId');
-        const storedTabId = stored.tabId as number | undefined;
-        if (storedTabId) {
-            await initiateStream(storedTabId);
+        const [audibleTab] = await chrome.tabs.query({ audible: true });
+        if (audibleTab?.id) {
+            await initiateStream(audibleTab.id);
         } else {
-            console.warn('No stored tabId found, cannot re-initiate stream');
+            console.warn('No audible tab found, cannot re-initiate stream');
         }
     }
     
@@ -43,12 +39,9 @@ export default defineBackground(async () => {
         );
         chrome.runtime.sendMessage(stopStreamMessage.toMessage());
         streaming = false;
-        // Clear stored tabId when stopping
-        chrome.storage.local.remove('tabId');
     }
 
     chrome.action.onClicked.addListener(async (tab) => {
-        console.log('Action clicked');
         if (streaming) {
             return;
         }
@@ -119,8 +112,6 @@ export default defineBackground(async () => {
     );
     // Listen for windows being closed and handle both settings and animation windows
     chrome.windows.onRemoved.addListener((windowId) => {
-        let handled = false;
-
         if (windowId === settingsWindowId) {
             settingsWindowId = null;
             const closeSettingsWindow = new SettingsWindowEvent(
@@ -128,24 +119,16 @@ export default defineBackground(async () => {
                 messageAction.closeSettingsWindow
             );
             chrome.runtime.sendMessage(closeSettingsWindow.toMessage());
-            handled = true;
         }
 
         if (windowId === animationWindowId) {
             animationWindowId = null;
             if (settingsWindowId) {
-                chrome.windows.remove(settingsWindowId, () => {
-                    console.log('Settings window with ID', settingsWindowId, 'has been closed due to animation window closing.');
-                });
+                chrome.windows.remove(settingsWindowId);
             }
             if (streaming) {
                 stopStream();
             }
-            handled = true;
-        }
-
-        if (handled) {
-            console.log('Window with ID', windowId, 'has been handled.');
         }
     });
 });

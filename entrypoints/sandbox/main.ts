@@ -81,7 +81,6 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
     // Handle special case for animation window ready event
     if ((target as string) === 'animationWindowReadyEvent') {
-        console.log('animationWindowReadyEvent');
         settingsUserInterface.buildScene();
         return;
     }

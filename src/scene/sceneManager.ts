@@ -38,13 +38,9 @@ export class SceneManager {
             this.latencyStats.total += latency;
             this.latencyStats.min = Math.min(this.latencyStats.min, latency);
             this.latencyStats.max = Math.max(this.latencyStats.max, latency);
-            
-            // Log every 60 frames (approximately once per second at 60fps)
+
+            // Reset stats every 60 frames
             if (this.latencyStats.count % 60 === 0) {
-                const avg = this.latencyStats.total / this.latencyStats.count;
-                console.log(`Audio latency stats (last 60 frames): avg=${avg.toFixed(2)}ms, min=${this.latencyStats.min.toFixed(2)}ms, max=${this.latencyStats.max.toFixed(2)}ms`);
-                
-                // Reset stats for next batch
                 this.latencyStats = {
                     count: 0,
                     total: 0,
@@ -53,7 +49,7 @@ export class SceneManager {
                 };
             }
         }
-        
+
         this.scene.updateAudioData(data);
     }
     updateSettings(settings: ISceneSetting) {
@@ -92,10 +88,12 @@ export class SceneManager {
                 messageAction.startStream,
                 this.scene ? this.scene.streamType : streamType.normal
             );
-            window.sandboxEventMessageHolder?.source?.postMessage(
-                animationWindowCreated.toMessage(),
-                { targetOrigin: window.sandboxEventMessageHolder.origin }
-            );
+            if (window.sandboxEventMessageHolder?.source) {
+                window.sandboxEventMessageHolder.source.postMessage(
+                    animationWindowCreated.toMessage(),
+                    { targetOrigin: window.sandboxEventMessageHolder.origin }
+                );
+            }
             this.buildingScene = false;
             this.updateSettings(settings);
         }

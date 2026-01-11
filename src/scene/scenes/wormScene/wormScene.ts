@@ -131,6 +131,8 @@ export class WormScene implements IScene {
         }
 
         this.canvas.remove();
+        this.canvas = null;
+        this.ctx = null;
     }
 }
 

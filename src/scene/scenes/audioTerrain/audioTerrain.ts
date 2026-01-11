@@ -381,5 +381,7 @@ export class AudioTerrain implements IScene {
         }
 
         this.canvas.remove();
+        this.canvas = null;
+        this.ctx = null;
     }
 }

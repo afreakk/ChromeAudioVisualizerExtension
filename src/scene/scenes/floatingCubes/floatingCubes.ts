@@ -42,7 +42,6 @@ export class FloatingCubes implements IScene {
     }
 
     private initCubes(): void {
-        console.log('initCubes');
         if (!this.canvas) return;
         this.cubes = [];
 

@@ -36,6 +36,7 @@ let initiateStreamId: string | null = null;
 // Dynamic FPS matching - capture rate adapts to render rate
 let captureInterval = 17; // Default 60fps (1000/60 ≈ 17ms)
 let targetFps = 60;
+let captureTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent | InitiateStreamEvent | SetFpsEvent) => {
     
@@ -59,7 +60,12 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
         case messageAction.initiateStream: {
             const initiateStreamMessage = message as InitiateStreamEvent;
             initiateStreamId = initiateStreamMessage.streamId;
-            initiateStream(initiateStreamId);
+            initiateStream(initiateStreamId).then(() => {
+                // After successfully initiating stream, start the capture loop if we have a stream type
+                if (currentStreamType !== null) {
+                    startStream();
+                }
+            });
             break;
         }
         case messageAction.stopStream: {
@@ -73,7 +79,6 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
             captureInterval = Math.round(1000 / targetFps);
             // Clamp to reasonable range (8ms = 120fps max, 33ms = 30fps min)
             captureInterval = Math.max(8, Math.min(33, captureInterval));
-            console.log(`FPS update: target=${targetFps}fps, captureInterval=${captureInterval}ms`);
             break;
         }
     }
@@ -134,21 +139,23 @@ async function initiateStream(streamId: string) {
 }
 
 async function startStream() {
+    // Clear any existing capture loop before starting a new one
+    if (captureTimeoutId !== null) {
+        clearTimeout(captureTimeoutId);
+        captureTimeoutId = null;
+    }
+
     const updateAudioDataEvent = async () => {
         if (!window.captureIsActive) {
             if (initiateStreamId !== null) {
-                console.log('Restoring stream with stored initiateStreamId', initiateStreamId);
                 try {
                     await stopStream();
                     await initiateStream(initiateStreamId);
-                } catch (error) {
-                    console.log('Failed to restore with stored stream ID, waiting for new stream ID from background');
+                } catch {
                     // The error handler in initiateStream will request a new ID
-                    // We'll wait for the InitiateStreamEvent message to arrive
                     return;
                 }
             } else {
-                console.log('No initiateStreamId, requesting new stream from background');
                 // Request a new stream ID from background script
                 const requestNewStream = new GenericEvent(
                     messageTarget.background,
@@ -200,8 +207,8 @@ async function startStream() {
             chrome.runtime.sendMessage(audioDataMessage.toMessage());
         }
 
-        // Dynamic capture rate - matches render FPS (updated every 2 seconds)
-        setTimeout(updateAudioDataEvent, captureInterval);
+        // Dynamic capture rate - matches render FPS
+        captureTimeoutId = setTimeout(updateAudioDataEvent, captureInterval);
     };
 
     updateAudioDataEvent();
@@ -210,12 +217,14 @@ async function startStream() {
 async function stopStream() {
     window.captureIsActive = false;
     initiateStreamId = null;
+    if (captureTimeoutId !== null) {
+        clearTimeout(captureTimeoutId);
+        captureTimeoutId = null;
+    }
     if (stream) {
         stream.getTracks().forEach((track) => track.stop());
-        console.log('Stream stopped.');
     }
     if (audioContext) {
-        await audioContext.close(); // Properly closes the audio context
-        console.log('Audio context closed.');
+        await audioContext.close();
     }
 }
