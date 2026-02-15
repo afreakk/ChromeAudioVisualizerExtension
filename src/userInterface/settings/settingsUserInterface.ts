@@ -53,6 +53,29 @@ import { floatingCubesSettings } from './sceneSettings/floatingCubesSettings';
 import { ChromaWaveSetting } from '@/src/scene/scenes/chromaWave/setting';
 import { chromaWaveSettings } from './sceneSettings/chromaWaveSettings';
 
+// Helper to properly dispose dat.gui controllers and prevent memory leaks
+function disposeFolder(folder: dat.GUI | dat.GUIFolder | null): void {
+    if (!folder) return;
+
+    // Recursively dispose nested folders first
+    const folders = (folder as any).__folders;
+    if (folders) {
+        for (const key of Object.keys(folders)) {
+            disposeFolder(folders[key]);
+        }
+    }
+
+    // Remove all controllers - this clears onChange listeners
+    const controllers = (folder as any).__controllers;
+    if (controllers) {
+        // Iterate backwards to avoid index issues during removal
+        for (let i = controllers.length - 1; i >= 0; i--) {
+            // Use 'any' cast since dat.gui types don't expose remove() on GUIFolder
+            (folder as any).remove(controllers[i]);
+        }
+    }
+}
+
 export class SettingsUserInterface {
     private gui: dat.GUI | null = null;
     private sceneFolder: dat.GUIFolder | null = null;
@@ -156,8 +179,9 @@ export class SettingsUserInterface {
     }
 
     private buildSettings(sceneName: string): ISceneSetting {
-        // Remove the existing settings folder if it exists
+        // Properly dispose controllers before removing the folder to prevent memory leaks
         if (this.sceneSettingsFolder && this.sceneFolder) {
+            disposeFolder(this.sceneSettingsFolder);
             this.sceneFolder.removeFolder(this.sceneSettingsFolder);
         }
 
@@ -864,16 +888,19 @@ export class SettingsUserInterface {
     }
 
     public destroy(): void {
-        // Proper cleanup of GUI components
+        // Properly dispose all controllers before removing folders to prevent memory leaks
         if (this.sceneSettingsFolder !== null && this.sceneFolder !== null) {
+            disposeFolder(this.sceneSettingsFolder);
             this.sceneFolder.removeFolder(this.sceneSettingsFolder);
             this.sceneSettingsFolder = null;
         }
         if (this.sceneFolder !== null && this.gui !== null) {
+            disposeFolder(this.sceneFolder);
             this.gui.removeFolder(this.sceneFolder);
             this.sceneFolder = null;
         }
         if (this.generalSettingsFolder !== null && this.gui !== null) {
+            disposeFolder(this.generalSettingsFolder);
             this.gui.removeFolder(this.generalSettingsFolder);
             this.generalSettingsFolder = null;
         }
