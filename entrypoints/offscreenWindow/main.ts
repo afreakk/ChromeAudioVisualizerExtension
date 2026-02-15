@@ -29,6 +29,12 @@ let analyserButterChurn: AnalyserNode | null = null;
 let analyserButterChurnL: AnalyserNode | null = null;
 let analyserButterChurnR: AnalyserNode | null = null;
 
+// Reusable buffers to avoid per-frame allocations
+let dataArrayNormal: Uint8Array<ArrayBuffer> | null = null;
+let dataArrayButterChurn: Uint8Array<ArrayBuffer> | null = null;
+let dataArrayButterChurnL: Uint8Array<ArrayBuffer> | null = null;
+let dataArrayButterChurnR: Uint8Array<ArrayBuffer> | null = null;
+
 // Stream ID - will be set when InitiateStreamEvent is received
 // Note: Stream IDs become invalid after hot-reload, so we request a new one from background when needed
 let initiateStreamId: string | null = null;
@@ -123,6 +129,13 @@ async function initiateStream(streamId: string) {
         source.connect(splitter);
         splitter.connect(analyserButterChurnL, 0);
         splitter.connect(analyserButterChurnR, 1);
+
+        // Initialize reusable buffers to avoid per-frame allocations
+        dataArrayNormal = new Uint8Array(numSamplesNormal / 4);
+        dataArrayButterChurn = new Uint8Array(numSamplesButterChurn);
+        dataArrayButterChurnL = new Uint8Array(numSamplesButterChurn);
+        dataArrayButterChurnR = new Uint8Array(numSamplesButterChurn);
+
         window.captureIsActive = true;
     } catch (error) {
         console.error('Error initiating stream with stream ID:', error);
@@ -169,12 +182,14 @@ async function startStream() {
         
         if (
             currentStreamType === streamType.normal &&
-            analyserNormal !== null
+            analyserNormal !== null &&
+            dataArrayNormal !== null
         ) {
-            const dataArray = new Uint8Array(numSamplesNormal / 4);
-            analyserNormal.getByteFrequencyData(dataArray);
+            analyserNormal.getByteFrequencyData(dataArrayNormal);
 
-            const data = Array.from(dataArray);
+            // Use Array.from with the reusable buffer - this still creates an array
+            // but avoids the Uint8Array allocation
+            const data = Array.from(dataArrayNormal);
             const audioData = new NormalAudioDataDto(data, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
@@ -186,18 +201,19 @@ async function startStream() {
             currentStreamType === streamType.butterChurn &&
             analyserButterChurn !== null &&
             analyserButterChurnL !== null &&
-            analyserButterChurnR !== null
+            analyserButterChurnR !== null &&
+            dataArrayButterChurn !== null &&
+            dataArrayButterChurnL !== null &&
+            dataArrayButterChurnR !== null
         ) {
-            const dataArray = new Uint8Array(numSamplesButterChurn);
-            const dataArrayL = new Uint8Array(numSamplesButterChurn);
-            const dataArrayR = new Uint8Array(numSamplesButterChurn);
-            analyserButterChurn.getByteTimeDomainData(dataArray);
-            analyserButterChurnL.getByteTimeDomainData(dataArrayL);
-            analyserButterChurnR.getByteTimeDomainData(dataArrayR);
+            analyserButterChurn.getByteTimeDomainData(dataArrayButterChurn);
+            analyserButterChurnL.getByteTimeDomainData(dataArrayButterChurnL);
+            analyserButterChurnR.getByteTimeDomainData(dataArrayButterChurnR);
 
-            const data = Array.from(dataArray);
-            const dataL = Array.from(dataArrayL);
-            const dataR = Array.from(dataArrayR);
+            // Use Array.from with reusable buffers
+            const data = Array.from(dataArrayButterChurn);
+            const dataL = Array.from(dataArrayButterChurnL);
+            const dataR = Array.from(dataArrayButterChurnR);
             const audioData = new ButterChurnAudioDataDto(data, dataL, dataR, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
@@ -227,4 +243,9 @@ async function stopStream() {
     if (audioContext) {
         await audioContext.close();
     }
+    // Clean up reusable buffers
+    dataArrayNormal = null;
+    dataArrayButterChurn = null;
+    dataArrayButterChurnL = null;
+    dataArrayButterChurnR = null;
 }

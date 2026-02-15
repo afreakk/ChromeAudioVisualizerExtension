@@ -164,9 +164,13 @@ window.addEventListener(messageAction.setSceneSettings, (event) => {
 // FPS measurement for dynamic audio capture rate
 let lastFrameTime = performance.now();
 let lastFpsUpdate = Date.now();
-const frameTimes: number[] = [];
 const FPS_UPDATE_INTERVAL = 2000; // Update every 2 seconds
 const MAX_FRAME_SAMPLES = 120; // Keep last 120 frames for averaging
+
+// Circular buffer for frame times - avoids O(n) shift() operations
+const frameTimes = new Float32Array(MAX_FRAME_SAMPLES);
+let frameTimesIndex = 0;
+let frameTimesCount = 0;
 
 function render() {
     const currentFrameTime = performance.now();
@@ -176,20 +180,25 @@ function render() {
     const frameTime = currentFrameTime - lastFrameTime;
     lastFrameTime = currentFrameTime;
     
-    // Track frame times (skip first frame which might be inaccurate)
+    // Track frame times using circular buffer (skip first frame which might be inaccurate)
     if (frameTime > 0 && frameTime < 100) { // Sanity check: frame time should be 0-100ms
-        frameTimes.push(frameTime);
-        if (frameTimes.length > MAX_FRAME_SAMPLES) {
-            frameTimes.shift();
+        frameTimes[frameTimesIndex] = frameTime;
+        frameTimesIndex = (frameTimesIndex + 1) % MAX_FRAME_SAMPLES;
+        if (frameTimesCount < MAX_FRAME_SAMPLES) {
+            frameTimesCount++;
         }
     }
-    
+
     // Send FPS update every 2 seconds
     const now = Date.now();
-    if (now - lastFpsUpdate >= FPS_UPDATE_INTERVAL && frameTimes.length >= 30) {
+    if (now - lastFpsUpdate >= FPS_UPDATE_INTERVAL && frameTimesCount >= 30) {
         try {
-            // Calculate average frame time from recent frames
-            const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+            // Calculate average frame time from recent frames using circular buffer
+            let sum = 0;
+            for (let i = 0; i < frameTimesCount; i++) {
+                sum += frameTimes[i];
+            }
+            const avgFrameTime = sum / frameTimesCount;
             const fps = Math.round(1000 / avgFrameTime);
             
             // Clamp FPS to reasonable range (30-120fps)
