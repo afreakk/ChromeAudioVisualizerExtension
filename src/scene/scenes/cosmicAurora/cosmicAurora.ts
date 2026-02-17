@@ -385,22 +385,22 @@ export class CosmicAurora implements IScene {
             auroraGradient.addColorStop(0.6, `rgba(${color2.r}, ${color2.g}, ${color2.b}, ${0.08 * intensity})`);
             auroraGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-            ctx.beginPath();
-            ctx.moveTo(ribbon.points[0].x, ribbon.points[0].y);
+            const fillPath = new Path2D();
+            fillPath.moveTo(ribbon.points[0].x, ribbon.points[0].y);
 
             for (let i = 1; i < ribbon.points.length - 2; i++) {
                 const xc = (ribbon.points[i].x + ribbon.points[i + 1].x) / 2;
                 const yc = (ribbon.points[i].y + ribbon.points[i + 1].y) / 2;
-                ctx.quadraticCurveTo(ribbon.points[i].x, ribbon.points[i].y, xc, yc);
+                fillPath.quadraticCurveTo(ribbon.points[i].x, ribbon.points[i].y, xc, yc);
             }
 
-            ctx.lineTo(width, ribbon.points[ribbon.points.length - 1].y);
-            ctx.lineTo(width, height);
-            ctx.lineTo(0, height);
-            ctx.closePath();
+            fillPath.lineTo(width, ribbon.points[ribbon.points.length - 1].y);
+            fillPath.lineTo(width, height);
+            fillPath.lineTo(0, height);
+            fillPath.closePath();
 
             ctx.fillStyle = auroraGradient;
-            ctx.fill();
+            ctx.fill(fillPath);
 
             for (let layer = 0; layer < 3; layer++) {
                 const layerOffset = layer * 15;
