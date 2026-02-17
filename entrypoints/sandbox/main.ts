@@ -7,34 +7,11 @@ import {
 } from '@/src/utils/eventMessage';
 import { IScene } from '@/src/scene/scene';
 import { SceneManager } from '@/src/scene/sceneManager';
-import { SunFlower } from '@/src/scene/scenes/sunflower/sunflower';
-import { SynthBars } from '@/src/scene/scenes/synthBars/synthBars';
-import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon/dancingHorizon';
 import { ISceneSetting } from '@/src/scene/sceneSetting';
 import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
 import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
-import { Butterchurn } from '@/src/scene/scenes/butterchurn/butterchurn';
-import { sceneNames } from '@/src/scene/sceneNames';
-import { SettingsWindowEvent } from '@/src/userInterface/settings/events/SettingsWindowEvent';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
-import { FrostFire } from '@/src/scene/scenes/frostfire/frostfire';
-import { DancingCubes3DSinus } from '@/src/scene/scenes/dancingCubes3DSinus/dancingCubes3DSinus';
-import { WormScene } from '@/src/scene/scenes/wormScene/wormScene';
-import { Dancing3DCubes } from '@/src/scene/scenes/dancing3DCubes/dancing3DCubes';
-import { RoundSpectrum } from '@/src/scene/scenes/roundSpectrum/roundSpectrum';
-import { SeventiesScene } from '@/src/scene/scenes/seventiesScene/seventiesScene';
-import { ParticleCircle } from '@/src/scene/scenes/particleCircle/particleCircle';
-import { PsychedelicCube } from '@/src/scene/scenes/psychedelicCube/psychedelicCube';
-import { PulsingGrid } from '@/src/scene/scenes/pulsingGrid/pulsingGrid';
-import { AudioTerrain } from '@/src/scene/scenes/audioTerrain/audioTerrain';
-import { CircleBurst } from '@/src/scene/scenes/circleBurst/circleBurst';
-import { PaintSplash } from '@/src/scene/scenes/paintSplash/paintSplash';
-import { HexagonPulse } from '@/src/scene/scenes/hexagonPulse/hexagonPulse';
-import { OrbitalRing } from '@/src/scene/scenes/orbitalRing/orbitalRing';
-import { NeuralWeb } from '@/src/scene/scenes/neuralWeb/neuralWeb';
-import { FloatingCubes } from '@/src/scene/scenes/floatingCubes/floatingCubes';
-import { ChromaWave } from '@/src/scene/scenes/chromaWave/chromaWave';
-import { CosmicAurora } from '@/src/scene/scenes/cosmicAurora/cosmicAurora';
+import { sceneRegistry } from '@/src/scene/sceneRegistry';
 
 // Extend Window interface for sandbox-specific properties
 declare global {
@@ -43,30 +20,11 @@ declare global {
     }
 }
 
-// Initialize scenes
+// Initialize scenes from registry
 const scenesMap = new Map<string, IScene>();
-scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
-scenesMap.set(sceneNames.SunFlower.toString(), new SunFlower());
-scenesMap.set(sceneNames.FrostFire.toString(), new FrostFire());
-scenesMap.set(sceneNames.SynthBars.toString(), new SynthBars());
-scenesMap.set(sceneNames.DancingHorizon.toString(), new DancingHorizon());
-scenesMap.set(sceneNames.DancingCubes3DSinus.toString(), new DancingCubes3DSinus());
-scenesMap.set(sceneNames.WormScene.toString(), new WormScene());
-scenesMap.set(sceneNames.Dancing3DCubes.toString(), new Dancing3DCubes());
-scenesMap.set(sceneNames.RoundSpectrum.toString(), new RoundSpectrum());
-scenesMap.set(sceneNames.SeventiesScene.toString(), new SeventiesScene());
-scenesMap.set(sceneNames.ParticleCircle.toString(), new ParticleCircle());
-scenesMap.set(sceneNames.PsychedelicCube.toString(), new PsychedelicCube());
-scenesMap.set(sceneNames.PulsingGrid.toString(), new PulsingGrid());
-scenesMap.set(sceneNames.AudioTerrain.toString(), new AudioTerrain());
-scenesMap.set(sceneNames.CircleBurst.toString(), new CircleBurst());
-scenesMap.set(sceneNames.PaintSplash.toString(), new PaintSplash());
-scenesMap.set(sceneNames.HexagonPulse.toString(), new HexagonPulse());
-scenesMap.set(sceneNames.OrbitalRing.toString(), new OrbitalRing());
-scenesMap.set(sceneNames.NeuralWeb.toString(), new NeuralWeb());
-scenesMap.set(sceneNames.FloatingCubes.toString(), new FloatingCubes());
-scenesMap.set(sceneNames.ChromaWave.toString(), new ChromaWave());
-scenesMap.set(sceneNames.CosmicAurora.toString(), new CosmicAurora());
+for (const entry of sceneRegistry) {
+    scenesMap.set(entry.sceneName.toString(), entry.createScene());
+}
 // Initialize scene manager
 const sceneManager = new SceneManager();
 window.sandboxEventMessageHolder = null;
