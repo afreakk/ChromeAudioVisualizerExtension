@@ -80,6 +80,10 @@ export class SceneManager {
             }
             // Set the new scene
             this.scene = newScene;
+            // Apply settings only on success (avoid type mismatch on failure)
+            if (settings && Object.keys(settings).length > 0) {
+                this.scene.updateSettings(settings);
+            }
         } catch (error) {
             console.error('Error building scene:', error);
         } finally {
@@ -95,7 +99,6 @@ export class SceneManager {
                 );
             }
             this.buildingScene = false;
-            this.updateSettings(settings);
         }
     }
 

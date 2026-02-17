@@ -20,4 +20,5 @@ export enum sceneNames {
     NeuralWeb = 'NeuralWeb',
     FloatingCubes = 'FloatingCubes',
     ChromaWave = 'ChromaWave',
+    CosmicAurora = 'CosmicAurora',
 }

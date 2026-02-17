@@ -52,6 +52,8 @@ import { FloatingCubesSetting } from '@/src/scene/scenes/floatingCubes/setting';
 import { floatingCubesSettings } from './sceneSettings/floatingCubesSettings';
 import { ChromaWaveSetting } from '@/src/scene/scenes/chromaWave/setting';
 import { chromaWaveSettings } from './sceneSettings/chromaWaveSettings';
+import { CosmicAuroraSetting } from '@/src/scene/scenes/cosmicAurora/setting';
+import { cosmicAuroraSettings } from './sceneSettings/cosmicAuroraSettings';
 
 export class SettingsUserInterface {
     private gui: dat.GUI | null = null;
@@ -859,6 +861,40 @@ export class SettingsUserInterface {
             );
 
             return chromaWaveSetting;
+        } else if (sceneName === sceneNames.CosmicAurora.toString()) {
+            let cosmicAuroraSetting = settings
+                ? (settings as CosmicAuroraSetting)
+                : new CosmicAuroraSetting();
+            setSceneSettings(
+                cosmicAuroraSetting,
+                sceneName,
+                this.isExternalUI
+            );
+
+            this.sceneSettingsFolder
+                .add(
+                    {
+                        reset: () => {
+                            cosmicAuroraSetting = new CosmicAuroraSetting();
+                            setSceneSettings(
+                                cosmicAuroraSetting,
+                                sceneName,
+                                this.isExternalUI
+                            );
+                            this.buildSettings(sceneName);
+                        },
+                    },
+                    'reset'
+                )
+                .name('Reset Settings');
+            cosmicAuroraSettings(
+                sceneName,
+                cosmicAuroraSetting,
+                this.sceneSettingsFolder,
+                this.isExternalUI
+            );
+
+            return cosmicAuroraSetting;
         }
         return {};
     }

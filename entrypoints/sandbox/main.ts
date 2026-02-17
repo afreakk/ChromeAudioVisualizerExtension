@@ -34,6 +34,7 @@ import { OrbitalRing } from '@/src/scene/scenes/orbitalRing/orbitalRing';
 import { NeuralWeb } from '@/src/scene/scenes/neuralWeb/neuralWeb';
 import { FloatingCubes } from '@/src/scene/scenes/floatingCubes/floatingCubes';
 import { ChromaWave } from '@/src/scene/scenes/chromaWave/chromaWave';
+import { CosmicAurora } from '@/src/scene/scenes/cosmicAurora/cosmicAurora';
 
 // Extend Window interface for sandbox-specific properties
 declare global {
@@ -65,6 +66,7 @@ scenesMap.set(sceneNames.OrbitalRing.toString(), new OrbitalRing());
 scenesMap.set(sceneNames.NeuralWeb.toString(), new NeuralWeb());
 scenesMap.set(sceneNames.FloatingCubes.toString(), new FloatingCubes());
 scenesMap.set(sceneNames.ChromaWave.toString(), new ChromaWave());
+scenesMap.set(sceneNames.CosmicAurora.toString(), new CosmicAurora());
 // Initialize scene manager
 const sceneManager = new SceneManager();
 window.sandboxEventMessageHolder = null;
@@ -106,10 +108,10 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
         case messageAction.setScene:
             const setSceneMessage = message as MessageEvent<SetSceneEvent>;
-            sceneManager.setScene(
-                scenesMap.get(setSceneMessage.data.sceneName) as IScene,
-                setSceneMessage.data.sceneSettings
-            );
+            const setSceneInstance = scenesMap.get(setSceneMessage.data.sceneName);
+            if (setSceneInstance) {
+                sceneManager.setScene(setSceneInstance, setSceneMessage.data.sceneSettings);
+            }
             break;
 
         case messageAction.setSceneSettings:
@@ -150,10 +152,10 @@ window.addEventListener(messageAction.toggleFullScreen, (event) => {
 window.addEventListener(messageAction.setScene, (event) => {
     const customEvent = event as CustomEvent<{ event: SetSceneEvent }>;
     const sceneEvent = customEvent.detail.event;
-    sceneManager.setScene(
-        scenesMap.get(sceneEvent.sceneName) as IScene,
-        sceneEvent.sceneSettings as ISceneSetting
-    );
+    const customSceneInstance = scenesMap.get(sceneEvent.sceneName);
+    if (customSceneInstance) {
+        sceneManager.setScene(customSceneInstance, sceneEvent.sceneSettings as ISceneSetting);
+    }
 });
 
 window.addEventListener(messageAction.setSceneSettings, (event) => {

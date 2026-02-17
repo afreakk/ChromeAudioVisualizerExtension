@@ -5,11 +5,16 @@ Chrome extension that visualizes audio from browser tabs using 2D Canvas and Web
 ## Commands
 
 ```bash
-npm run dev          # Development build with WXT hot-reload
-npm run build        # Production build
-npm run compile      # TypeScript type-check only (no emit)
-npm run zip          # Package for Chrome Web Store
+pnpm run dev          # Development build with WXT hot-reload
+pnpm run build        # Production build
+pnpm run compile      # TypeScript type-check only (no emit)
+pnpm run zip          # Package for Chrome Web Store
+nix develop --command npx playwright test  # E2E tests (requires build first)
 ```
+
+## Testing
+
+See [TESTING.md](TESTING.md) for full details. Tests use Playwright to load the extension in Chromium, cycle through all 22 scenes with synthetic audio data, and verify canvas creation, WebGL context health, settings propagation, and console errors. Browsers come from Nix (`flake.nix`), not npm.
 
 ## Architecture Overview
 
@@ -242,6 +247,6 @@ ctx.fillRect(0, 0, width, height);
 
 - Scenes run in sandboxed iframe - inspect the iframe in devtools
 - Audio latency logged every 60 frames
-- `npm run compile` for type checking
+- `pnpm run compile` for type checking
 - Scene rendering: `src/scene/sceneManager.ts`
 - Audio processing: `entrypoints/offscreenWindow/main.ts`

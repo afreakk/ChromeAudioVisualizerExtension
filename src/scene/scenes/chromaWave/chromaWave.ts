@@ -13,11 +13,15 @@ export class ChromaWave implements IScene {
     private lowUniformLocation: WebGLUniformLocation | null = null;
     private midUniformLocation: WebGLUniformLocation | null = null;
     private highUniformLocation: WebGLUniformLocation | null = null;
+    private rawLowUniformLocation: WebGLUniformLocation | null = null;
+    private rawMidUniformLocation: WebGLUniformLocation | null = null;
+    private rawHighUniformLocation: WebGLUniformLocation | null = null;
     private intensityUniformLocation: WebGLUniformLocation | null = null;
     private waveFrequencyUniformLocation: WebGLUniformLocation | null = null;
     private colorShiftUniformLocation: WebGLUniformLocation | null = null;
     private patternStyleUniformLocation: WebGLUniformLocation | null = null;
     private distortionUniformLocation: WebGLUniformLocation | null = null;
+    private audioSensitivityUniformLocation: WebGLUniformLocation | null = null;
 
     private audioData: NormalAudioDataDto;
     private settings: ChromaWaveSetting = new ChromaWaveSetting();
@@ -25,6 +29,9 @@ export class ChromaWave implements IScene {
     private low: number = 0;
     private mid: number = 0;
     private high: number = 0;
+    private smoothLow: number = 0;
+    private smoothMid: number = 0;
+    private smoothHigh: number = 0;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -61,11 +68,15 @@ export class ChromaWave implements IScene {
             uniform float low;
             uniform float mid;
             uniform float high;
+            uniform float rawLow;
+            uniform float rawMid;
+            uniform float rawHigh;
             uniform float intensity;
             uniform float waveFrequency;
             uniform float colorShift;
             uniform float patternStyle;
             uniform float distortion;
+            uniform float audioSensitivity;
 
             const float PI = 3.141592653589793;
 
@@ -80,6 +91,13 @@ export class ChromaWave implements IScene {
                 vec2 p = uv * 2.0 - 1.0;
                 p.x *= resolution.x / resolution.y;
 
+                // Audio-reactive coordinate distortion
+                float audioPower = (rawLow + rawMid + rawHigh) * audioSensitivity;
+                p += vec2(
+                    sin(p.y * 3.0 + low) * rawLow * distortion * 0.15,
+                    cos(p.x * 3.0 + mid) * rawMid * distortion * 0.15
+                );
+
                 float r, g, b;
                 float time1 = low * colorShift;
                 float time2 = mid * colorShift;
@@ -87,54 +105,71 @@ export class ChromaWave implements IScene {
 
                 // Different pattern styles
                 if (patternStyle < 0.5) {
-                    // Wave pattern
-                    r = sin(p.x * waveFrequency + time1) * 0.5 + 0.5;
-                    g = sin(p.y * waveFrequency + time2 + PI / 3.0) * 0.5 + 0.5;
-                    b = sin((p.x + p.y) * waveFrequency * 0.7 + time3 + PI * 2.0 / 3.0) * 0.5 + 0.5;
+                    // Wave pattern - now with strong audio reactivity
+                    float waveAmp = 1.0 + audioPower * 0.5;
+                    r = sin(p.x * waveFrequency * waveAmp + time1) * 0.5 + 0.5;
+                    g = sin(p.y * waveFrequency * waveAmp + time2 + PI / 3.0) * 0.5 + 0.5;
+                    b = sin((p.x + p.y) * waveFrequency * 0.7 * waveAmp + time3 + PI * 2.0 / 3.0) * 0.5 + 0.5;
 
-                    // Add audio distortion
-                    float dist = length(p) * distortion;
-                    r += sin(dist * 3.0 + time1 * 2.0) * 0.2;
-                    g += sin(dist * 4.0 + time2 * 2.0) * 0.2;
-                    b += sin(dist * 5.0 + time3 * 2.0) * 0.2;
+                    // Audio-reactive distortion rings
+                    float dist = length(p);
+                    float bassRing = sin(dist * 8.0 - rawLow * 20.0 * audioSensitivity) * rawLow * distortion;
+                    float midRing = sin(dist * 12.0 - rawMid * 15.0 * audioSensitivity) * rawMid * distortion;
+                    float highRing = sin(dist * 16.0 - rawHigh * 10.0 * audioSensitivity) * rawHigh * distortion;
+
+                    r += bassRing * 0.4 + sin(dist * 3.0 + time1 * 2.0) * 0.2;
+                    g += midRing * 0.4 + sin(dist * 4.0 + time2 * 2.0) * 0.2;
+                    b += highRing * 0.4 + sin(dist * 5.0 + time3 * 2.0) * 0.2;
                 } else if (patternStyle < 1.5) {
-                    // Spiral pattern
+                    // Spiral pattern - now pulses with audio
                     float angle = atan(p.y, p.x);
                     float radius = length(p);
 
-                    r = sin(angle * waveFrequency + radius * 4.0 - time1 * 3.0) * 0.5 + 0.5;
-                    g = sin(angle * waveFrequency + radius * 4.0 - time2 * 3.0 + PI / 2.0) * 0.5 + 0.5;
-                    b = sin(angle * waveFrequency + radius * 4.0 - time3 * 3.0 + PI) * 0.5 + 0.5;
+                    // Audio-reactive spiral speed and expansion
+                    float spiralSpeed = 3.0 + rawLow * 5.0 * audioSensitivity;
+                    float spiralExpand = 4.0 + rawMid * 8.0 * audioSensitivity;
 
-                    // Audio pulse
-                    float pulse = sin(radius * 10.0 - (low + mid + high) * 0.5) * distortion;
-                    r += pulse * 0.2;
-                    g += pulse * 0.15;
-                    b += pulse * 0.1;
+                    r = sin(angle * waveFrequency + radius * spiralExpand - time1 * spiralSpeed) * 0.5 + 0.5;
+                    g = sin(angle * waveFrequency + radius * spiralExpand - time2 * spiralSpeed + PI / 2.0) * 0.5 + 0.5;
+                    b = sin(angle * waveFrequency + radius * spiralExpand - time3 * spiralSpeed + PI) * 0.5 + 0.5;
+
+                    // Strong audio pulse rings
+                    float pulse = sin(radius * 15.0 - audioPower * 8.0) * distortion;
+                    float bassPulse = sin(radius * 6.0 - rawLow * 30.0 * audioSensitivity) * rawLow;
+                    r += pulse * 0.3 + bassPulse * 0.5;
+                    g += pulse * 0.25 + bassPulse * 0.3;
+                    b += pulse * 0.2 + bassPulse * 0.2;
                 } else {
-                    // Plasma pattern
-                    float v1 = sin(p.x * waveFrequency + time1);
-                    float v2 = sin(waveFrequency * (p.x * sin(time2 * 0.5) + p.y * cos(time2 * 0.3)));
-                    float v3 = sin(waveFrequency * (p.x * cos(time3 * 0.3) + p.y * sin(time3 * 0.5)));
-                    float v4 = sin(sqrt(p.x * p.x + p.y * p.y) * waveFrequency);
+                    // Plasma pattern - audio warps the plasma
+                    float audioWarp = 1.0 + audioPower * 0.3;
+                    float v1 = sin(p.x * waveFrequency * audioWarp + time1 + rawLow * 5.0);
+                    float v2 = sin(waveFrequency * audioWarp * (p.x * sin(time2 * 0.5 + rawMid * 3.0) + p.y * cos(time2 * 0.3)));
+                    float v3 = sin(waveFrequency * audioWarp * (p.x * cos(time3 * 0.3) + p.y * sin(time3 * 0.5 + rawHigh * 3.0)));
+                    float v4 = sin(sqrt(p.x * p.x + p.y * p.y) * waveFrequency * (1.0 + rawLow * audioSensitivity));
 
                     float v = v1 + v2 + v3 + v4;
                     v *= 0.25;
 
-                    r = sin(v * PI + time1 * colorShift) * 0.5 + 0.5;
-                    g = sin(v * PI + time2 * colorShift + PI / 3.0) * 0.5 + 0.5;
-                    b = sin(v * PI + time3 * colorShift + PI * 2.0 / 3.0) * 0.5 + 0.5;
+                    // Audio-reactive color cycling
+                    float colorSpeed = colorShift * (1.0 + audioPower);
+                    r = sin(v * PI + time1 * colorSpeed) * 0.5 + 0.5;
+                    g = sin(v * PI + time2 * colorSpeed + PI / 3.0) * 0.5 + 0.5;
+                    b = sin(v * PI + time3 * colorSpeed + PI * 2.0 / 3.0) * 0.5 + 0.5;
 
-                    // Distortion based on audio
-                    float audioMix = (low + mid + high) / 30.0 * distortion;
-                    r = mix(r, sin(v * PI * 2.0), audioMix);
-                    g = mix(g, cos(v * PI * 2.0), audioMix);
+                    // Strong audio color mixing
+                    float audioMix = audioPower * distortion * 0.4;
+                    r = mix(r, sin(v * PI * 2.0 + rawLow * 10.0), audioMix);
+                    g = mix(g, cos(v * PI * 2.0 + rawMid * 10.0), audioMix);
+                    b = mix(b, sin(v * PI * 1.5 + rawHigh * 10.0), audioMix * 0.8);
                 }
 
-                // Apply intensity
-                r *= intensity;
-                g *= intensity;
-                b *= intensity;
+                // Audio-reactive brightness boost
+                float brightnessBoost = 1.0 + audioPower * 0.3;
+
+                // Apply intensity with audio boost
+                r *= intensity * brightnessBoost;
+                g *= intensity * brightnessBoost;
+                b *= intensity * brightnessBoost;
 
                 // Clamp values
                 gl_FragColor = vec4(clamp(r, 0.0, 1.0), clamp(g, 0.0, 1.0), clamp(b, 0.0, 1.0), 1.0);
@@ -165,11 +200,15 @@ export class ChromaWave implements IScene {
         this.lowUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'low');
         this.midUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'mid');
         this.highUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'high');
+        this.rawLowUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'rawLow');
+        this.rawMidUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'rawMid');
+        this.rawHighUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'rawHigh');
         this.intensityUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'intensity');
         this.waveFrequencyUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'waveFrequency');
         this.colorShiftUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'colorShift');
         this.patternStyleUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'patternStyle');
         this.distortionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'distortion');
+        this.audioSensitivityUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'audioSensitivity');
     }
 
     private getFrequencyBands(): { low: number; mid: number; high: number } {
@@ -177,23 +216,26 @@ export class ChromaWave implements IScene {
         const len = audioArray.length;
         if (len === 0) return { low: 0, mid: 0, high: 0 };
 
-        const third = Math.floor(len / 3);
+        // Use first 15% for bass (more accurate for bass frequencies)
+        const bassEnd = Math.floor(len * 0.15);
+        const midEnd = Math.floor(len * 0.5);
         let lowSum = 0, midSum = 0, highSum = 0;
 
-        for (let i = 0; i < third; i++) {
+        for (let i = 0; i < bassEnd; i++) {
             lowSum += audioArray[i] || 0;
         }
-        for (let i = third; i < third * 2; i++) {
+        for (let i = bassEnd; i < midEnd; i++) {
             midSum += audioArray[i] || 0;
         }
-        for (let i = third * 2; i < len; i++) {
+        for (let i = midEnd; i < len; i++) {
             highSum += audioArray[i] || 0;
         }
 
+        // Normalize to 0-1 range (divide by 255, not 100!)
         return {
-            low: lowSum / third / 100,
-            mid: midSum / third / 100,
-            high: highSum / (len - third * 2) / 100,
+            low: (lowSum / bassEnd / 255) * this.settings.audioSensitivity,
+            mid: (midSum / (midEnd - bassEnd) / 255) * this.settings.audioSensitivity,
+            high: (highSum / (len - midEnd) / 255) * this.settings.audioSensitivity,
         };
     }
 
@@ -206,6 +248,7 @@ export class ChromaWave implements IScene {
             this.gl.uniform1f(this.colorShiftUniformLocation, settings.colorShift);
             this.gl.uniform1f(this.patternStyleUniformLocation, settings.patternStyle);
             this.gl.uniform1f(this.distortionUniformLocation, settings.distortionAmount);
+            this.gl.uniform1f(this.audioSensitivityUniformLocation, settings.audioSensitivity);
         }
     }
 
@@ -216,27 +259,42 @@ export class ChromaWave implements IScene {
     render(): void {
         if (!this.canvas || !this.gl) return;
 
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
         // Calculate frequency bands
         const bands = this.getFrequencyBands();
 
-        // Update accumulated values
-        const lowDelta = (bands.low * this.settings.lowSpeed - this.settings.baseLowSpeed) * 0.1;
-        const midDelta = (bands.mid * this.settings.midSpeed - this.settings.baseMidSpeed) * 0.1;
-        const highDelta = (bands.high * this.settings.highSpeed - this.settings.baseHighSpeed) * 0.1;
+        // Smooth the raw audio values for less jittery visuals
+        const smoothFactor = 0.3;
+        this.smoothLow += (bands.low - this.smoothLow) * smoothFactor;
+        this.smoothMid += (bands.mid - this.smoothMid) * smoothFactor;
+        this.smoothHigh += (bands.high - this.smoothHigh) * smoothFactor;
 
-        this.low += Math.max(lowDelta, this.settings.baseLowSpeed * 0.05);
-        this.mid += Math.max(midDelta, this.settings.baseMidSpeed * 0.05);
-        this.high += Math.max(highDelta, this.settings.baseHighSpeed * 0.05);
+        // Update accumulated time values (for continuous animation)
+        const lowDelta = bands.low * this.settings.lowSpeed + this.settings.baseLowSpeed;
+        const midDelta = bands.mid * this.settings.midSpeed + this.settings.baseMidSpeed;
+        const highDelta = bands.high * this.settings.highSpeed + this.settings.baseHighSpeed;
+
+        this.low += lowDelta;
+        this.mid += midDelta;
+        this.high += highDelta;
 
         this.gl.uniform2f(this.resolutionUniformLocation, this.canvas.width, this.canvas.height);
+
+        // Time-accumulated values for continuous movement
         this.gl.uniform1f(this.lowUniformLocation, this.low);
         this.gl.uniform1f(this.midUniformLocation, this.mid);
         this.gl.uniform1f(this.highUniformLocation, this.high);
+
+        // Raw audio values for immediate reactivity
+        this.gl.uniform1f(this.rawLowUniformLocation, this.smoothLow);
+        this.gl.uniform1f(this.rawMidUniformLocation, this.smoothMid);
+        this.gl.uniform1f(this.rawHighUniformLocation, this.smoothHigh);
 
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
@@ -260,5 +318,23 @@ export class ChromaWave implements IScene {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vertexBuffer = null;
+        this.resolutionUniformLocation = null;
+        this.lowUniformLocation = null;
+        this.midUniformLocation = null;
+        this.highUniformLocation = null;
+        this.rawLowUniformLocation = null;
+        this.rawMidUniformLocation = null;
+        this.rawHighUniformLocation = null;
+        this.intensityUniformLocation = null;
+        this.waveFrequencyUniformLocation = null;
+        this.colorShiftUniformLocation = null;
+        this.patternStyleUniformLocation = null;
+        this.distortionUniformLocation = null;
+        this.audioSensitivityUniformLocation = null;
     }
 }

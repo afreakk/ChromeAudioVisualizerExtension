@@ -15,14 +15,15 @@
         "postinstall": "wxt prepare"
     },
     "devDependencies": {
-        "@types/chrome": "^0.1.32",
-        "typescript": "^5.5.3",
-        "wxt": "^0.18.14"
+        "@playwright/test": "1.57.0",
+        "@types/chrome": "^0.1.33",
+        "typescript": "^5.9.3",
+        "wxt": "^0.20.13"
     },
     "dependencies": {
         "butterchurn": "^2.6.7",
         "butterchurn-presets": "^2.4.7",
         "dat.gui": "^0.7.9",
-        "gl-matrix": "^3.4.3"
+        "gl-matrix": "^3.4.4"
     }
 }

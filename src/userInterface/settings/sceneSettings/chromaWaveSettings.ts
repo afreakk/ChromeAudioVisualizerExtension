@@ -7,30 +7,36 @@ export function chromaWaveSettings(
     settingsFolder: any,
     isExternalUi: boolean
 ): void {
+    // Audio reactivity - most important setting!
+    settingsFolder.add(settings, 'audioSensitivity', 0.5, 5).name('Audio Sensitivity').onChange((value: number) => {
+        settings.audioSensitivity = value;
+        setSceneSettings(settings, sceneName, isExternalUi);
+    });
+
     // Frequency band speeds
-    settingsFolder.add(settings, 'lowSpeed', 0.001, 0.02).name('Bass Speed').onChange((value: number) => {
+    settingsFolder.add(settings, 'lowSpeed', 0.01, 0.2).name('Bass Speed').onChange((value: number) => {
         settings.lowSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'midSpeed', 0.001, 0.02).name('Mid Speed').onChange((value: number) => {
+    settingsFolder.add(settings, 'midSpeed', 0.01, 0.2).name('Mid Speed').onChange((value: number) => {
         settings.midSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'highSpeed', 0.001, 0.02).name('Treble Speed').onChange((value: number) => {
+    settingsFolder.add(settings, 'highSpeed', 0.01, 0.2).name('Treble Speed').onChange((value: number) => {
         settings.highSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
 
     // Base movement
-    settingsFolder.add(settings, 'baseLowSpeed', 0, 0.3).name('Base Bass Speed').onChange((value: number) => {
+    settingsFolder.add(settings, 'baseLowSpeed', 0, 0.1).name('Base Bass Speed').onChange((value: number) => {
         settings.baseLowSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'baseMidSpeed', 0, 0.3).name('Base Mid Speed').onChange((value: number) => {
+    settingsFolder.add(settings, 'baseMidSpeed', 0, 0.1).name('Base Mid Speed').onChange((value: number) => {
         settings.baseMidSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'baseHighSpeed', 0, 0.3).name('Base Treble Speed').onChange((value: number) => {
+    settingsFolder.add(settings, 'baseHighSpeed', 0, 0.1).name('Base Treble Speed').onChange((value: number) => {
         settings.baseHighSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
@@ -54,7 +60,7 @@ export function chromaWaveSettings(
         settings.patternStyle = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'distortionAmount', 0, 1.5).name('Distortion').onChange((value: number) => {
+    settingsFolder.add(settings, 'distortionAmount', 0, 2).name('Distortion').onChange((value: number) => {
         settings.distortionAmount = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });

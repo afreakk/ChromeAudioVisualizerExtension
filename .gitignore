@@ -28,4 +28,11 @@ web-ext.config.ts
 *.sw?
 
 .direnv/
->>>>>>> yeye/main
+
+# Test artifacts
+test-results/
+tests/screenshots/
+playwright-report/
+
+# Agent working files
+tasks.md
