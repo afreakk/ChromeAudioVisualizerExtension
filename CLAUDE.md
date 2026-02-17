@@ -9,6 +9,7 @@ pnpm run dev          # Development build with WXT hot-reload
 pnpm run build        # Production build
 pnpm run compile      # TypeScript type-check only (no emit)
 pnpm run zip          # Package for Chrome Web Store
+pnpm run check:scenes # Verify all scenes are registered
 nix develop --command npx playwright test  # E2E tests (requires build first)
 ```
 

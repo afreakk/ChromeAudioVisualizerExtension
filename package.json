@@ -12,6 +12,7 @@
         "zip": "wxt zip",
         "zip:firefox": "wxt zip -b firefox",
         "compile": "tsc --noEmit",
+        "check:scenes": "bash scripts/check-scene-registration.sh",
         "postinstall": "wxt prepare"
     },
     "devDependencies": {
