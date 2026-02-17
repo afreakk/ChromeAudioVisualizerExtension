@@ -61,7 +61,6 @@ export function initShaderProgram(gl: WebGLRenderingContext, vs: string, fs: str
     // Check if the program was linked successfully
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
         console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
-        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
         return null;
     }
 
