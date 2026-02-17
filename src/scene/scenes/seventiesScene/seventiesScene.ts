@@ -1,4 +1,5 @@
 import { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { SeventiesSceneSetting } from './setting';
 
@@ -27,15 +28,7 @@ export class SeventiesScene implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
             console.error('Unable to initialize Canvas 2D. Your browser may not support it.');
