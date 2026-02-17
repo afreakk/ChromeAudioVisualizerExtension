@@ -1,4 +1,5 @@
 import { IScene } from '@/src/scene/scene';
+import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { CosmicAuroraSetting } from './setting';
 
@@ -214,17 +215,6 @@ export class CosmicAurora implements IScene {
         };
     }
 
-    private hexToRgb(hex: string): { r: number; g: number; b: number } {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result
-            ? {
-                  r: parseInt(result[1], 16),
-                  g: parseInt(result[2], 16),
-                  b: parseInt(result[3], 16),
-              }
-            : { r: 0, g: 255, b: 136 };
-    }
-
     private renderStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getFrequencyBands>): void {
         if (!this.starSprite) return;
 
@@ -344,9 +334,9 @@ export class CosmicAurora implements IScene {
         const intensity = this.settings.auroraIntensity * (1 + audio.average * this.settings.audioSensitivity);
 
         const colors = [
-            this.hexToRgb(this.settings.auroraColor1),
-            this.hexToRgb(this.settings.auroraColor2),
-            this.hexToRgb(this.settings.auroraColor3),
+            hexToRgb(this.settings.auroraColor1),
+            hexToRgb(this.settings.auroraColor2),
+            hexToRgb(this.settings.auroraColor3),
         ];
 
         for (let ribbonIndex = 0; ribbonIndex < this.auroraRibbons.length; ribbonIndex++) {

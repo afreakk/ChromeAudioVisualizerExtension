@@ -1,4 +1,5 @@
 import { IScene } from '@/src/scene/scene';
+import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { FloatingCubesSetting } from './setting';
 
@@ -62,17 +63,6 @@ export class FloatingCubes implements IScene {
         return `hsl(${h % 360}, ${s}%, ${l}%)`;
     }
 
-    private hexToRgb(hex: string): { r: number; g: number; b: number } {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result
-            ? {
-                  r: parseInt(result[1], 16),
-                  g: parseInt(result[2], 16),
-                  b: parseInt(result[3], 16),
-              }
-            : { r: 0, g: 0, b: 0 };
-    }
-
     updateSettings(settings: FloatingCubesSetting): void {
         const needsReinit = settings.cubeCount !== this.settings.cubeCount;
         this.settings = settings;
@@ -102,8 +92,8 @@ export class FloatingCubes implements IScene {
         }
 
         const { width, height } = this.canvas;
-        const bgColor = this.hexToRgb(this.settings.backgroundColor);
-        const borderColor = this.hexToRgb(this.settings.borderColor);
+        const bgColor = hexToRgb(this.settings.backgroundColor);
+        const borderColor = hexToRgb(this.settings.borderColor);
 
         // Draw background - solid if resized, semi-transparent for trail effect otherwise
         if (needsResize) {

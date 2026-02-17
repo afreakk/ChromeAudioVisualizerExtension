@@ -1,5 +1,6 @@
 import { IScene } from '@/src/scene/scene';
 import { createFullscreenCanvas } from '@/src/utils/canvas';
+import { hslToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { PaintSplashSetting } from './setting';
 
@@ -45,12 +46,6 @@ export class PaintSplash implements IScene {
                 hue: (i / this.settings.numSplashes) * 360,
             });
         }
-    }
-
-    private hslToRgb(h: number, s: number, l: number): string {
-        h = h % 360;
-        if (h < 0) h += 360;
-        return `hsl(${h}, ${s * 100}%, ${l * 100}%)`;
     }
 
     updateSettings(settings: PaintSplashSetting): void {
@@ -122,7 +117,7 @@ export class PaintSplash implements IScene {
 
             // Color
             const hue = (particle.hue + this.colorOffset * 360) % 360;
-            const color = this.hslToRgb(
+            const color = hslToRgb(
                 hue,
                 this.settings.colorSaturation,
                 this.settings.colorBrightness * (0.5 + audioValue * 0.5)
@@ -131,7 +126,7 @@ export class PaintSplash implements IScene {
             // Draw glow
             if (this.settings.glowIntensity > 0) {
                 const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, size * 2);
-                gradient.addColorStop(0, this.hslToRgb(hue, this.settings.colorSaturation, this.settings.colorBrightness * 0.3));
+                gradient.addColorStop(0, hslToRgb(hue, this.settings.colorSaturation, this.settings.colorBrightness * 0.3));
                 gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 this.ctx.fillStyle = gradient;
                 this.ctx.globalAlpha = this.settings.glowIntensity * audioValue;

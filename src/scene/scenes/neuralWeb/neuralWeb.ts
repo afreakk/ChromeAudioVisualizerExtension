@@ -1,5 +1,6 @@
 import { IScene } from '@/src/scene/scene';
 import { createFullscreenCanvas } from '@/src/utils/canvas';
+import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { NeuralWebSetting } from './setting';
 
@@ -52,17 +53,6 @@ export class NeuralWeb implements IScene {
         }
     }
 
-    private hexToRgb(hex: string): { r: number; g: number; b: number } {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result
-            ? {
-                  r: parseInt(result[1], 16),
-                  g: parseInt(result[2], 16),
-                  b: parseInt(result[3], 16),
-              }
-            : { r: 0, g: 255, b: 255 };
-    }
-
     updateSettings(settings: NeuralWebSetting): void {
         const needsReinit = settings.nodeCount !== this.settings.nodeCount;
         this.settings = settings;
@@ -98,8 +88,8 @@ export class NeuralWeb implements IScene {
         this.ctx.fillStyle = this.settings.backgroundColor;
         this.ctx.fillRect(0, 0, width, height);
 
-        const nodeColor = this.hexToRgb(this.settings.nodeColor);
-        const lineColor = this.hexToRgb(this.settings.lineColor);
+        const nodeColor = hexToRgb(this.settings.nodeColor);
+        const lineColor = hexToRgb(this.settings.lineColor);
 
         // Update and draw nodes
         for (let i = 0; i < this.nodes.length; i++) {
