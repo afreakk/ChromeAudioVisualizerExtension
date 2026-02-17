@@ -24,6 +24,13 @@ let audioContext: AudioContext | null = null;
 
 let numSamplesNormal = 2048;
 let numSamplesButterChurn = 1024;
+
+// Pre-allocated buffers to avoid per-frame GC pressure
+const normalDataArray = new Uint8Array(numSamplesNormal / 4);
+const butterChurnDataArray = new Uint8Array(numSamplesButterChurn);
+const butterChurnDataArrayL = new Uint8Array(numSamplesButterChurn);
+const butterChurnDataArrayR = new Uint8Array(numSamplesButterChurn);
+
 let analyserNormal: AnalyserNode | null = null;
 let analyserButterChurn: AnalyserNode | null = null;
 let analyserButterChurnL: AnalyserNode | null = null;
@@ -171,10 +178,9 @@ async function startStream() {
             currentStreamType === streamType.normal &&
             analyserNormal !== null
         ) {
-            const dataArray = new Uint8Array(numSamplesNormal / 4);
-            analyserNormal.getByteFrequencyData(dataArray);
+            analyserNormal.getByteFrequencyData(normalDataArray);
 
-            const data = Array.from(dataArray);
+            const data = Array.from(normalDataArray);
             const audioData = new NormalAudioDataDto(data, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
@@ -188,16 +194,13 @@ async function startStream() {
             analyserButterChurnL !== null &&
             analyserButterChurnR !== null
         ) {
-            const dataArray = new Uint8Array(numSamplesButterChurn);
-            const dataArrayL = new Uint8Array(numSamplesButterChurn);
-            const dataArrayR = new Uint8Array(numSamplesButterChurn);
-            analyserButterChurn.getByteTimeDomainData(dataArray);
-            analyserButterChurnL.getByteTimeDomainData(dataArrayL);
-            analyserButterChurnR.getByteTimeDomainData(dataArrayR);
+            analyserButterChurn.getByteTimeDomainData(butterChurnDataArray);
+            analyserButterChurnL.getByteTimeDomainData(butterChurnDataArrayL);
+            analyserButterChurnR.getByteTimeDomainData(butterChurnDataArrayR);
 
-            const data = Array.from(dataArray);
-            const dataL = Array.from(dataArrayL);
-            const dataR = Array.from(dataArrayR);
+            const data = Array.from(butterChurnDataArray);
+            const dataL = Array.from(butterChurnDataArrayL);
+            const dataR = Array.from(butterChurnDataArrayR);
             const audioData = new ButterChurnAudioDataDto(data, dataL, dataR, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
