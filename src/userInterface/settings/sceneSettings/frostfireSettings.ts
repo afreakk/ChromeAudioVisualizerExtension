@@ -1,5 +1,5 @@
 import { setSceneSettings } from "../settingsManager";
-import { FrostFireSetting } from "@/src/scene/scenes/frostfire/settings";
+import { FrostFireSetting } from "@/src/scene/scenes/frostfire/setting";
 
 export function frostFireSettings(sceneName: string, frostFireSettings: FrostFireSetting, settingsFolder: any, isExternalUi: boolean): void {
 

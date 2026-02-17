@@ -29,7 +29,7 @@ import { CosmicAurora } from '@/src/scene/scenes/cosmicAurora/cosmicAurora';
 // Setting classes
 import { SunFlowerSetting } from '@/src/scene/scenes/sunflower/setting';
 import { SynthBarsSetting } from '@/src/scene/scenes/synthBars/setting';
-import { FrostFireSetting } from '@/src/scene/scenes/frostfire/settings';
+import { FrostFireSetting } from '@/src/scene/scenes/frostfire/setting';
 import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
 import { ButterchurnSetting } from '@/src/scene/scenes/butterchurn/setting';
 import { DancingCubes3DSinusSetting } from '@/src/scene/scenes/dancingCubes3DSinus/setting';

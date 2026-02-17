@@ -2,7 +2,7 @@ import { IScene } from '@/src/scene/scene';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
-import { FrostFireSetting } from './settings';
+import { FrostFireSetting } from './setting';
 
 export class FrostFire implements IScene {
     private canvas: HTMLCanvasElement | null = null;
