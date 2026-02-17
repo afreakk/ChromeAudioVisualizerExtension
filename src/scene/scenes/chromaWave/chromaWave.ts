@@ -1,4 +1,5 @@
 import { IScene } from '@/src/scene/scene';
+import { getFrequencyBands } from '@/src/utils/audio';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { initShaderProgram } from '@/src/utils/openGl/openGl';
 import { ChromaWaveSetting } from './setting';
@@ -211,33 +212,6 @@ export class ChromaWave implements IScene {
         this.audioSensitivityUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'audioSensitivity');
     }
 
-    private getFrequencyBands(): { low: number; mid: number; high: number } {
-        const audioArray = this.audioData.timeByteArray;
-        const len = audioArray.length;
-        if (len === 0) return { low: 0, mid: 0, high: 0 };
-
-        // Use first 15% for bass (more accurate for bass frequencies)
-        const bassEnd = Math.floor(len * 0.15);
-        const midEnd = Math.floor(len * 0.5);
-        let lowSum = 0, midSum = 0, highSum = 0;
-
-        for (let i = 0; i < bassEnd; i++) {
-            lowSum += audioArray[i] || 0;
-        }
-        for (let i = bassEnd; i < midEnd; i++) {
-            midSum += audioArray[i] || 0;
-        }
-        for (let i = midEnd; i < len; i++) {
-            highSum += audioArray[i] || 0;
-        }
-
-        // Normalize to 0-1 range (divide by 255, not 100!)
-        return {
-            low: (lowSum / bassEnd / 255) * this.settings.audioSensitivity,
-            mid: (midSum / (midEnd - bassEnd) / 255) * this.settings.audioSensitivity,
-            high: (highSum / (len - midEnd) / 255) * this.settings.audioSensitivity,
-        };
-    }
 
     updateSettings(settings: ChromaWaveSetting): void {
         this.settings = settings;
@@ -267,16 +241,16 @@ export class ChromaWave implements IScene {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
         // Calculate frequency bands
-        const bands = this.getFrequencyBands();
+        const bands = getFrequencyBands(this.audioData.timeByteArray, this.settings.audioSensitivity);
 
         // Smooth the raw audio values for less jittery visuals
         const smoothFactor = 0.3;
-        this.smoothLow += (bands.low - this.smoothLow) * smoothFactor;
+        this.smoothLow += (bands.bass - this.smoothLow) * smoothFactor;
         this.smoothMid += (bands.mid - this.smoothMid) * smoothFactor;
         this.smoothHigh += (bands.high - this.smoothHigh) * smoothFactor;
 
         // Update accumulated time values (for continuous animation)
-        const lowDelta = bands.low * this.settings.lowSpeed + this.settings.baseLowSpeed;
+        const lowDelta = bands.bass * this.settings.lowSpeed + this.settings.baseLowSpeed;
         const midDelta = bands.mid * this.settings.midSpeed + this.settings.baseMidSpeed;
         const highDelta = bands.high * this.settings.highSpeed + this.settings.baseHighSpeed;
 

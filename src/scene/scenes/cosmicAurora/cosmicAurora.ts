@@ -1,4 +1,5 @@
 import { IScene } from '@/src/scene/scene';
+import { getFrequencyBands } from '@/src/utils/audio';
 import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { CosmicAuroraSetting } from './setting';
@@ -189,33 +190,25 @@ export class CosmicAurora implements IScene {
         this.audioData = data;
     }
 
-    private getFrequencyBands(): { bass: number; mid: number; high: number; average: number } {
+    private getAudioBands(): { bass: number; mid: number; high: number; average: number } {
         const audioArray = this.audioData.timeByteArray;
         if (!audioArray || audioArray.length === 0) {
             return { bass: 0, mid: 0, high: 0, average: 0 };
         }
-
-        let bassSum = 0, midSum = 0, highSum = 0, total = 0;
-        const bassEnd = Math.floor(audioArray.length * 0.15);
-        const midEnd = Math.floor(audioArray.length * 0.5);
-
+        const bands = getFrequencyBands(audioArray);
+        let total = 0;
         for (let i = 0; i < audioArray.length; i++) {
-            const value = audioArray[i] / 255;
-            total += value;
-            if (i < bassEnd) bassSum += value;
-            else if (i < midEnd) midSum += value;
-            else highSum += value;
+            total += audioArray[i] / 255;
         }
-
         return {
-            bass: (bassSum / bassEnd) * this.settings.bassReactivity,
-            mid: midSum / (midEnd - bassEnd),
-            high: highSum / (audioArray.length - midEnd),
+            bass: bands.bass * this.settings.bassReactivity,
+            mid: bands.mid,
+            high: bands.high,
             average: total / audioArray.length,
         };
     }
 
-    private renderStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getFrequencyBands>): void {
+    private renderStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
         if (!this.starSprite) return;
 
         const audioBoost = 1 + audio.high * this.settings.audioSensitivity;
@@ -237,7 +230,7 @@ export class CosmicAurora implements IScene {
         ctx.globalAlpha = savedAlpha;
     }
 
-    private renderShootingStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getFrequencyBands>): void {
+    private renderShootingStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
         if (this.settings.showShootingStars && audio.bass > 0.6 && this.time - this.lastPeakTime > 30) {
             this.lastPeakTime = this.time;
             const startX = Math.random() * width;
@@ -291,7 +284,7 @@ export class CosmicAurora implements IScene {
         });
     }
 
-    private renderNebulaClouds(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getFrequencyBands>): void {
+    private renderNebulaClouds(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
         const intensity = this.settings.nebulaIntensity * (1 + audio.average * this.settings.audioSensitivity);
 
         for (const cloud of this.nebulaClouds) {
@@ -329,7 +322,7 @@ export class CosmicAurora implements IScene {
         }
     }
 
-    private renderAurora(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getFrequencyBands>): void {
+    private renderAurora(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
         const audioArray = this.audioData.timeByteArray;
         const intensity = this.settings.auroraIntensity * (1 + audio.average * this.settings.audioSensitivity);
 
@@ -429,7 +422,7 @@ export class CosmicAurora implements IScene {
         }
     }
 
-    private renderCentralGlow(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getFrequencyBands>): void {
+    private renderCentralGlow(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
         const glowRadius = Math.min(width, height) * 0.4 * (1 + audio.bass * 0.5);
         const centerX = width / 2;
         const centerY = height * 0.7;
@@ -462,7 +455,7 @@ export class CosmicAurora implements IScene {
         this.time++;
         this.colorPhase += this.settings.colorCycleSpeed * 0.01;
 
-        const audio = this.getFrequencyBands();
+        const audio = this.getAudioBands();
         this.smoothedBass += (audio.bass - this.smoothedBass) * 0.1;
         this.smoothedMid += (audio.mid - this.smoothedMid) * 0.1;
         this.smoothedHigh += (audio.high - this.smoothedHigh) * 0.1;
