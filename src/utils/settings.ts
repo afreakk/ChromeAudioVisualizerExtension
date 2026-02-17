@@ -4,19 +4,19 @@ function keyGenerator(name: string): string {
 
 const settingsCache: Record<string, string> = {};
 export function loadSettings<T>(settingsName: string): T | null {
-    const settingsJson = settingsCache[settingsName];
-    if (settingsJson === undefined) {
-        return null;
+    const cached = settingsCache[settingsName];
+    if (cached !== undefined) {
+        return JSON.parse(cached) as T;
     }
-    return JSON.parse(settingsJson) as T;
+    const stored = localStorage.getItem(keyGenerator(settingsName));
+    if (stored !== null) {
+        settingsCache[settingsName] = stored;
+        return JSON.parse(stored) as T;
+    }
+    return null;
 }
 export function saveSettings<T>(settingsName: string, settings: T): void {
-    settingsCache[settingsName] = JSON.stringify(settings);
-    // localStorage.setItem(keyGenerator(settingsName), JSON.stringify(settings));
-}
-export function checkClassType<T>(
-    object: any,
-    constructor: { new (...args: any[]): T }
-): object is T {
-    return object instanceof constructor;
+    const json = JSON.stringify(settings);
+    settingsCache[settingsName] = json;
+    localStorage.setItem(keyGenerator(settingsName), json);
 }
