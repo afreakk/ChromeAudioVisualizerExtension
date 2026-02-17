@@ -46,32 +46,36 @@ export default defineBackground(async () => {
             return;
         }
         tabId = tab.id as number;
-        streaming = true;
 
-        const existingContexts = await chrome.runtime.getContexts({});
-        const offscreenDocument = existingContexts.find(
-            (c) => c.contextType === 'OFFSCREEN_DOCUMENT'
-        );
-        if (!offscreenDocument) {
-            await chrome.offscreen.createDocument({
-                url: 'offscreenWindow.html',
-                reasons: [chrome.offscreen.Reason.USER_MEDIA],
-                justification: 'play sound effects',
+        try {
+            const existingContexts = await chrome.runtime.getContexts({});
+            const offscreenDocument = existingContexts.find(
+                (c) => c.contextType === 'OFFSCREEN_DOCUMENT'
+            );
+            if (!offscreenDocument) {
+                await chrome.offscreen.createDocument({
+                    url: 'offscreenWindow.html',
+                    reasons: [chrome.offscreen.Reason.USER_MEDIA],
+                    justification: 'play sound effects',
+                });
+            }
+            await initiateStream(tabId);
+
+            // Create the animation window
+            const win = await chrome.windows.create({
+                url: chrome.runtime.getURL('animationWindow.html'),
+                type: 'popup',
+                width: 1600,
+                height: 900,
             });
+            if (!win) {
+                throw new Error('Failed to create animation window');
+            }
+            animationWindowId = win.id as number;
+        } catch (error) {
+            console.error('Failed to start visualization:', error);
+            streaming = false;
         }
-        await initiateStream(tabId);
-
-        // Create the animation window
-        const win = await chrome.windows.create({
-            url: chrome.runtime.getURL('animationWindow.html'),
-            type: 'popup',
-            width: 1600,
-            height: 900,
-        });
-        if (!win) {
-            throw new Error('Failed to create animation window');
-        }
-        animationWindowId = win.id as number;
     });
 
     chrome.runtime.onMessage.addListener(
