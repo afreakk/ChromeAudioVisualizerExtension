@@ -1,33 +1,26 @@
-import {
-    messageAction,
-    messageTarget,
-} from '@/src/utils/eventMessage';
-chrome.runtime.onMessage.addListener((message) => {
-    document
-        .getElementById('theFrame')
-        ?.contentWindow?.postMessage(message, '*');
+import { messageAction, messageTarget } from '@/src/utils/eventMessage';
+
+let theFrame = null;
+
+window.addEventListener('load', function () {
+    theFrame = document.getElementById('theFrame');
+    theFrame?.contentWindow?.postMessage({ target: 'animationWindowReadyEvent' }, '*');
 });
+
 chrome.runtime.onMessage.addListener((message) => {
     if (
-        message.target === "animation" &&
-        message.action === "toggle-full-screen"
+        message.target === messageTarget.animation &&
+        message.action === messageAction.toggleFullScreen
     ) {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen(); // Make the whole page fullscreen
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen(); // Exit fullscreen mode
-            }
+            document.documentElement.requestFullscreen();
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen();
         }
     }
+    theFrame?.contentWindow?.postMessage(message, '*');
 });
 
-window.addEventListener('load', function() {
-    document
-        .getElementById('theFrame')
-        ?.contentWindow?.postMessage({ target: 'animationWindowReadyEvent' }, '*');
-});
-
-window.addEventListener('message', function(e) {
+window.addEventListener('message', function (e) {
     chrome.runtime.sendMessage(e.data);
 });
