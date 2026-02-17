@@ -437,5 +437,12 @@ export class PsychedelicCube implements IScene {
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vxBuffer = null;
+        this.ixBuffer = null;
+        this.txBuffer = null;
     }
 }

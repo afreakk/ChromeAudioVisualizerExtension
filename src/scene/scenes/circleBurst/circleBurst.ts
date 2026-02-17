@@ -252,5 +252,25 @@ export class CircleBurst implements IScene {
         this.gl.bindTexture(this.gl.TEXTURE_2D, null);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vertexBuffer = null;
+        this.audioTexture = null;
+        this.audioTextureUniformLocation = null;
+        this.resolutionUniformLocation = null;
+        this.timeUniformLocation = null;
+        this.baseRadiusUniformLocation = null;
+        this.maxRadiusUniformLocation = null;
+        this.numSpokesUniformLocation = null;
+        this.rotationSpeedUniformLocation = null;
+        this.colorCycleSpeedUniformLocation = null;
+        this.audioSensitivityUniformLocation = null;
+        this.innerColorUniformLocation = null;
+        this.outerColorUniformLocation = null;
+        this.backgroundColorUniformLocation = null;
+        this.glowIntensityUniformLocation = null;
+        this.spokeWidthUniformLocation = null;
     }
 }

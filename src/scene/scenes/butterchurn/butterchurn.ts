@@ -98,5 +98,6 @@ export class Butterchurn implements IScene {
         }
         this.canvas.remove();
         this.canvas = null;
+        this.visualizer = null;
     }
 }
