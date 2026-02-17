@@ -1,5 +1,5 @@
 import { IScene } from '@/src/scene/scene';
-import { ButterchurnSettings, getRandomPreset } from './setting';
+import { ButterchurnSetting, getRandomPreset } from './setting';
 import {
     ButterChurnAudioDataDto,
     IAudioDataDto,
@@ -39,7 +39,7 @@ export class Butterchurn implements IScene {
             textureRatio: 1,
         });
     }
-    updateSettings(settings: ButterchurnSettings): void {
+    updateSettings(settings: ButterchurnSetting): void {
         if (!this.visualizer) return;
         const preset = presets[settings.preset];
         this.visualizer.loadPreset(preset, settings.blendLength);

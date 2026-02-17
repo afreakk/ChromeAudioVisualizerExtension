@@ -1,10 +1,10 @@
-import { ButterchurnSettings } from '@/src/scene/scenes/butterchurn/setting';
+import { ButterchurnSetting } from '@/src/scene/scenes/butterchurn/setting';
 import { setSceneSettings } from '../settingsManager';
 import butterchurnPresets from 'butterchurn-presets';
 
 export function buildButterchurnSetting(
     sceneName: string,
-    butterchurnSettings: ButterchurnSettings,
+    butterchurnSettings: ButterchurnSetting,
     settingsFolder: any,
     isExternalUi: boolean
 ): void {

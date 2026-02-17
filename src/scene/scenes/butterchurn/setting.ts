@@ -7,7 +7,7 @@ export const getRandomPreset = () => {
     ];
 };
 
-export class ButterchurnSettings implements ISceneSetting {
+export class ButterchurnSetting implements ISceneSetting {
     public blendLength: number = 5;
     public cycleSeconds: number = 20;
     public cyclePresets: boolean = true;

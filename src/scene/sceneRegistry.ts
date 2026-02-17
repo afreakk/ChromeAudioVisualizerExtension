@@ -31,7 +31,7 @@ import { SunFlowerSetting } from '@/src/scene/scenes/sunflower/setting';
 import { SynthBarsSetting } from '@/src/scene/scenes/synthBars/setting';
 import { FrostFireSetting } from '@/src/scene/scenes/frostfire/settings';
 import { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
-import { ButterchurnSettings } from '@/src/scene/scenes/butterchurn/setting';
+import { ButterchurnSetting } from '@/src/scene/scenes/butterchurn/setting';
 import { DancingCubes3DSinusSetting } from '@/src/scene/scenes/dancingCubes3DSinus/setting';
 import { WormSceneSetting } from '@/src/scene/scenes/wormScene/setting';
 import { Dancing3DCubesSetting } from '@/src/scene/scenes/dancing3DCubes/setting';
@@ -87,7 +87,7 @@ function registerScene(entry: SceneRegistryEntry): void {
     sceneRegistry.push(entry);
 }
 
-registerScene({ sceneName: sceneNames.Butterchurn, createScene: () => new Butterchurn(), createDefaultSettings: () => new ButterchurnSettings(), buildSettingsUI: buildButterchurnSetting });
+registerScene({ sceneName: sceneNames.Butterchurn, createScene: () => new Butterchurn(), createDefaultSettings: () => new ButterchurnSetting(), buildSettingsUI: buildButterchurnSetting });
 registerScene({ sceneName: sceneNames.SunFlower, createScene: () => new SunFlower(), createDefaultSettings: () => new SunFlowerSetting(), buildSettingsUI: sunFlowerSettings });
 registerScene({ sceneName: sceneNames.FrostFire, createScene: () => new FrostFire(), createDefaultSettings: () => new FrostFireSetting(), buildSettingsUI: frostFireSettings });
 registerScene({ sceneName: sceneNames.SynthBars, createScene: () => new SynthBars(), createDefaultSettings: () => new SynthBarsSetting(), buildSettingsUI: synthBarSettings });
