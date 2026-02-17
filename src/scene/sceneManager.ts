@@ -80,17 +80,11 @@ export class SceneManager {
             }
             // Set the new scene
             this.scene = newScene;
-            // Apply settings only on success (avoid type mismatch on failure)
-            if (settings && Object.keys(settings).length > 0) {
-                this.scene.updateSettings(settings);
-            }
-        } catch (error) {
-            console.error('Error building scene:', error);
-        } finally {
+
             const animationWindowCreated = new StartStreamEvent(
                 messageTarget.offscreen,
                 messageAction.startStream,
-                this.scene ? this.scene.streamType : streamType.normal
+                this.scene.streamType
             );
             if (window.sandboxEventMessageHolder?.source) {
                 window.sandboxEventMessageHolder.source.postMessage(
@@ -98,6 +92,10 @@ export class SceneManager {
                     { targetOrigin: window.sandboxEventMessageHolder.origin }
                 );
             }
+            this.scene.updateSettings(settings);
+        } catch (error) {
+            console.error('Error building scene:', error);
+        } finally {
             this.buildingScene = false;
         }
     }
