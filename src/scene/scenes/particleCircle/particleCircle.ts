@@ -114,8 +114,10 @@ export class ParticleCircle implements IScene {
         }
 
         // Update canvas size
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
 
         // Clear background with optional fade effect
         if (this.settings.enableTrails) {

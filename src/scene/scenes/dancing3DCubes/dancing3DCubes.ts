@@ -405,9 +405,11 @@ export class Dancing3DCubes implements IScene {
         const program = this.shaderProgram;
 
         // Update canvas size and viewport
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
 
         // Update projection matrix if canvas size changed
         mat4.perspective(

@@ -333,9 +333,11 @@ export class PsychedelicCube implements IScene {
         const program = this.shaderProgram;
 
         // Update canvas size and viewport
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
 
         gl.useProgram(program);
 

@@ -189,8 +189,10 @@ export class AudioTerrain implements IScene {
         const s = this.settings;
 
         // Update canvas size
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
 
         const width = this.canvas.width;
         const height = this.canvas.height;

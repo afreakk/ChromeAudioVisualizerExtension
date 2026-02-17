@@ -130,8 +130,10 @@ export class PulsingGrid implements IScene {
         const s = this.settings;
 
         // Update canvas size
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
 
         // Semi-transparent background for trail effect
         ctx.fillStyle = `rgba(${Math.floor(s.bgRed * 255)},${Math.floor(s.bgGreen * 255)},${Math.floor(s.bgBlue * 255)},${s.bgAlpha})`;

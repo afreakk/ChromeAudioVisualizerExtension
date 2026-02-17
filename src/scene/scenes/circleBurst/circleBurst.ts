@@ -213,10 +213,12 @@ export class CircleBurst implements IScene {
     render(): void {
         if (!this.canvas || !this.gl) return;
 
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
