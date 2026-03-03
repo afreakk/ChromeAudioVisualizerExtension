@@ -37,7 +37,7 @@ export class NeuralWeb implements IScene {
     private rebuildGlowSprite(): void {
         const baseSize = (this.settings.nodeSize + this.settings.nodeSizeAudioScale) * 4;
         const spriteSize = Math.ceil(baseSize * 2);
-        if (spriteSize < 1) return;
+        if (!Number.isFinite(spriteSize) || spriteSize < 1) return;
         this.glowSpriteSize = spriteSize;
         const sprite = document.createElement('canvas');
         sprite.width = spriteSize * 2;
@@ -83,7 +83,7 @@ export class NeuralWeb implements IScene {
     }
 
     updateSettings(settings: NeuralWebSetting): void {
-        const needsReinit = settings.nodeCount !== this.settings.nodeCount;
+        const needsReinit = settings.nodeCount !== this.nodes.length;
         this.settings = settings;
         this.cacheColors();
         if (needsReinit) {

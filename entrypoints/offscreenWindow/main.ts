@@ -202,7 +202,9 @@ async function startStream() {
                     return;
                 }
                 const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
-                console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
+                console.warn(
+                    `Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`,
+                );
                 retryTimeoutId = setTimeout(() => {
                     retryTimeoutId = null;
                     const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
@@ -245,7 +247,12 @@ async function startStream() {
             copyToPlainArray(butterChurnDataArray, butterChurnPlainArray);
             copyToPlainArray(butterChurnDataArrayL, butterChurnPlainArrayL);
             copyToPlainArray(butterChurnDataArrayR, butterChurnPlainArrayR);
-            const audioData = new ButterChurnAudioDataDto(butterChurnPlainArray, butterChurnPlainArrayL, butterChurnPlainArrayR, captureTimestamp);
+            const audioData = new ButterChurnAudioDataDto(
+                butterChurnPlainArray,
+                butterChurnPlainArrayL,
+                butterChurnPlainArrayR,
+                captureTimestamp,
+            );
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,

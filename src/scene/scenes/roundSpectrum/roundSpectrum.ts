@@ -206,8 +206,14 @@ export class RoundSpectrum implements IScene {
                 this.ctx.globalCompositeOperation = 'lighter';
                 this.ctx.drawImage(
                     this.glowSprite,
-                    0, 0, spriteSize, spriteSize,
-                    cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2,
+                    0,
+                    0,
+                    spriteSize,
+                    spriteSize,
+                    cx - glowSize,
+                    cy - glowSize,
+                    glowSize * 2,
+                    glowSize * 2,
                 );
                 this.ctx.globalCompositeOperation = 'source-over';
             }

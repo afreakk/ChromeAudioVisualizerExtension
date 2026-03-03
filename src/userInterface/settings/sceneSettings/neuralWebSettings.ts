@@ -9,7 +9,7 @@ export function neuralWebSettings(
 ): void {
     // Nodes
     settingsFolder
-        .add(settings, 'nodeCount', 20, 200)
+        .add(settings, 'nodeCount', 1, 200)
         .step(1)
         .name('Node Count')
         .onChange((value: number) => {

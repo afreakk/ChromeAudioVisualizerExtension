@@ -2,7 +2,7 @@ import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class NeuralWebSetting implements ISceneSetting {
     // Nodes
-    public nodeCount: number = 80;
+    public nodeCount: number = 50;
     public nodeSize: number = 4;
     public nodeSizeAudioScale: number = 8;
 

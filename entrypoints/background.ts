@@ -79,7 +79,7 @@ export default defineBackground(() => {
         // Handle request for new stream ID after hot-reload
         if (message.action === messageAction.initiateStream) {
             reinitiateStream();
-            return true; // Keep message port open for async operation
+            return;
         }
 
         if (message.action === messageAction.openSettingsWindow) {
@@ -101,7 +101,7 @@ export default defineBackground(() => {
                 );
                 chrome.runtime.sendMessage(closeSettingsInAnimation.toMessage());
             })();
-            return true; // Keep message port open for async operation
+            return;
         }
     });
     // Listen for windows being closed and handle both settings and animation windows

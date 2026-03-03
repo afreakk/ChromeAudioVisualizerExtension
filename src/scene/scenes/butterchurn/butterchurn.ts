@@ -42,6 +42,7 @@ export class Butterchurn implements IScene {
     updateSettings(settings: ButterchurnSetting): void {
         if (!this.visualizer) return;
         const preset = presets[settings.preset];
+        if (!preset) return;
         this.visualizer.loadPreset(preset, settings.blendLength);
         if (!settings.cyclePresets) {
             clearInterval(this.cyclePresetInterval as NodeJS.Timeout);

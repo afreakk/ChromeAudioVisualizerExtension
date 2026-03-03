@@ -18,9 +18,7 @@ function withTimeout<T>(fn: () => Promise<T>, ms: number): Promise<T> {
 }
 
 // All scenes except Butterchurn (requires stereo audio + external lib setup)
-const SCENES = Object.values(sceneNames).filter(
-    (name) => name !== sceneNames.Butterchurn,
-);
+const SCENES = Object.values(sceneNames).filter((name) => name !== sceneNames.Butterchurn);
 
 /** Generate synthetic audio data (sine wave, 256 bins, values 0-255) */
 function generateAudioData(frame: number): number[] {

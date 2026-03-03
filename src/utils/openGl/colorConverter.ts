@@ -1,10 +1,17 @@
-export function hexToRGBNormalized(color: string): Float32Array {
+export function hexToRGBNormalized(color: string | number): Float32Array {
+    // dat.gui can return color values as numbers (e.g. 0xff0000)
+    if (typeof color === 'number') {
+        const r = ((color >> 16) & 0xff) / 255;
+        const g = ((color >> 8) & 0xff) / 255;
+        const b = (color & 0xff) / 255;
+        return new Float32Array([r, g, b]);
+    }
     if (typeof color !== 'string') {
-        throw new Error('Invalid input: HEX color must be a string.');
+        return new Float32Array([0, 0, 0]);
     }
     const hex = color.replace(/^#/, '');
     if (hex.length !== 6) {
-        throw new Error('Invalid HEX color.');
+        return new Float32Array([0, 0, 0]);
     }
 
     const r = parseInt(hex.substring(0, 2), 16) / 255;

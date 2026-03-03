@@ -87,7 +87,8 @@ export class PaintSplash implements IScene {
         }
 
         const audioArray = this.audioData.timeByteArray;
-        const binSize = audioArray.length > 0 ? Math.max(1, Math.floor(audioArray.length / this.settings.numSplashes)) : 0;
+        const binSize =
+            audioArray.length > 0 ? Math.max(1, Math.floor(audioArray.length / this.settings.numSplashes)) : 0;
 
         let totalAudio = 0;
 

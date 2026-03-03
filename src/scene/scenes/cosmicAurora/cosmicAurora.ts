@@ -301,7 +301,12 @@ export class CosmicAurora implements IScene {
         height: number,
         audio: ReturnType<typeof this.getAudioBands>,
     ): void {
-        if (this.settings.showShootingStars && audio.bass > 0.4 && this.time - this.lastPeakTime > 20 && this.shootingStars.length < CosmicAurora.MAX_SHOOTING_STARS) {
+        if (
+            this.settings.showShootingStars &&
+            audio.bass > 0.4 &&
+            this.time - this.lastPeakTime > 20 &&
+            this.shootingStars.length < CosmicAurora.MAX_SHOOTING_STARS
+        ) {
             this.lastPeakTime = this.time;
             const startX = Math.random() * width;
             const startY = Math.random() * height * 0.3;
@@ -361,11 +366,7 @@ export class CosmicAurora implements IScene {
         });
     }
 
-    private renderNebulaClouds(
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-    ): void {
+    private renderNebulaClouds(ctx: CanvasRenderingContext2D, width: number, height: number): void {
         const intensity = this.settings.nebulaIntensity * (1 + this.smoothedBass * this.settings.audioSensitivity * 2);
 
         for (const cloud of this.nebulaClouds) {
@@ -463,11 +464,7 @@ export class CosmicAurora implements IScene {
         });
     }
 
-    private renderAurora(
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-    ): void {
+    private renderAurora(ctx: CanvasRenderingContext2D, width: number, height: number): void {
         const audioArray = this.audioData.timeByteArray;
         const intensity = this.settings.auroraIntensity * (1 + this.smoothedBass * this.settings.audioSensitivity * 2);
 
@@ -565,11 +562,7 @@ export class CosmicAurora implements IScene {
         }
     }
 
-    private renderCentralGlow(
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-    ): void {
+    private renderCentralGlow(ctx: CanvasRenderingContext2D, width: number, height: number): void {
         const glowRadius = Math.min(width, height) * 0.4 * (1 + this.smoothedBass * 1.0);
         const centerX = width / 2;
         const centerY = height * 0.7;
@@ -582,18 +575,17 @@ export class CosmicAurora implements IScene {
             0,
             `hsla(${(180 + hueShift) % 360}, 80%, 30%, ${bassGlow * this.settings.glowIntensity})`,
         );
-        gradient.addColorStop(0.5, `hsla(${(220 + hueShift) % 360}, 70%, 20%, ${bassGlow * 0.4 * this.settings.glowIntensity})`);
+        gradient.addColorStop(
+            0.5,
+            `hsla(${(220 + hueShift) % 360}, 70%, 20%, ${bassGlow * 0.4 * this.settings.glowIntensity})`,
+        );
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
     }
 
-    private renderBeatFlash(
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-    ): void {
+    private renderBeatFlash(ctx: CanvasRenderingContext2D, width: number, height: number): void {
         if (this.beatFlash <= 0) return;
 
         const hueShift = this.colorPhase * 60;
