@@ -45,6 +45,12 @@ let captureInterval = 17; // Default 60fps (1000/60 ≈ 17ms)
 let targetFps = 60;
 let captureTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+// Stream recovery backoff
+const MAX_STREAM_RETRIES = 5;
+const BASE_RETRY_DELAY_MS = 500;
+let streamRetryCount = 0;
+let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
 chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent | InitiateStreamEvent | SetFpsEvent) => {
     // Only process messages targeted at offscreen
     if (message.target !== messageTarget.offscreen) {
@@ -134,15 +140,26 @@ async function initiateStream(streamId: string) {
         splitter.connect(analyserButterChurnL, 0);
         splitter.connect(analyserButterChurnR, 1);
         window.captureIsActive = true;
+        streamRetryCount = 0; // Reset on success
     } catch (error) {
         // Clear the invalid stream ID
         initiateStreamId = null;
-        // Request a new stream ID from background script
-        const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
-        try {
-            chrome.runtime.sendMessage(requestNewStream.toMessage());
-        } catch (_e) {
-            // Receiving end may not exist
+        streamRetryCount++;
+        if (streamRetryCount <= MAX_STREAM_RETRIES) {
+            const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
+            console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
+            // Request a new stream ID from background script with backoff
+            retryTimeoutId = setTimeout(() => {
+                retryTimeoutId = null;
+                const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
+                try {
+                    chrome.runtime.sendMessage(requestNewStream.toMessage());
+                } catch (_e) {
+                    // Receiving end may not exist
+                }
+            }, delay);
+        } else {
+            console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
         }
         throw error; // Re-throw so caller knows it failed
     }
@@ -166,13 +183,23 @@ async function startStream() {
                     return;
                 }
             } else {
-                // Request a new stream ID from background script
-                const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
-                try {
-                    chrome.runtime.sendMessage(requestNewStream.toMessage());
-                } catch (_e) {
-                    // Receiving end may not exist
+                // Request a new stream ID from background script with backoff
+                streamRetryCount++;
+                if (streamRetryCount > MAX_STREAM_RETRIES) {
+                    console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
+                    return;
                 }
+                const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
+                console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
+                retryTimeoutId = setTimeout(() => {
+                    retryTimeoutId = null;
+                    const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
+                    try {
+                        chrome.runtime.sendMessage(requestNewStream.toMessage());
+                    } catch (_e) {
+                        // Receiving end may not exist
+                    }
+                }, delay);
                 return;
             }
         }
@@ -229,6 +256,10 @@ async function startStream() {
 async function stopStream() {
     window.captureIsActive = false;
     initiateStreamId = null;
+    if (retryTimeoutId !== null) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+    }
     if (captureTimeoutId !== null) {
         clearTimeout(captureTimeoutId);
         captureTimeoutId = null;
