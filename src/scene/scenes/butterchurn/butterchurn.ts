@@ -1,21 +1,21 @@
-import { IScene } from '@/src/scene/scene';
-import { ButterchurnSettings, getRandomPreset } from './setting';
-import {
-    ButterChurnAudioDataDto,
-    IAudioDataDto,
-    streamType,
-} from '@/src/utils/eventMessage';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
+import type { IScene } from '@/src/scene/scene';
+import { ButterChurnAudioDataDto, streamType } from '@/src/utils/eventMessage';
+import { type ButterchurnSetting, getRandomPreset } from './setting';
+
 const presets = butterchurnPresets.getPresets();
 
 export class Butterchurn implements IScene {
     private canvas: HTMLCanvasElement | null = null;
     private audioData: ButterChurnAudioDataDto;
     private visualizer: any = null;
-    private lastTime: any;
+    private lastTime: number = 0;
     private lastCycleSeconds: number = 0;
     private cyclePresetInterval: NodeJS.Timeout | null = null;
+    private audioBuffer: Uint8Array = new Uint8Array(1024);
+    private audioBufferL: Uint8Array = new Uint8Array(1024);
+    private audioBufferR: Uint8Array = new Uint8Array(1024);
     constructor() {
         this.audioData = new ButterChurnAudioDataDto([], [], []);
     }
@@ -39,16 +39,14 @@ export class Butterchurn implements IScene {
             textureRatio: 1,
         });
     }
-    updateSettings(settings: ButterchurnSettings): void {
+    updateSettings(settings: ButterchurnSetting): void {
         if (!this.visualizer) return;
         const preset = presets[settings.preset];
+        if (!preset) return;
         this.visualizer.loadPreset(preset, settings.blendLength);
         if (!settings.cyclePresets) {
             clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
-        } else if (
-            settings.cycleSeconds != this.lastCycleSeconds ||
-            this.cyclePresetInterval === null
-        ) {
+        } else if (settings.cycleSeconds !== this.lastCycleSeconds || this.cyclePresetInterval === null) {
             clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
             this.lastCycleSeconds = settings.cycleSeconds;
             this.cyclePresetInterval = setInterval(() => {
@@ -67,14 +65,19 @@ export class Butterchurn implements IScene {
             return;
         }
 
-        const data = new Uint8Array(this.audioData.timeByteArray);
-        const dataL = new Uint8Array(this.audioData.timeByteArrayLeft);
-        const dataR = new Uint8Array(this.audioData.timeByteArrayRight);
+        this.audioBuffer.set(this.audioData.timeByteArray);
+        this.audioBufferL.set(this.audioData.timeByteArrayLeft);
+        this.audioBufferR.set(this.audioData.timeByteArrayRight);
+        const data = this.audioBuffer;
+        const dataL = this.audioBufferL;
+        const dataR = this.audioBufferR;
         const currentTime = +Date.now();
         const elapsedTime = (currentTime - this.lastTime) / 1000;
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.visualizer.setRendererSize(this.canvas.width, this.canvas.height);
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.visualizer.setRendererSize(this.canvas.width, this.canvas.height);
+        }
         this.lastTime = currentTime;
         this.visualizer.render({
             elapsedTime: elapsedTime,
@@ -96,5 +99,6 @@ export class Butterchurn implements IScene {
         }
         this.canvas.remove();
         this.canvas = null;
+        this.visualizer = null;
     }
 }

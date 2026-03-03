@@ -1,11 +1,11 @@
-import { setSceneSettings } from "../settingsManager";
-import { DancingCubes3DSinusSetting } from "@/src/scene/scenes/dancingCubes3DSinus/setting";
+import type { DancingCubes3DSinusSetting } from '@/src/scene/scenes/dancingCubes3DSinus/setting';
+import { setSceneSettings } from '../settingsManager';
 
 export function dancingCubes3DSinusSettings(
     sceneName: string,
     settings: DancingCubes3DSinusSetting,
     settingsFolder: any,
-    isExternalUi: boolean
+    isExternalUi: boolean,
 ): void {
     settingsFolder.add(settings, 'danceSpeed', 0.0, 0.001).onChange((value: number) => {
         settings.danceSpeed = value;
@@ -15,10 +15,13 @@ export function dancingCubes3DSinusSettings(
         settings.directionChangeSpeed = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'cubeCount', 1, 50).step(1).onChange((value: number) => {
-        settings.cubeCount = value;
-        setSceneSettings(settings, sceneName, isExternalUi);
-    });
+    settingsFolder
+        .add(settings, 'cubeCount', 1, 50)
+        .step(1)
+        .onChange((value: number) => {
+            settings.cubeCount = value;
+            setSceneSettings(settings, sceneName, isExternalUi);
+        });
     settingsFolder.add(settings, 'colorStrength', 0.0, 2.0).onChange((value: number) => {
         settings.colorStrength = value;
         setSceneSettings(settings, sceneName, isExternalUi);
@@ -80,4 +83,3 @@ export function dancingCubes3DSinusSettings(
         setSceneSettings(settings, sceneName, isExternalUi);
     });
 }
-

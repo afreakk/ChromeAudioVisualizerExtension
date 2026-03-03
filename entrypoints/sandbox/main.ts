@@ -1,39 +1,12 @@
-import {
-    messageAction,
-    messageTarget,
-    AudioDataEvent,
-    GenericEvent,
-    SetFpsEvent,
-} from '@/src/utils/eventMessage';
-import { IScene } from '@/src/scene/scene';
+import type { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
+import type { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
+import type { IScene } from '@/src/scene/scene';
 import { SceneManager } from '@/src/scene/sceneManager';
-import { SunFlower } from '@/src/scene/scenes/sunflower/sunflower';
-import { SynthBars } from '@/src/scene/scenes/synthBars/synthBars';
-import { DancingHorizon } from '@/src/scene/scenes/dancingHorizon/dancingHorizon';
-import { ISceneSetting } from '@/src/scene/sceneSetting';
-import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
-import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
-import { Butterchurn } from '@/src/scene/scenes/butterchurn/butterchurn';
-import { sceneNames } from '@/src/scene/sceneNames';
-import { SettingsWindowEvent } from '@/src/userInterface/settings/events/SettingsWindowEvent';
+import { sceneRegistry } from '@/src/scene/sceneRegistry';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
-import { FrostFire } from '@/src/scene/scenes/frostfire/frostfire';
-import { DancingCubes3DSinus } from '@/src/scene/scenes/dancingCubes3DSinus/dancingCubes3DSinus';
-import { WormScene } from '@/src/scene/scenes/wormScene/wormScene';
-import { Dancing3DCubes } from '@/src/scene/scenes/dancing3DCubes/dancing3DCubes';
-import { RoundSpectrum } from '@/src/scene/scenes/roundSpectrum/roundSpectrum';
-import { SeventiesScene } from '@/src/scene/scenes/seventiesScene/seventiesScene';
-import { ParticleCircle } from '@/src/scene/scenes/particleCircle/particleCircle';
-import { PsychedelicCube } from '@/src/scene/scenes/psychedelicCube/psychedelicCube';
-import { PulsingGrid } from '@/src/scene/scenes/pulsingGrid/pulsingGrid';
-import { AudioTerrain } from '@/src/scene/scenes/audioTerrain/audioTerrain';
-import { CircleBurst } from '@/src/scene/scenes/circleBurst/circleBurst';
-import { PaintSplash } from '@/src/scene/scenes/paintSplash/paintSplash';
-import { HexagonPulse } from '@/src/scene/scenes/hexagonPulse/hexagonPulse';
-import { OrbitalRing } from '@/src/scene/scenes/orbitalRing/orbitalRing';
-import { NeuralWeb } from '@/src/scene/scenes/neuralWeb/neuralWeb';
-import { FloatingCubes } from '@/src/scene/scenes/floatingCubes/floatingCubes';
-import { ChromaWave } from '@/src/scene/scenes/chromaWave/chromaWave';
+import { type AudioDataEvent, GenericEvent, messageAction, messageTarget, SetFpsEvent } from '@/src/utils/eventMessage';
+import { loadSettings } from '@/src/utils/settings';
 
 // Extend Window interface for sandbox-specific properties
 declare global {
@@ -42,29 +15,11 @@ declare global {
     }
 }
 
-// Initialize scenes
-const scenesMap = new Map<string, IScene>();
-scenesMap.set(sceneNames.Butterchurn.toString(), new Butterchurn());
-scenesMap.set(sceneNames.SunFlower.toString(), new SunFlower());
-scenesMap.set(sceneNames.FrostFire.toString(), new FrostFire());
-scenesMap.set(sceneNames.SynthBars.toString(), new SynthBars());
-scenesMap.set(sceneNames.DancingHorizon.toString(), new DancingHorizon());
-scenesMap.set(sceneNames.DancingCubes3DSinus.toString(), new DancingCubes3DSinus());
-scenesMap.set(sceneNames.WormScene.toString(), new WormScene());
-scenesMap.set(sceneNames.Dancing3DCubes.toString(), new Dancing3DCubes());
-scenesMap.set(sceneNames.RoundSpectrum.toString(), new RoundSpectrum());
-scenesMap.set(sceneNames.SeventiesScene.toString(), new SeventiesScene());
-scenesMap.set(sceneNames.ParticleCircle.toString(), new ParticleCircle());
-scenesMap.set(sceneNames.PsychedelicCube.toString(), new PsychedelicCube());
-scenesMap.set(sceneNames.PulsingGrid.toString(), new PulsingGrid());
-scenesMap.set(sceneNames.AudioTerrain.toString(), new AudioTerrain());
-scenesMap.set(sceneNames.CircleBurst.toString(), new CircleBurst());
-scenesMap.set(sceneNames.PaintSplash.toString(), new PaintSplash());
-scenesMap.set(sceneNames.HexagonPulse.toString(), new HexagonPulse());
-scenesMap.set(sceneNames.OrbitalRing.toString(), new OrbitalRing());
-scenesMap.set(sceneNames.NeuralWeb.toString(), new NeuralWeb());
-scenesMap.set(sceneNames.FloatingCubes.toString(), new FloatingCubes());
-scenesMap.set(sceneNames.ChromaWave.toString(), new ChromaWave());
+// Build scene factory map from registry (creates fresh instances on each switch)
+const sceneFactoryMap = new Map<string, () => IScene>();
+for (const entry of sceneRegistry) {
+    sceneFactoryMap.set(entry.sceneName.toString(), entry.createScene);
+}
 // Initialize scene manager
 const sceneManager = new SceneManager();
 window.sandboxEventMessageHolder = null;
@@ -92,35 +47,35 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
     // Route messages based on action
     switch (action) {
-        case messageAction.toggleFullScreen:
+        case messageAction.toggleFullScreen: {
             if (!window.sandboxEventMessageHolder?.source) break;
-            const fullScreenEventMessage = new GenericEvent(
-                messageTarget.animation,
-                messageAction.toggleFullScreen
-            );
-            window.sandboxEventMessageHolder.source.postMessage(
-                fullScreenEventMessage.toMessage(),
-                { targetOrigin: window.sandboxEventMessageHolder.origin }
-            );
+            const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
+            window.sandboxEventMessageHolder.source.postMessage(fullScreenEventMessage.toMessage(), {
+                targetOrigin: window.sandboxEventMessageHolder.origin,
+            });
             break;
+        }
 
-        case messageAction.setScene:
+        case messageAction.setScene: {
             const setSceneMessage = message as MessageEvent<SetSceneEvent>;
-            sceneManager.setScene(
-                scenesMap.get(setSceneMessage.data.sceneName) as IScene,
-                setSceneMessage.data.sceneSettings
-            );
+            const createScene = sceneFactoryMap.get(setSceneMessage.data.sceneName);
+            if (createScene) {
+                sceneManager.setScene(createScene(), setSceneMessage.data.sceneSettings);
+            }
             break;
+        }
 
-        case messageAction.setSceneSettings:
+        case messageAction.setSceneSettings: {
             const setSceneSettingsMessage = message as MessageEvent<SetSceneSettingsEvent>;
             sceneManager.updateSettings(setSceneSettingsMessage.data.sceneSettings);
             break;
+        }
 
-        case messageAction.updateAudioData:
+        case messageAction.updateAudioData: {
             const audioDataMessage = message as MessageEvent<AudioDataEvent>;
             sceneManager.updateAudioData(audioDataMessage.data.audioData);
             break;
+        }
 
         case messageAction.openSettingsWindow:
             settingsUserInterface.destroy();
@@ -129,31 +84,33 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
         case messageAction.closeSettingsWindow:
             settingsUserInterface.buildScene();
             break;
+
+        case messageAction.showFpsOverlay: {
+            const showFpsMessage = message.data as GenericEvent & { value: boolean };
+            showFpsOverlay = showFpsMessage.value;
+            break;
+        }
     }
 });
 
 // Custom event listeners (for events dispatched via CustomEvent, not postMessage)
-window.addEventListener(messageAction.toggleFullScreen, (event) => {
+window.addEventListener(messageAction.toggleFullScreen, (_event) => {
     if (!window.sandboxEventMessageHolder?.source) return;
-    
-    const toggleFullScreenViaOffscreen = new GenericEvent(
-        messageTarget.offscreen,
-        messageAction.toggleFullScreen
-    );
 
-    window.sandboxEventMessageHolder.source.postMessage(
-        toggleFullScreenViaOffscreen.toMessage(),
-        { targetOrigin: window.sandboxEventMessageHolder.origin }
-    );
+    const toggleFullScreenViaOffscreen = new GenericEvent(messageTarget.offscreen, messageAction.toggleFullScreen);
+
+    window.sandboxEventMessageHolder.source.postMessage(toggleFullScreenViaOffscreen.toMessage(), {
+        targetOrigin: window.sandboxEventMessageHolder.origin,
+    });
 });
 
 window.addEventListener(messageAction.setScene, (event) => {
     const customEvent = event as CustomEvent<{ event: SetSceneEvent }>;
     const sceneEvent = customEvent.detail.event;
-    sceneManager.setScene(
-        scenesMap.get(sceneEvent.sceneName) as IScene,
-        sceneEvent.sceneSettings as ISceneSetting
-    );
+    const createScene = sceneFactoryMap.get(sceneEvent.sceneName);
+    if (createScene) {
+        sceneManager.setScene(createScene(), sceneEvent.sceneSettings as ISceneSetting);
+    }
 });
 
 window.addEventListener(messageAction.setSceneSettings, (event) => {
@@ -161,6 +118,32 @@ window.addEventListener(messageAction.setSceneSettings, (event) => {
     const sceneSettingsEvent = customEvent.detail.event;
     sceneManager.updateSettings(sceneSettingsEvent.sceneSettings);
 });
+window.addEventListener(messageAction.showFpsOverlay, (event) => {
+    const customEvent = event as CustomEvent<{ event: GenericEvent; value: boolean }>;
+    showFpsOverlay = customEvent.detail.value;
+});
+
+// FPS overlay state
+let showFpsOverlay = loadSettings<boolean>('showFps') ?? false;
+let currentFps = 0;
+let cachedFpsOverlay: HTMLElement | null = null;
+
+function updateFpsOverlay() {
+    if (showFpsOverlay) {
+        if (!cachedFpsOverlay) {
+            cachedFpsOverlay = document.createElement('div');
+            cachedFpsOverlay.id = 'fps-overlay';
+            cachedFpsOverlay.style.cssText =
+                'position:fixed;top:8px;left:8px;z-index:999999;color:#00ff00;font-family:monospace;font-size:14px;background:rgba(0,0,0,0.5);padding:4px 8px;border-radius:4px;pointer-events:none;';
+            document.body.appendChild(cachedFpsOverlay);
+        }
+        cachedFpsOverlay.textContent = `${currentFps} FPS`;
+    } else if (cachedFpsOverlay) {
+        cachedFpsOverlay.remove();
+        cachedFpsOverlay = null;
+    }
+}
+
 // FPS measurement for dynamic audio capture rate
 let lastFrameTime = performance.now();
 let lastFpsUpdate = Date.now();
@@ -171,19 +154,20 @@ const MAX_FRAME_SAMPLES = 120; // Keep last 120 frames for averaging
 function render() {
     const currentFrameTime = performance.now();
     sceneManager.renderScene();
-    
+
     // Measure actual frame time (time between frames, not render time)
     const frameTime = currentFrameTime - lastFrameTime;
     lastFrameTime = currentFrameTime;
-    
+
     // Track frame times (skip first frame which might be inaccurate)
-    if (frameTime > 0 && frameTime < 100) { // Sanity check: frame time should be 0-100ms
+    if (frameTime > 0 && frameTime < 100) {
+        // Sanity check: frame time should be 0-100ms
         frameTimes.push(frameTime);
         if (frameTimes.length > MAX_FRAME_SAMPLES) {
             frameTimes.shift();
         }
     }
-    
+
     // Send FPS update every 2 seconds
     const now = Date.now();
     if (now - lastFpsUpdate >= FPS_UPDATE_INTERVAL && frameTimes.length >= 30) {
@@ -191,30 +175,26 @@ function render() {
             // Calculate average frame time from recent frames
             const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
             const fps = Math.round(1000 / avgFrameTime);
-            
+            currentFps = fps;
+
             // Clamp FPS to reasonable range (30-120fps)
             const clampedFps = Math.max(30, Math.min(120, fps));
-            
+
             // Send FPS to offscreen window via animation window (postMessage pattern)
             if (window.sandboxEventMessageHolder?.source) {
-                const fpsUpdate = new SetFpsEvent(
-                    messageTarget.offscreen,
-                    messageAction.setFps,
-                    clampedFps
-                );
-                window.sandboxEventMessageHolder.source.postMessage(
-                    fpsUpdate.toMessage(),
-                    { targetOrigin: window.sandboxEventMessageHolder.origin }
-                );
+                const fpsUpdate = new SetFpsEvent(messageTarget.offscreen, messageAction.setFps, clampedFps);
+                window.sandboxEventMessageHolder.source.postMessage(fpsUpdate.toMessage(), {
+                    targetOrigin: window.sandboxEventMessageHolder.origin,
+                });
             }
-            
+
             lastFpsUpdate = now;
-        } catch (error) {
-            console.error('Error sending FPS update:', error);
+        } catch (_error) {
             // Don't break the render loop on error
         }
     }
-    
+
+    updateFpsOverlay();
     requestAnimationFrame(render);
 }
 render();

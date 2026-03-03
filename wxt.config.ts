@@ -1,8 +1,8 @@
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
-    runner: {
-        startUrls: ['https://hearthis.at/morgenmuffel/joopsradio-rheinwelle-925-morningshow-etc19-yWh/'],
+    webExt: {
+        startUrls: ['https://hearthis.at/popular/'],
     },
     manifest: {
         permissions: ['tabCapture', 'offscreen'],
@@ -10,4 +10,9 @@ export default defineConfig({
             default_icon: 'icon/icon256.png',
         },
     },
+    vite: () => ({
+        server: {
+            cors: true,
+        },
+    }),
 });

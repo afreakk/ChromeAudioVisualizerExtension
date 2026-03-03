@@ -1,4 +1,5 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { AudioTerrainSetting } from './setting';
 
@@ -39,9 +40,17 @@ class SimplexNoise {
         return this.lerp(
             this.lerp(this.grad(this.perm[A], x, y), this.grad(this.perm[B], x - 1, y), u),
             this.lerp(this.grad(this.perm[A + 1], x, y - 1), this.grad(this.perm[B + 1], x - 1, y - 1), u),
-            v
+            v,
         );
     }
+}
+
+interface TerrainPoint {
+    x: number;
+    y: number;
+    worldY: number;
+    scale: number;
+    valid: boolean;
 }
 
 export class AudioTerrain implements IScene {
@@ -52,6 +61,9 @@ export class AudioTerrain implements IScene {
     private noise: SimplexNoise;
     private scrollOffset: number = 0;
     private time: number = 0;
+    private grid: TerrainPoint[][] = [];
+    private allocatedGridW: number = 0;
+    private allocatedGridH: number = 0;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -62,18 +74,9 @@ export class AudioTerrain implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to initialize Canvas 2D.');
             return;
         }
     }
@@ -84,6 +87,19 @@ export class AudioTerrain implements IScene {
 
     updateAudioData(data: NormalAudioDataDto): void {
         this.audioData = data;
+    }
+
+    private ensureGrid(gridW: number, gridH: number): void {
+        if (this.allocatedGridW >= gridW && this.allocatedGridH >= gridH) return;
+        this.grid = [];
+        for (let z = 0; z < gridH; z++) {
+            this.grid[z] = [];
+            for (let x = 0; x < gridW; x++) {
+                this.grid[z][x] = { x: 0, y: 0, worldY: 0, scale: 0, valid: false };
+            }
+        }
+        this.allocatedGridW = gridW;
+        this.allocatedGridH = gridH;
     }
 
     private getAudioSum(): number {
@@ -138,13 +154,9 @@ export class AudioTerrain implements IScene {
         return baseHeight + audioHeight * audioBoost;
     }
 
-    private lerpColor(
-        r1: number, g1: number, b1: number,
-        r2: number, g2: number, b2: number,
-        t: number
-    ): string {
+    private lerpColor(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number, t: number): string {
         // Apply power curve for more dramatic color transition
-        const curve = Math.pow(t, 0.7);
+        const curve = t ** 0.7;
         const r = Math.floor(r1 + (r2 - r1) * curve);
         const g = Math.floor(g1 + (g2 - g1) * curve);
         const b = Math.floor(b1 + (b2 - b1) * curve);
@@ -159,25 +171,37 @@ export class AudioTerrain implements IScene {
             // Low areas - dark blue/purple
             const t = heightRatio / 0.4;
             return this.lerpColor(
-                s.terrainLowR * 255 * 0.3, s.terrainLowG * 255 * 0.3, s.terrainLowB * 255 * 0.5,
-                s.terrainLowR * 255, s.terrainLowG * 255, s.terrainLowB * 255,
-                t
+                s.terrainLowR * 255 * 0.3,
+                s.terrainLowG * 255 * 0.3,
+                s.terrainLowB * 255 * 0.5,
+                s.terrainLowR * 255,
+                s.terrainLowG * 255,
+                s.terrainLowB * 255,
+                t,
             );
         } else if (heightRatio < 0.7) {
             // Mid areas - transition
             const t = (heightRatio - 0.4) / 0.3;
             return this.lerpColor(
-                s.terrainLowR * 255, s.terrainLowG * 255, s.terrainLowB * 255,
-                (s.terrainLowR + s.terrainHighR) * 127, (s.terrainLowG + s.terrainHighG) * 127, (s.terrainLowB + s.terrainHighB) * 127,
-                t
+                s.terrainLowR * 255,
+                s.terrainLowG * 255,
+                s.terrainLowB * 255,
+                (s.terrainLowR + s.terrainHighR) * 127,
+                (s.terrainLowG + s.terrainHighG) * 127,
+                (s.terrainLowB + s.terrainHighB) * 127,
+                t,
             );
         } else {
             // High areas - bright magenta/pink
             const t = (heightRatio - 0.7) / 0.3;
             return this.lerpColor(
-                (s.terrainLowR + s.terrainHighR) * 127, (s.terrainLowG + s.terrainHighG) * 127, (s.terrainLowB + s.terrainHighB) * 127,
-                s.terrainHighR * 255, s.terrainHighG * 255, s.terrainHighB * 255,
-                t
+                (s.terrainLowR + s.terrainHighR) * 127,
+                (s.terrainLowG + s.terrainHighG) * 127,
+                (s.terrainLowB + s.terrainHighB) * 127,
+                s.terrainHighR * 255,
+                s.terrainHighG * 255,
+                s.terrainHighB * 255,
+                t,
             );
         }
     }
@@ -189,8 +213,10 @@ export class AudioTerrain implements IScene {
         const s = this.settings;
 
         // Update canvas size
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
 
         const width = this.canvas.width;
         const height = this.canvas.height;
@@ -205,8 +231,14 @@ export class AudioTerrain implements IScene {
 
         // Draw gradient sky
         const skyGradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
-        skyGradient.addColorStop(0, `rgb(${Math.floor(s.skyTopR * 255)},${Math.floor(s.skyTopG * 255)},${Math.floor(s.skyTopB * 255)})`);
-        skyGradient.addColorStop(1, `rgb(${Math.floor(s.skyBottomR * 255)},${Math.floor(s.skyBottomG * 255)},${Math.floor(s.skyBottomB * 255)})`);
+        skyGradient.addColorStop(
+            0,
+            `rgb(${Math.floor(s.skyTopR * 255)},${Math.floor(s.skyTopG * 255)},${Math.floor(s.skyTopB * 255)})`,
+        );
+        skyGradient.addColorStop(
+            1,
+            `rgb(${Math.floor(s.skyBottomR * 255)},${Math.floor(s.skyBottomG * 255)},${Math.floor(s.skyBottomB * 255)})`,
+        );
         ctx.fillStyle = skyGradient;
         ctx.fillRect(0, 0, width, height);
 
@@ -252,22 +284,27 @@ export class AudioTerrain implements IScene {
         const gridH = s.gridHeight;
         const halfW = gridW / 2;
 
-        // Store projected points
-        const points: ({ x: number; y: number; worldY: number; scale: number } | null)[][] = [];
+        // Ensure pre-allocated grid is large enough
+        this.ensureGrid(gridW, gridH);
+        const points = this.grid;
 
         for (let z = 0; z < gridH; z++) {
-            points[z] = [];
             const worldZ = -z * s.tileSize;
 
             for (let x = 0; x < gridW; x++) {
                 const worldX = (x - halfW) * s.tileSize;
                 const terrainY = this.getTerrainHeight(worldX, worldZ, normalizedAudio * 3 + 0.5);
                 const projected = this.projectPoint(worldX, terrainY, worldZ);
+                const point = points[z][x];
 
                 if (projected) {
-                    points[z][x] = { ...projected, worldY: terrainY };
+                    point.x = projected.x;
+                    point.y = projected.y;
+                    point.scale = projected.scale;
+                    point.worldY = terrainY;
+                    point.valid = true;
                 } else {
-                    points[z][x] = null;
+                    point.valid = false;
                 }
             }
         }
@@ -287,7 +324,7 @@ export class AudioTerrain implements IScene {
 
                 for (let x = 0; x < gridW; x++) {
                     const p = points[z][x];
-                    if (p) {
+                    if (p.valid) {
                         const heightRatio = Math.min(Math.max(p.worldY / s.mountainHeight, 0), 1);
                         const alpha = Math.min(1, p.scale * 0.5) * (0.5 + s.glowIntensity * 0.5);
 
@@ -312,7 +349,7 @@ export class AudioTerrain implements IScene {
 
                 for (let z = 0; z < gridH; z++) {
                     const p = points[z][x];
-                    if (p) {
+                    if (p.valid) {
                         const heightRatio = Math.min(Math.max(p.worldY / s.mountainHeight, 0), 1);
                         const alpha = Math.min(1, p.scale * 0.5) * (0.5 + s.glowIntensity * 0.5);
 
@@ -338,7 +375,7 @@ export class AudioTerrain implements IScene {
                     const p3 = points[z + 1][x + 1];
                     const p4 = points[z + 1][x];
 
-                    if (p1 && p2 && p3 && p4) {
+                    if (p1.valid && p2.valid && p3.valid && p4.valid) {
                         const avgHeight = (p1.worldY + p2.worldY + p3.worldY + p4.worldY) / 4;
                         const heightRatio = Math.min(Math.max(avgHeight / s.mountainHeight, 0), 1);
                         const alpha = Math.min(1, p1.scale * 0.3) * 0.8;

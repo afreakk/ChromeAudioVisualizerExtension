@@ -11,7 +11,6 @@ export enum sceneNames {
     SeventiesScene = 'SeventiesScene',
     ParticleCircle = 'ParticleCircle',
     PsychedelicCube = 'PsychedelicCube',
-    PulsingGrid = 'PulsingGrid',
     AudioTerrain = 'AudioTerrain',
     CircleBurst = 'CircleBurst',
     PaintSplash = 'PaintSplash',
@@ -20,4 +19,5 @@ export enum sceneNames {
     NeuralWeb = 'NeuralWeb',
     FloatingCubes = 'FloatingCubes',
     ChromaWave = 'ChromaWave',
+    CosmicAurora = 'CosmicAurora',
 }

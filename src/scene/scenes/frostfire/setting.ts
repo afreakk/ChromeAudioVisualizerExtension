@@ -1,5 +1,4 @@
-
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 export class FrostFireSetting implements ISceneSetting {
     public numberOfHexagons: number = 40.0;
     public height: number = 0.55;

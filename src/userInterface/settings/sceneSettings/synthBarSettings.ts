@@ -1,7 +1,12 @@
-import { setSceneSettings } from "../settingsManager";
-import { SynthBarsSetting } from "@/src/scene/scenes/synthBars/setting";
+import type { SynthBarsSetting } from '@/src/scene/scenes/synthBars/setting';
+import { setSceneSettings } from '../settingsManager';
 
-export function synthBarSettings(sceneName: string, synthbarSettings: SynthBarsSetting, settingsFolder: any, isExternalUi: boolean): void {
+export function synthBarSettings(
+    sceneName: string,
+    synthbarSettings: SynthBarsSetting,
+    settingsFolder: any,
+    isExternalUi: boolean,
+): void {
     settingsFolder.addColor(synthbarSettings, 'bottomColor').onChange((value: string) => {
         synthbarSettings.bottomColor = value;
         setSceneSettings(synthbarSettings, sceneName, isExternalUi);

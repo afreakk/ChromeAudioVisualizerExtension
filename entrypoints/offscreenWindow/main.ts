@@ -1,14 +1,14 @@
 import {
-    StartStreamEvent,
-    GenericEvent,
     AudioDataEvent,
-    NormalAudioDataDto,
     ButterChurnAudioDataDto,
+    GenericEvent,
+    type InitiateStreamEvent,
     messageAction,
     messageTarget,
+    NormalAudioDataDto,
+    type SetFpsEvent,
+    type StartStreamEvent,
     streamType,
-    InitiateStreamEvent,
-    SetFpsEvent,
 } from '@/src/utils/eventMessage';
 
 // Extend Window interface for offscreen-specific properties
@@ -22,8 +22,27 @@ let currentStreamType: streamType | null = null;
 let stream: MediaStream | null = null;
 let audioContext: AudioContext | null = null;
 
-let numSamplesNormal = 2048;
-let numSamplesButterChurn = 1024;
+const numSamplesNormal = 2048;
+const numSamplesButterChurn = 1024;
+
+// Pre-allocated buffers to avoid per-frame GC pressure
+const normalDataArray = new Uint8Array(numSamplesNormal / 4);
+const butterChurnDataArray = new Uint8Array(numSamplesButterChurn);
+const butterChurnDataArrayL = new Uint8Array(numSamplesButterChurn);
+const butterChurnDataArrayR = new Uint8Array(numSamplesButterChurn);
+
+// Pre-allocated plain arrays for message serialization (avoids Array.from() per frame)
+const normalPlainArray: number[] = new Array(numSamplesNormal / 4).fill(0);
+const butterChurnPlainArray: number[] = new Array(numSamplesButterChurn).fill(0);
+const butterChurnPlainArrayL: number[] = new Array(numSamplesButterChurn).fill(0);
+const butterChurnPlainArrayR: number[] = new Array(numSamplesButterChurn).fill(0);
+
+function copyToPlainArray(src: Uint8Array, dst: number[]): void {
+    for (let i = 0; i < src.length; i++) {
+        dst[i] = src[i];
+    }
+}
+
 let analyserNormal: AnalyserNode | null = null;
 let analyserButterChurn: AnalyserNode | null = null;
 let analyserButterChurnL: AnalyserNode | null = null;
@@ -38,8 +57,13 @@ let captureInterval = 17; // Default 60fps (1000/60 ≈ 17ms)
 let targetFps = 60;
 let captureTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+// Stream recovery backoff
+const MAX_STREAM_RETRIES = 5;
+const BASE_RETRY_DELAY_MS = 500;
+let streamRetryCount = 0;
+let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
 chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent | InitiateStreamEvent | SetFpsEvent) => {
-    
     // Only process messages targeted at offscreen
     if (message.target !== messageTarget.offscreen) {
         return;
@@ -48,7 +72,11 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
     switch (message.action) {
         case messageAction.toggleFullScreen: {
             const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
-            chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
+            try {
+                chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
+            } catch (_e) {
+                // Receiving end may not exist if animation window is closed
+            }
             break;
         }
         case messageAction.startStream: {
@@ -124,16 +152,27 @@ async function initiateStream(streamId: string) {
         splitter.connect(analyserButterChurnL, 0);
         splitter.connect(analyserButterChurnR, 1);
         window.captureIsActive = true;
+        streamRetryCount = 0; // Reset on success
     } catch (error) {
-        console.error('Error initiating stream with stream ID:', error);
         // Clear the invalid stream ID
         initiateStreamId = null;
-        // Request a new stream ID from background script
-        const requestNewStream = new GenericEvent(
-            messageTarget.background,
-            messageAction.initiateStream
-        );
-        chrome.runtime.sendMessage(requestNewStream.toMessage());
+        streamRetryCount++;
+        if (streamRetryCount <= MAX_STREAM_RETRIES) {
+            const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
+            console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
+            // Request a new stream ID from background script with backoff
+            retryTimeoutId = setTimeout(() => {
+                retryTimeoutId = null;
+                const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
+                try {
+                    chrome.runtime.sendMessage(requestNewStream.toMessage());
+                } catch (_e) {
+                    // Receiving end may not exist
+                }
+            }, delay);
+        } else {
+            console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
+        }
         throw error; // Re-throw so caller knows it failed
     }
 }
@@ -156,55 +195,74 @@ async function startStream() {
                     return;
                 }
             } else {
-                // Request a new stream ID from background script
-                const requestNewStream = new GenericEvent(
-                    messageTarget.background,
-                    messageAction.initiateStream
+                // Request a new stream ID from background script with backoff
+                streamRetryCount++;
+                if (streamRetryCount > MAX_STREAM_RETRIES) {
+                    console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
+                    return;
+                }
+                const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
+                console.warn(
+                    `Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`,
                 );
-                chrome.runtime.sendMessage(requestNewStream.toMessage());
+                retryTimeoutId = setTimeout(() => {
+                    retryTimeoutId = null;
+                    const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
+                    try {
+                        chrome.runtime.sendMessage(requestNewStream.toMessage());
+                    } catch (_e) {
+                        // Receiving end may not exist
+                    }
+                }, delay);
                 return;
             }
         }
         const captureTimestamp = Date.now(); // Capture timestamp as early as possible (using Date.now() for cross-context synchronization)
-        
-        if (
-            currentStreamType === streamType.normal &&
-            analyserNormal !== null
-        ) {
-            const dataArray = new Uint8Array(numSamplesNormal / 4);
-            analyserNormal.getByteFrequencyData(dataArray);
 
-            const data = Array.from(dataArray);
-            const audioData = new NormalAudioDataDto(data, captureTimestamp);
+        if (currentStreamType === streamType.normal && analyserNormal !== null) {
+            analyserNormal.getByteFrequencyData(normalDataArray);
+
+            copyToPlainArray(normalDataArray, normalPlainArray);
+            const audioData = new NormalAudioDataDto(normalPlainArray, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,
-                audioData
+                audioData,
             );
-            chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            try {
+                chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            } catch (_e) {
+                // Receiving end may not exist if animation window is closed
+            }
         } else if (
             currentStreamType === streamType.butterChurn &&
             analyserButterChurn !== null &&
             analyserButterChurnL !== null &&
             analyserButterChurnR !== null
         ) {
-            const dataArray = new Uint8Array(numSamplesButterChurn);
-            const dataArrayL = new Uint8Array(numSamplesButterChurn);
-            const dataArrayR = new Uint8Array(numSamplesButterChurn);
-            analyserButterChurn.getByteTimeDomainData(dataArray);
-            analyserButterChurnL.getByteTimeDomainData(dataArrayL);
-            analyserButterChurnR.getByteTimeDomainData(dataArrayR);
+            analyserButterChurn.getByteTimeDomainData(butterChurnDataArray);
+            analyserButterChurnL.getByteTimeDomainData(butterChurnDataArrayL);
+            analyserButterChurnR.getByteTimeDomainData(butterChurnDataArrayR);
 
-            const data = Array.from(dataArray);
-            const dataL = Array.from(dataArrayL);
-            const dataR = Array.from(dataArrayR);
-            const audioData = new ButterChurnAudioDataDto(data, dataL, dataR, captureTimestamp);
+            copyToPlainArray(butterChurnDataArray, butterChurnPlainArray);
+            copyToPlainArray(butterChurnDataArrayL, butterChurnPlainArrayL);
+            copyToPlainArray(butterChurnDataArrayR, butterChurnPlainArrayR);
+            const audioData = new ButterChurnAudioDataDto(
+                butterChurnPlainArray,
+                butterChurnPlainArrayL,
+                butterChurnPlainArrayR,
+                captureTimestamp,
+            );
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,
-                audioData
+                audioData,
             );
-            chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            try {
+                chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            } catch (_e) {
+                // Receiving end may not exist if animation window is closed
+            }
         }
 
         // Dynamic capture rate - matches render FPS
@@ -217,14 +275,26 @@ async function startStream() {
 async function stopStream() {
     window.captureIsActive = false;
     initiateStreamId = null;
+    if (retryTimeoutId !== null) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+    }
     if (captureTimeoutId !== null) {
         clearTimeout(captureTimeoutId);
         captureTimeoutId = null;
     }
     if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+        for (const track of stream.getTracks()) {
+            track.stop();
+        }
+        stream = null;
     }
     if (audioContext) {
         await audioContext.close();
+        audioContext = null;
     }
+    analyserNormal = null;
+    analyserButterChurn = null;
+    analyserButterChurnL = null;
+    analyserButterChurnR = null;
 }

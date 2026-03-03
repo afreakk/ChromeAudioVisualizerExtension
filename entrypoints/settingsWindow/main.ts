@@ -1,5 +1,5 @@
-import { SettingsUserInterface } from "@/src/userInterface/settings/settingsUserInterface";
+import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
 
-document.body.style.backgroundColor = "black";
-let settingsUserInterface = new SettingsUserInterface(true);
+document.body.style.backgroundColor = 'black';
+const settingsUserInterface = new SettingsUserInterface(true);
 settingsUserInterface.buildScene();

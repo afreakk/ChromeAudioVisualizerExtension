@@ -1,4 +1,6 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
+import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { NeuralWebSetting } from './setting';
 
@@ -16,26 +18,47 @@ export class NeuralWeb implements IScene {
     private audioData: NormalAudioDataDto;
     private settings: NeuralWebSetting = new NeuralWebSetting();
     private nodes: Node[] = [];
+    private cachedNodeColor = { r: 0, g: 0, b: 0 };
+    private cachedLineColor = { r: 0, g: 0, b: 0 };
+    private glowSprite: HTMLCanvasElement | null = null;
+    private glowSpriteSize = 0;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
+        this.cacheColors();
+    }
+
+    private cacheColors(): void {
+        this.cachedNodeColor = hexToRgb(this.settings.nodeColor) ?? { r: 0, g: 0, b: 0 };
+        this.cachedLineColor = hexToRgb(this.settings.lineColor) ?? { r: 0, g: 0, b: 0 };
+        this.rebuildGlowSprite();
+    }
+
+    private rebuildGlowSprite(): void {
+        const baseSize = (this.settings.nodeSize + this.settings.nodeSizeAudioScale) * 4;
+        const spriteSize = Math.ceil(baseSize * 2);
+        if (!Number.isFinite(spriteSize) || spriteSize < 1) return;
+        this.glowSpriteSize = spriteSize;
+        const sprite = document.createElement('canvas');
+        sprite.width = spriteSize * 2;
+        sprite.height = spriteSize * 2;
+        const sCtx = sprite.getContext('2d');
+        if (!sCtx) return;
+        const c = this.cachedNodeColor;
+        const gradient = sCtx.createRadialGradient(spriteSize, spriteSize, 0, spriteSize, spriteSize, spriteSize);
+        gradient.addColorStop(0, `rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        sCtx.fillStyle = gradient;
+        sCtx.fillRect(0, 0, spriteSize * 2, spriteSize * 2);
+        this.glowSprite = sprite;
     }
 
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to get 2D context');
             return;
         }
 
@@ -59,20 +82,10 @@ export class NeuralWeb implements IScene {
         }
     }
 
-    private hexToRgb(hex: string): { r: number; g: number; b: number } {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result
-            ? {
-                  r: parseInt(result[1], 16),
-                  g: parseInt(result[2], 16),
-                  b: parseInt(result[3], 16),
-              }
-            : { r: 0, g: 255, b: 255 };
-    }
-
     updateSettings(settings: NeuralWebSetting): void {
-        const needsReinit = settings.nodeCount !== this.settings.nodeCount;
+        const needsReinit = settings.nodeCount !== this.nodes.length;
         this.settings = settings;
+        this.cacheColors();
         if (needsReinit) {
             this.initNodes();
         }
@@ -96,17 +109,19 @@ export class NeuralWeb implements IScene {
 
         // Calculate average audio level
         let avgAudio = 0;
-        for (let i = 0; i < audioArray.length; i++) {
-            avgAudio += audioArray[i] || 0;
+        if (audioArray.length > 0) {
+            for (let i = 0; i < audioArray.length; i++) {
+                avgAudio += audioArray[i] || 0;
+            }
+            avgAudio = (avgAudio / audioArray.length / 255) * this.settings.audioSensitivity;
         }
-        avgAudio = (avgAudio / audioArray.length / 255) * this.settings.audioSensitivity;
 
         // Clear background
         this.ctx.fillStyle = this.settings.backgroundColor;
         this.ctx.fillRect(0, 0, width, height);
 
-        const nodeColor = this.hexToRgb(this.settings.nodeColor);
-        const lineColor = this.hexToRgb(this.settings.lineColor);
+        const nodeColor = this.cachedNodeColor;
+        const lineColor = this.cachedLineColor;
 
         // Update and draw nodes
         for (let i = 0; i < this.nodes.length; i++) {
@@ -140,22 +155,24 @@ export class NeuralWeb implements IScene {
             }
         }
 
-        // Draw connections
+        // Draw connections (compare squared distances to avoid sqrt)
         const connectionDist = this.settings.connectionDistance * (1 + avgAudio * 0.5);
+        const connectionDistSq = connectionDist * connectionDist;
+        this.ctx.lineWidth = this.settings.lineWidth;
+        const audioBoost = this.settings.pulseOnBeat ? 1 + avgAudio * 0.5 : 1;
         for (let i = 0; i < this.nodes.length; i++) {
             for (let j = i + 1; j < this.nodes.length; j++) {
                 const nodeA = this.nodes[i];
                 const nodeB = this.nodes[j];
                 const dx = nodeA.x - nodeB.x;
                 const dy = nodeA.y - nodeB.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                const distSq = dx * dx + dy * dy;
 
-                if (distance < connectionDist) {
+                if (distSq < connectionDistSq) {
+                    const distance = Math.sqrt(distSq);
                     const opacity = (1 - distance / connectionDist) * this.settings.lineOpacity;
-                    const audioBoost = this.settings.pulseOnBeat ? 1 + avgAudio * 0.5 : 1;
 
                     this.ctx.strokeStyle = `rgba(${lineColor.r}, ${lineColor.g}, ${lineColor.b}, ${opacity * audioBoost})`;
-                    this.ctx.lineWidth = this.settings.lineWidth;
                     this.ctx.beginPath();
                     this.ctx.moveTo(nodeA.x, nodeA.y);
                     this.ctx.lineTo(nodeB.x, nodeB.y);
@@ -169,18 +186,18 @@ export class NeuralWeb implements IScene {
             const nodeAudio = ((audioArray[node.audioIndex] || 0) / 255) * this.settings.audioSensitivity;
             const size = this.settings.nodeSize + nodeAudio * this.settings.nodeSizeAudioScale;
 
-            // Draw glow
-            if (this.settings.glowIntensity > 0) {
-                const gradient = this.ctx.createRadialGradient(
-                    node.x, node.y, 0,
-                    node.x, node.y, size * 4
+            // Draw glow using pre-rendered sprite
+            if (this.settings.glowIntensity > 0 && this.glowSprite) {
+                const glowRadius = size * 4;
+                this.ctx.globalAlpha = this.settings.glowIntensity;
+                this.ctx.drawImage(
+                    this.glowSprite,
+                    node.x - glowRadius,
+                    node.y - glowRadius,
+                    glowRadius * 2,
+                    glowRadius * 2,
                 );
-                gradient.addColorStop(0, `rgba(${nodeColor.r}, ${nodeColor.g}, ${nodeColor.b}, ${0.3 * this.settings.glowIntensity})`);
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                this.ctx.fillStyle = gradient;
-                this.ctx.beginPath();
-                this.ctx.arc(node.x, node.y, size * 4, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.ctx.globalAlpha = 1;
             }
 
             // Draw node
@@ -199,5 +216,6 @@ export class NeuralWeb implements IScene {
         }
         this.ctx = null;
         this.nodes = [];
+        this.glowSprite = null;
     }
 }

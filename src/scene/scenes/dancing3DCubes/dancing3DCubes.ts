@@ -1,9 +1,10 @@
-import { IScene } from '@/src/scene/scene';
+import * as mat4 from 'gl-matrix/mat4';
+import * as vec3 from 'gl-matrix/vec3';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenWebGLCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { initShaderProgram } from '@/src/utils/openGl/openGl';
 import { Dancing3DCubesSetting } from './setting';
-import * as mat4 from 'gl-matrix/mat4';
-import * as vec3 from 'gl-matrix/vec3';
 
 interface Cube {
     x: number;
@@ -22,7 +23,7 @@ interface Cube {
         spaceWidth: number,
         spaceZBegin: number,
         spaceZEnd: number,
-        spaceZoffset: number
+        spaceZoffset: number,
     ): void;
     draw(
         colorStr: number,
@@ -31,7 +32,7 @@ interface Cube {
         indiceLen: number,
         v: number,
         textureSinusIntensity: number,
-        gl: WebGLRenderingContext
+        gl: WebGLRenderingContext,
     ): void;
 }
 
@@ -60,6 +61,8 @@ class DancingCube3D implements Cube {
     pos: vec3;
     modelViewMatrix: mat4;
     normalMatrix: mat4;
+    private scratchScale: vec3;
+    private scratchScaleMatrix: mat4;
 
     constructor(x: number, y: number, z: number) {
         this.x = x;
@@ -68,6 +71,8 @@ class DancingCube3D implements Cube {
         this.pos = vec3.create();
         this.modelViewMatrix = mat4.create();
         this.normalMatrix = mat4.create();
+        this.scratchScale = vec3.create();
+        this.scratchScaleMatrix = mat4.create();
     }
 
     update(
@@ -80,7 +85,7 @@ class DancingCube3D implements Cube {
         spaceWidth: number,
         spaceZBegin: number,
         spaceZEnd: number,
-        spaceZoffset: number
+        _spaceZoffset: number,
     ): void {
         this.x += Math.sin(v * directionChangeSpeed) * v * speed;
         this.y += Math.cos(v * directionChangeSpeed) * v * speed;
@@ -112,10 +117,10 @@ class DancingCube3D implements Cube {
         this.pos[1] = this.y;
         this.pos[2] = this.z;
         mat4.fromTranslation(this.modelViewMatrix, this.pos);
-        const s = vec3.fromValues(width * v, height * v, width * v);
-        const scaleMatrix = mat4.create();
-        mat4.scale(scaleMatrix, scaleMatrix, s);
-        mat4.multiply(this.modelViewMatrix, this.modelViewMatrix, scaleMatrix);
+        vec3.set(this.scratchScale, width * v, height * v, width * v);
+        mat4.identity(this.scratchScaleMatrix);
+        mat4.scale(this.scratchScaleMatrix, this.scratchScaleMatrix, this.scratchScale);
+        mat4.multiply(this.modelViewMatrix, this.modelViewMatrix, this.scratchScaleMatrix);
         mat4.invert(this.normalMatrix, this.modelViewMatrix);
         mat4.transpose(this.normalMatrix, this.normalMatrix);
     }
@@ -127,7 +132,7 @@ class DancingCube3D implements Cube {
         indiceLen: number,
         v: number,
         textureSinusIntensity: number,
-        gl: WebGLRenderingContext
+        gl: WebGLRenderingContext,
     ): void {
         gl.uniformMatrix4fv(program.normalMatrix, false, this.normalMatrix);
         gl.uniformMatrix4fv(program.modelViewMatrix, false, this.modelViewMatrix);
@@ -135,7 +140,7 @@ class DancingCube3D implements Cube {
             program.colorInfluence,
             Math.sin(v * colorChangeSpeed) * colorStr,
             Math.cos(v * colorChangeSpeed) * colorStr,
-            Math.cos(v * colorChangeSpeed + 0.35) * colorStr
+            Math.cos(v * colorChangeSpeed + 0.35) * colorStr,
         );
         gl.uniform4f(program.worldPos, this.x, this.y, this.z, v * textureSinusIntensity);
         gl.drawElements(gl.TRIANGLES, indiceLen, gl.UNSIGNED_SHORT, 0);
@@ -168,102 +173,88 @@ export class Dancing3DCubes implements IScene {
         return {
             vertices: [
                 // Front face
-                -1.0, -1.0, 1.0,
-                1.0, -1.0, 1.0,
-                1.0, 1.0, 1.0,
-                -1.0, 1.0, 1.0,
+                -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
 
                 // Back face
-                -1.0, -1.0, -1.0,
-                -1.0, 1.0, -1.0,
-                1.0, 1.0, -1.0,
-                1.0, -1.0, -1.0,
+                -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
 
                 // Top face
-                -1.0, 1.0, -1.0,
-                -1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0,
-                1.0, 1.0, -1.0,
+                -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
 
                 // Bottom face
-                -1.0, -1.0, -1.0,
-                1.0, -1.0, -1.0,
-                1.0, -1.0, 1.0,
-                -1.0, -1.0, 1.0,
+                -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
 
                 // Right face
-                1.0, -1.0, -1.0,
-                1.0, 1.0, -1.0,
-                1.0, 1.0, 1.0,
-                1.0, -1.0, 1.0,
+                1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
 
                 // Left face
-                -1.0, -1.0, -1.0,
-                -1.0, -1.0, 1.0,
-                -1.0, 1.0, 1.0,
-                -1.0, 1.0, -1.0,
+                -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
             ],
             indices: [
-                0, 1, 2, 0, 2, 3,    // front
-                4, 5, 6, 4, 6, 7,    // back
-                8, 9, 10, 8, 10, 11,   // top
-                12, 13, 14, 12, 14, 15,   // bottom
-                16, 17, 18, 16, 18, 19,   // right
-                20, 21, 22, 20, 22, 23,   // left
+                0,
+                1,
+                2,
+                0,
+                2,
+                3, // front
+                4,
+                5,
+                6,
+                4,
+                6,
+                7, // back
+                8,
+                9,
+                10,
+                8,
+                10,
+                11, // top
+                12,
+                13,
+                14,
+                12,
+                14,
+                15, // bottom
+                16,
+                17,
+                18,
+                16,
+                18,
+                19, // right
+                20,
+                21,
+                22,
+                20,
+                22,
+                23, // left
             ],
             normals: [
                 // Front
-                0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
 
                 // Back
-                0.0, 0.0, -1.0,
-                0.0, 0.0, -1.0,
-                0.0, 0.0, -1.0,
-                0.0, 0.0, -1.0,
+                0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0,
 
                 // Top
-                0.0, 1.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
 
                 // Bottom
-                0.0, -1.0, 0.0,
-                0.0, -1.0, 0.0,
-                0.0, -1.0, 0.0,
-                0.0, -1.0, 0.0,
+                0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0,
 
                 // Right
-                1.0, 0.0, 0.0,
-                1.0, 0.0, 0.0,
-                1.0, 0.0, 0.0,
-                1.0, 0.0, 0.0,
+                1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
 
                 // Left
-                -1.0, 0.0, 0.0,
-                -1.0, 0.0, 0.0,
-                -1.0, 0.0, 0.0,
-                -1.0, 0.0, 0.0
-            ]
+                -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+            ],
         };
     }
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
-        this.gl = this.canvas.getContext('webgl');
+        const { canvas, gl: webGl } = createFullscreenWebGLCanvas();
+        this.canvas = canvas;
+        this.gl = webGl;
         if (!this.gl) {
-            console.error('Unable to initialize WebGL. Your browser may not support it.');
             return;
         }
 
@@ -321,7 +312,6 @@ export class Dancing3DCubes implements IScene {
 
         this.shaderProgram = initShaderProgram(gl, vs, fs) as ShaderProgram | null;
         if (!this.shaderProgram) {
-            console.error('Unable to initialize the shader program');
             return;
         }
 
@@ -351,10 +341,10 @@ export class Dancing3DCubes implements IScene {
         this.projectionMatrix = mat4.create();
         mat4.perspective(
             this.projectionMatrix,
-            45 * Math.PI / 180,
+            (45 * Math.PI) / 180,
             this.canvas.clientWidth / this.canvas.clientHeight,
             1,
-            1000
+            1000,
         );
     }
 
@@ -367,25 +357,13 @@ export class Dancing3DCubes implements IScene {
         this.ixBuffer = gl.createBuffer();
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vxBuffer);
-        gl.bufferData(
-            gl.ARRAY_BUFFER,
-            new Float32Array(this.cubeGeometry.vertices),
-            gl.STATIC_DRAW
-        );
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.cubeGeometry.vertices), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.nrmBuffer);
-        gl.bufferData(
-            gl.ARRAY_BUFFER,
-            new Float32Array(this.cubeGeometry.normals),
-            gl.STATIC_DRAW
-        );
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.cubeGeometry.normals), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ixBuffer);
-        gl.bufferData(
-            gl.ELEMENT_ARRAY_BUFFER,
-            new Uint16Array(this.cubeGeometry.indices),
-            gl.STATIC_DRAW
-        );
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.cubeGeometry.indices), gl.STATIC_DRAW);
     }
 
     updateSettings(settings: Dancing3DCubesSetting): void {
@@ -404,19 +382,19 @@ export class Dancing3DCubes implements IScene {
         const gl = this.gl;
         const program = this.shaderProgram;
 
-        // Update canvas size and viewport
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-
-        // Update projection matrix if canvas size changed
-        mat4.perspective(
-            this.projectionMatrix,
-            45 * Math.PI / 180,
-            this.canvas.clientWidth / this.canvas.clientHeight,
-            1,
-            1000
-        );
+        // Update canvas size, viewport, and projection matrix on resize
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            mat4.perspective(
+                this.projectionMatrix,
+                (45 * Math.PI) / 180,
+                this.canvas.clientWidth / this.canvas.clientHeight,
+                1,
+                1000,
+            );
+        }
 
         gl.useProgram(program);
         gl.uniform1f(program.cubeAlpha, this.settings.cubeAlphaModifier);
@@ -434,26 +412,27 @@ export class Dancing3DCubes implements IScene {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ixBuffer);
 
         gl.uniformMatrix4fv(program.projectionMatrix, false, this.projectionMatrix);
-        
-        // Update time for animation
-        this.time += 0.016; // ~60fps
-        if (this.time > 1000) this.time = 0; // Prevent overflow
+
+        // Update time for animation (wrap with modular arithmetic to avoid visual discontinuity)
+        this.time = (this.time + 0.016) % (2000 * Math.PI);
         gl.uniform1f(program.time, this.time);
 
         // Initialize cubes if needed
         while (this.cubes.length < this.settings.cubeCount) {
-            this.cubes.push(new DancingCube3D(
-                Math.random() * this.settings.spaceWidth * 2 - this.settings.spaceWidth,
-                Math.random() * this.settings.spaceHeight * 2 - this.settings.spaceHeight,
-                (Math.random() * (this.settings.spaceZEnd - this.settings.spaceZBegin) + this.settings.spaceZBegin) * -1
-            ));
+            this.cubes.push(
+                new DancingCube3D(
+                    Math.random() * this.settings.spaceWidth * 2 - this.settings.spaceWidth,
+                    Math.random() * this.settings.spaceHeight * 2 - this.settings.spaceHeight,
+                    (Math.random() * (this.settings.spaceZEnd - this.settings.spaceZBegin) +
+                        this.settings.spaceZBegin) *
+                        -1,
+                ),
+            );
         }
 
         // Update and draw cubes
         for (let i = 0; i < this.settings.cubeCount; i++) {
-            const sum = i < this.audioData.timeByteArray.length
-                ? this.audioData.timeByteArray[i]
-                : 0;
+            const sum = i < this.audioData.timeByteArray.length ? this.audioData.timeByteArray[i] : 0;
 
             this.cubes[i].update(
                 sum,
@@ -465,7 +444,7 @@ export class Dancing3DCubes implements IScene {
                 this.settings.spaceWidth,
                 this.settings.spaceZBegin,
                 this.settings.spaceZEnd,
-                this.settings.spaceZoffset
+                this.settings.spaceZoffset,
             );
             this.cubes[i].draw(
                 this.settings.colorStrength,
@@ -474,7 +453,7 @@ export class Dancing3DCubes implements IScene {
                 this.cubeGeometry.indices.length,
                 sum,
                 this.settings.textureSinusIntensity,
-                gl
+                gl,
             );
         }
     }
@@ -511,6 +490,12 @@ export class Dancing3DCubes implements IScene {
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vxBuffer = null;
+        this.nrmBuffer = null;
+        this.ixBuffer = null;
+        this.projectionMatrix = null;
     }
 }
-

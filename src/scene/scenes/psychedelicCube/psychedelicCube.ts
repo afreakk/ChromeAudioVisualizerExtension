@@ -1,9 +1,10 @@
-import { IScene } from '@/src/scene/scene';
+import * as mat4 from 'gl-matrix/mat4';
+import * as vec3 from 'gl-matrix/vec3';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenWebGLCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { initShaderProgram } from '@/src/utils/openGl/openGl';
 import { PsychedelicCubeSetting } from './setting';
-import * as mat4 from 'gl-matrix/mat4';
-import * as vec3 from 'gl-matrix/vec3';
 
 interface ShaderProgram extends WebGLProgram {
     position: number;
@@ -37,6 +38,10 @@ export class PsychedelicCube implements IScene {
     private settings: PsychedelicCubeSetting;
     private soundValue: number = 0;
     private startTime: number;
+    private scratchRotationAxis: vec3;
+    private scratchScaleVec: vec3;
+    private scratchScaleMatrix: mat4;
+    private scratchSendMatrix: mat4;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -44,6 +49,10 @@ export class PsychedelicCube implements IScene {
         this.settings = new PsychedelicCubeSetting();
         this.modelMatrix = mat4.create();
         this.startTime = Date.now();
+        this.scratchRotationAxis = vec3.fromValues(0.5, 0.5, 0.5);
+        this.scratchScaleVec = vec3.create();
+        this.scratchScaleMatrix = mat4.create();
+        this.scratchSendMatrix = mat4.create();
     }
 
     streamType = streamType.normal;
@@ -52,86 +61,80 @@ export class PsychedelicCube implements IScene {
         return {
             vertices: new Float32Array([
                 // Front face
-                -1.0, -1.0, 1.0,
-                1.0, -1.0, 1.0,
-                1.0, 1.0, 1.0,
-                -1.0, 1.0, 1.0,
+                -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
 
                 // Back face
-                -1.0, -1.0, -1.0,
-                -1.0, 1.0, -1.0,
-                1.0, 1.0, -1.0,
-                1.0, -1.0, -1.0,
+                -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
 
                 // Top face
-                -1.0, 1.0, -1.0,
-                -1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0,
-                1.0, 1.0, -1.0,
+                -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
 
                 // Bottom face
-                -1.0, -1.0, -1.0,
-                1.0, -1.0, -1.0,
-                1.0, -1.0, 1.0,
-                -1.0, -1.0, 1.0,
+                -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
 
                 // Right face
-                1.0, -1.0, -1.0,
-                1.0, 1.0, -1.0,
-                1.0, 1.0, 1.0,
-                1.0, -1.0, 1.0,
+                1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
 
                 // Left face
-                -1.0, -1.0, -1.0,
-                -1.0, -1.0, 1.0,
-                -1.0, 1.0, 1.0,
-                -1.0, 1.0, -1.0,
+                -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
             ]),
             indices: new Uint16Array([
-                0, 1, 2, 0, 2, 3,       // Front face
-                4, 5, 6, 4, 6, 7,       // Back face
-                8, 9, 10, 8, 10, 11,    // Top face
-                12, 13, 14, 12, 14, 15, // Bottom face
-                16, 17, 18, 16, 18, 19, // Right face
-                20, 21, 22, 20, 22, 23  // Left face
+                0,
+                1,
+                2,
+                0,
+                2,
+                3, // Front face
+                4,
+                5,
+                6,
+                4,
+                6,
+                7, // Back face
+                8,
+                9,
+                10,
+                8,
+                10,
+                11, // Top face
+                12,
+                13,
+                14,
+                12,
+                14,
+                15, // Bottom face
+                16,
+                17,
+                18,
+                16,
+                18,
+                19, // Right face
+                20,
+                21,
+                22,
+                20,
+                22,
+                23, // Left face
             ]),
             txCoords: new Float32Array([
                 // Front face
-                0.0, 0.0,
-                1.0, 0.0,
-                1.0, 1.0,
-                0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
 
                 // Back face
-                1.0, 0.0,
-                1.0, 1.0,
-                0.0, 1.0,
-                0.0, 0.0,
+                1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0,
 
                 // Top face
-                0.0, 1.0,
-                0.0, 0.0,
-                1.0, 0.0,
-                1.0, 1.0,
+                0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
 
                 // Bottom face
-                1.0, 1.0,
-                0.0, 1.0,
-                0.0, 0.0,
-                1.0, 0.0,
+                1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
 
                 // Right face
-                1.0, 0.0,
-                1.0, 1.0,
-                0.0, 1.0,
-                0.0, 0.0,
+                1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0,
 
                 // Left face
-                0.0, 0.0,
-                1.0, 0.0,
-                1.0, 1.0,
-                0.0, 1.0,
-            ])
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+            ]),
         };
     }
 
@@ -179,18 +182,10 @@ export class PsychedelicCube implements IScene {
     }
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
-        this.gl = this.canvas.getContext('webgl');
+        const { canvas, gl: webGl } = createFullscreenWebGLCanvas();
+        this.canvas = canvas;
+        this.gl = webGl;
         if (!this.gl) {
-            console.error('Unable to initialize WebGL. Your browser may not support it.');
             return;
         }
 
@@ -252,7 +247,6 @@ export class PsychedelicCube implements IScene {
 
         this.shaderProgram = initShaderProgram(gl, vs, fs) as ShaderProgram | null;
         if (!this.shaderProgram) {
-            console.error('Unable to initialize the shader program');
             return;
         }
 
@@ -287,7 +281,7 @@ export class PsychedelicCube implements IScene {
 
         // Projection matrix
         const projectionMatrix = mat4.create();
-        mat4.perspective(projectionMatrix, 45 * Math.PI / 180, 16 / 9, 1, 100);
+        mat4.perspective(projectionMatrix, (45 * Math.PI) / 180, 16 / 9, 1, 100);
         gl.uniformMatrix4fv(this.shaderProgram.projectionMatrix, false, projectionMatrix);
 
         // World matrix (camera position)
@@ -333,45 +327,36 @@ export class PsychedelicCube implements IScene {
         const program = this.shaderProgram;
 
         // Update canvas size and viewport
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
 
         gl.useProgram(program);
 
         // Clear background
-        gl.clearColor(
-            this.settings.bgRed,
-            this.settings.bgGreen,
-            this.settings.bgBlue,
-            this.settings.bgAlpha
-        );
+        gl.clearColor(this.settings.bgRed, this.settings.bgGreen, this.settings.bgBlue, this.settings.bgAlpha);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Get audio values
         let volume = this.getVolume() / 100.0;
-        if (isNaN(volume)) volume = 0;
+        if (Number.isNaN(volume)) volume = 0;
 
         // Rotate model based on volume
-        const rotationAxis = vec3.fromValues(0.5, 0.5, 0.5);
-        mat4.rotate(this.modelMatrix, this.modelMatrix, volume * this.settings.spinSpeed, rotationAxis);
+        mat4.rotate(this.modelMatrix, this.modelMatrix, volume * this.settings.spinSpeed, this.scratchRotationAxis);
 
         // Scale based on frequency bands
-        const scaleVec = vec3.fromValues(
-            this.getHigh(),
-            this.getMid(),
-            this.getLow()
-        );
+        vec3.set(this.scratchScaleVec, this.getHigh(), this.getMid(), this.getLow());
         for (let i = 0; i < 3; i++) {
-            scaleVec[i] = Math.max(scaleVec[i] * this.settings.cubeVolumeScale, 0.1);
+            this.scratchScaleVec[i] = Math.max(this.scratchScaleVec[i] * this.settings.cubeVolumeScale, 0.1);
         }
-        const scaleMatrix = mat4.create();
-        mat4.scale(scaleMatrix, scaleMatrix, scaleVec);
+        mat4.identity(this.scratchScaleMatrix);
+        mat4.scale(this.scratchScaleMatrix, this.scratchScaleMatrix, this.scratchScaleVec);
 
         // Combine model and scale matrices
-        const sendMatrix = mat4.create();
-        mat4.multiply(sendMatrix, this.modelMatrix, scaleMatrix);
-        gl.uniformMatrix4fv(program.modelMatrix, false, sendMatrix);
+        mat4.multiply(this.scratchSendMatrix, this.modelMatrix, this.scratchScaleMatrix);
+        gl.uniformMatrix4fv(program.modelMatrix, false, this.scratchSendMatrix);
 
         // Update time-based uniforms
         this.soundValue += volume * this.settings.volumeMultiplier;
@@ -379,15 +364,15 @@ export class PsychedelicCube implements IScene {
         gl.uniform2f(program.resolution, this.canvas.width, this.canvas.height);
 
         // Normalize audio values for shader (0-1 range)
-        const low = this.getLow() / 255.0 * this.settings.pulseIntensity;
-        const mid = this.getMid() / 255.0 * this.settings.pulseIntensity;
-        const high = this.getHigh() / 255.0 * this.settings.pulseIntensity;
+        const low = (this.getLow() / 255.0) * this.settings.pulseIntensity;
+        const mid = (this.getMid() / 255.0) * this.settings.pulseIntensity;
+        const high = (this.getHigh() / 255.0) * this.settings.pulseIntensity;
 
         gl.uniform3f(
             program.colorInfluence,
             this.settings.redSpeed * low * 100,
             this.settings.greenSpeed * mid * 100,
-            this.settings.blueSpeed * high * 100
+            this.settings.blueSpeed * high * 100,
         );
         gl.uniform1f(program.colorSeparation, this.settings.colorSeparation);
         gl.uniform3f(program.audioReact, low, mid, high);
@@ -435,5 +420,12 @@ export class PsychedelicCube implements IScene {
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vxBuffer = null;
+        this.ixBuffer = null;
+        this.txBuffer = null;
     }
 }

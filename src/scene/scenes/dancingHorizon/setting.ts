@@ -1,5 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
-
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class DancingHorizonSetting implements ISceneSetting {
     public horizonColorNight: string = '#FFDAB9';

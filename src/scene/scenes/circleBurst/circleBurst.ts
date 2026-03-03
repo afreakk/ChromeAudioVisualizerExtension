@@ -1,8 +1,9 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenWebGLCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
-import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
-import { CircleBurstSetting } from './setting';
 import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
+import { bindAudioDataToTexture, initShaderProgram, initTexture } from '@/src/utils/openGl/openGl';
+import type { CircleBurstSetting } from './setting';
 
 export class CircleBurst implements IScene {
     private canvas: HTMLCanvasElement | null = null;
@@ -25,6 +26,7 @@ export class CircleBurst implements IScene {
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
     private audioData: NormalAudioDataDto;
+    private audioBuffer: Uint8Array = new Uint8Array(512);
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -33,18 +35,11 @@ export class CircleBurst implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-        this.gl = this.canvas.getContext('webgl');
+        const { canvas, gl } = createFullscreenWebGLCanvas();
+        this.canvas = canvas;
+        this.gl = gl;
 
         if (!this.gl) {
-            console.error('Unable to initialize WebGL.');
             return;
         }
 
@@ -146,9 +141,7 @@ export class CircleBurst implements IScene {
             }
         `;
 
-        const vertices = new Float32Array([
-            -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0,
-        ]);
+        const vertices = new Float32Array([-1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0]);
 
         this.vertexBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -158,7 +151,6 @@ export class CircleBurst implements IScene {
 
         this.shaderProgram = initShaderProgram(this.gl, vs, fs);
         if (!this.shaderProgram) {
-            console.error('Unable to initialize the shader program');
             return;
         }
 
@@ -213,15 +205,25 @@ export class CircleBurst implements IScene {
     render(): void {
         if (!this.canvas || !this.gl) return;
 
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
         this.gl.uniform1i(this.audioTextureUniformLocation, 0);
-        bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl);
+        const audioSrc = this.audioData.timeByteArray;
+        if (audioSrc.length <= this.audioBuffer.length) {
+            this.audioBuffer.set(audioSrc);
+        } else {
+            for (let i = 0; i < this.audioBuffer.length; i++) {
+                this.audioBuffer[i] = audioSrc[i];
+            }
+        }
+        bindAudioDataToTexture(this.audioBuffer, this.gl);
 
         this.gl.uniform2f(this.resolutionUniformLocation, this.canvas.width, this.canvas.height);
         this.gl.uniform1f(this.timeUniformLocation, performance.now() / 1000.0);
@@ -250,5 +252,25 @@ export class CircleBurst implements IScene {
         this.gl.bindTexture(this.gl.TEXTURE_2D, null);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vertexBuffer = null;
+        this.audioTexture = null;
+        this.audioTextureUniformLocation = null;
+        this.resolutionUniformLocation = null;
+        this.timeUniformLocation = null;
+        this.baseRadiusUniformLocation = null;
+        this.maxRadiusUniformLocation = null;
+        this.numSpokesUniformLocation = null;
+        this.rotationSpeedUniformLocation = null;
+        this.colorCycleSpeedUniformLocation = null;
+        this.audioSensitivityUniformLocation = null;
+        this.innerColorUniformLocation = null;
+        this.outerColorUniformLocation = null;
+        this.backgroundColorUniformLocation = null;
+        this.glowIntensityUniformLocation = null;
+        this.spokeWidthUniformLocation = null;
     }
 }

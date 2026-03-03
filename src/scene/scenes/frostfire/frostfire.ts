@@ -1,8 +1,9 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenWebGLCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
-import { bindAudioDataToTexture, initTexture, initShaderProgram } from '@/src/utils/openGl/openGl';
 import { hexToRGBNormalized } from '@/src/utils/openGl/colorConverter';
-import { FrostFireSetting } from './settings';
+import { bindAudioDataToTexture, initShaderProgram, initTexture } from '@/src/utils/openGl/openGl';
+import type { FrostFireSetting } from './setting';
 
 export class FrostFire implements IScene {
     private canvas: HTMLCanvasElement | null = null;
@@ -24,34 +25,26 @@ export class FrostFire implements IScene {
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
     private audioData: NormalAudioDataDto;
+    private audioBuffer: Uint8Array = new Uint8Array(512);
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
     }
     streamType = streamType.normal;
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-        this.gl = this.canvas.getContext('webgl');
+        const { canvas, gl } = createFullscreenWebGLCanvas();
+        this.canvas = canvas;
+        this.gl = gl;
         if (!this.gl) {
-            console.error('Unable to initialize WebGL. Your browser may not support it.');
             return;
         }
-        const vs =
-            `
+        const vs = `
                 attribute vec4 vertexPosition;
                 void main() {
                     gl_Position = vertexPosition;
                 }
             `;
 
-        const fs =
-            `
+        const fs = `
                 precision mediump float;
                 uniform float time;
                 uniform sampler2D audioTexture;
@@ -143,12 +136,7 @@ export class FrostFire implements IScene {
             `;
 
         // Vertex data for a square
-        const vertices = new Float32Array([
-            -1.0, 1.0,
-            -1.0, -1.0,
-            1.0, 1.0,
-            1.0, -1.0,
-        ]);
+        const vertices = new Float32Array([-1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0]);
         this.vertexBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
@@ -157,19 +145,17 @@ export class FrostFire implements IScene {
 
         this.shaderProgram = initShaderProgram(this.gl, vs, fs);
         if (!this.shaderProgram) {
-            console.error('Unable to initialize the shader program');
             return;
         }
 
         this.gl.useProgram(this.shaderProgram);
-
 
         this.audioTextureUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'audioTexture');
         const position = this.gl.getAttribLocation(this.shaderProgram, 'vertexPosition');
         this.gl.vertexAttribPointer(position, 2, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(position);
         this.resolutionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'resolution');
-        this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, "time");
+        this.timeUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'time');
         this.numberOfHexagonsUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'numberOfHexagons');
         this.heightUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'height');
         this.colorBlendUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'colorBlend');
@@ -178,7 +164,6 @@ export class FrostFire implements IScene {
         this.frostColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'frostColor');
         this.fireColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'fireColor');
         this.blendColorUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'blendColor');
-
     }
     updateSettings(settings: FrostFireSetting): void {
         if (!this.gl) {
@@ -209,19 +194,27 @@ export class FrostFire implements IScene {
         if (!this.gl) {
             return;
         }
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
         // Update canvas size and viewport
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
         // Bind texture
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
         this.gl.uniform1i(this.audioTextureUniformLocation, 0);
-        bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl);
+        const audioSrc = this.audioData.timeByteArray;
+        if (audioSrc.length <= this.audioBuffer.length) {
+            this.audioBuffer.set(audioSrc);
+        } else {
+            for (let i = 0; i < this.audioBuffer.length; i++) {
+                this.audioBuffer[i] = audioSrc[i];
+            }
+        }
+        bindAudioDataToTexture(this.audioBuffer, this.gl);
 
         // Update resolution
         this.gl.uniform2f(this.resolutionUniformLocation, this.gl.canvas.width, this.gl.canvas.height);
@@ -264,5 +257,21 @@ export class FrostFire implements IScene {
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vertexBuffer = null;
+        this.audioTexture = null;
+        this.audioTextureUniformLocation = null;
+        this.resolutionUniformLocation = null;
+        this.timeUniformLocation = null;
+        this.numberOfHexagonsUniformLocation = null;
+        this.heightUniformLocation = null;
+        this.colorBlendUniformLocation = null;
+        this.dynamicColorUniformLocation = null;
+        this.breathingUniformLocation = null;
+        this.frostColorUniformLocation = null;
+        this.fireColorUniformLocation = null;
+        this.blendColorUniformLocation = null;
     }
 }

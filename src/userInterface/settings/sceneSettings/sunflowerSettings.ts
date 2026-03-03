@@ -1,7 +1,12 @@
-import { SunFlowerSetting } from "@/src/scene/scenes/sunflower/setting";
-import { setSceneSettings } from "../settingsManager";
+import type { SunFlowerSetting } from '@/src/scene/scenes/sunflower/setting';
+import { setSceneSettings } from '../settingsManager';
 
-export function sunFlowerSettings(sceneName: string, sunFlowerSettings: SunFlowerSetting, settingsFolder: any, isExternalUi: boolean): void {
+export function sunFlowerSettings(
+    sceneName: string,
+    sunFlowerSettings: SunFlowerSetting,
+    settingsFolder: any,
+    isExternalUi: boolean,
+): void {
     settingsFolder.addColor(sunFlowerSettings, 'innerColor').onChange((value: string) => {
         sunFlowerSettings.innerColor = value;
         setSceneSettings(sunFlowerSettings, sceneName, isExternalUi);

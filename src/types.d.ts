@@ -10,7 +10,7 @@ declare module 'butterchurn' {
                 mesh_height?: number;
                 pixelRatio?: number;
                 textureRatio?: number;
-            }
+            },
         ): {
             loadPreset(preset: unknown, blendTime: number): void;
             setRendererSize(width: number, height: number): void;
@@ -43,7 +43,7 @@ declare module 'dat.gui' {
             propName: string,
             min?: number | string[] | Record<string, unknown>,
             max?: number,
-            step?: number
+            step?: number,
         ): GUIController;
         addColor(target: object, propName: string): GUIController;
         addFolder(name: string): GUI;
@@ -89,8 +89,21 @@ declare module 'gl-matrix/mat4' {
     export function fromRotation(out: Mat4, rad: number, axis: Float32Array | number[]): Mat4;
     export function fromScaling(out: Mat4, v: Float32Array | number[]): Mat4;
     export function perspective(out: Mat4, fovy: number, aspect: number, near: number, far: number): Mat4;
-    export function ortho(out: Mat4, left: number, right: number, bottom: number, top: number, near: number, far: number): Mat4;
-    export function lookAt(out: Mat4, eye: Float32Array | number[], center: Float32Array | number[], up: Float32Array | number[]): Mat4;
+    export function ortho(
+        out: Mat4,
+        left: number,
+        right: number,
+        bottom: number,
+        top: number,
+        near: number,
+        far: number,
+    ): Mat4;
+    export function lookAt(
+        out: Mat4,
+        eye: Float32Array | number[],
+        center: Float32Array | number[],
+        up: Float32Array | number[],
+    ): Mat4;
 }
 
 declare module 'gl-matrix/vec3' {

@@ -1,16 +1,17 @@
-import { IScene } from '@/src/scene/scene';
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { IScene } from '@/src/scene/scene';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import {
-    IAudioDataDto,
-    StartStreamEvent,
+    type IAudioDataDto,
     messageAction,
     messageTarget,
+    StartStreamEvent,
     streamType,
 } from '@/src/utils/eventMessage';
 
 export class SceneManager {
     private scene: IScene | null = null;
     private buildingScene = false;
+    private bufferedAudioData: IAudioDataDto | null = null;
     private latencyStats = {
         count: 0,
         total: 0,
@@ -23,16 +24,17 @@ export class SceneManager {
         if (!this.scene) {
             return;
         }
-        // Return if the scene is still being built
+        // Buffer audio data during scene transitions so the first render uses fresh data
         if (this.buildingScene) {
+            this.bufferedAudioData = data;
             return;
         }
-        
+
         // Measure latency if timestamp is available
         if (data.timestamp !== undefined) {
             const now = Date.now(); // Use Date.now() for cross-context synchronization
             const latency = now - data.timestamp;
-            
+
             // Update stats
             this.latencyStats.count++;
             this.latencyStats.total += latency;
@@ -65,37 +67,41 @@ export class SceneManager {
     }
 
     setScene(scene: IScene, settings: ISceneSetting) {
-        // Return if the scene is already set
-        if (this.scene instanceof scene.constructor) {
-            return;
-        }
-
-        let newScene = scene;
+        const newScene = scene;
         this.buildingScene = true;
         try {
-            newScene.build();
-            // Clean up the current scene if there is one
+            // Clean up the current scene first to free WebGL context
+            // before building the new one (avoids hitting browser context limit)
             if (this.scene) {
                 this.scene.clean();
+                this.scene = null;
             }
+            newScene.build();
             // Set the new scene
             this.scene = newScene;
-        } catch (error) {
-            console.error('Error building scene:', error);
+            // Apply settings only if non-empty (avoid overwriting defaults with {})
+            if (settings && Object.keys(settings).length > 0) {
+                this.scene.updateSettings(settings);
+            }
+        } catch (_error) {
+            console.error('Failed to build scene:', _error);
         } finally {
             const animationWindowCreated = new StartStreamEvent(
                 messageTarget.offscreen,
                 messageAction.startStream,
-                this.scene ? this.scene.streamType : streamType.normal
+                this.scene ? this.scene.streamType : streamType.normal,
             );
             if (window.sandboxEventMessageHolder?.source) {
-                window.sandboxEventMessageHolder.source.postMessage(
-                    animationWindowCreated.toMessage(),
-                    { targetOrigin: window.sandboxEventMessageHolder.origin }
-                );
+                window.sandboxEventMessageHolder.source.postMessage(animationWindowCreated.toMessage(), {
+                    targetOrigin: window.sandboxEventMessageHolder.origin,
+                });
             }
             this.buildingScene = false;
-            this.updateSettings(settings);
+            // Apply buffered audio data so the first render uses fresh data
+            if (this.bufferedAudioData && this.scene) {
+                this.scene.updateAudioData(this.bufferedAudioData);
+                this.bufferedAudioData = null;
+            }
         }
     }
 

@@ -1,6 +1,9 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { SeventiesSceneSetting } from './setting';
+
+const MAX_CIRCLES = 500;
 
 interface Circle {
     x: number;
@@ -27,18 +30,9 @@ export class SeventiesScene implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to initialize Canvas 2D. Your browser may not support it.');
             return;
         }
     }
@@ -54,7 +48,7 @@ export class SeventiesScene implements IScene {
     private getVolume(): number {
         const data = this.audioData.timeByteArray;
         if (data.length === 0) return 0;
-        
+
         // Use more frequency bins for better responsiveness
         const binCount = Math.floor(data.length / 8); // Use 1/8 instead of 1/16 for more data
         let sum = 0;
@@ -79,7 +73,7 @@ export class SeventiesScene implements IScene {
         // Volume is already multiplied by volumeSensitivity in getVolume()
         // Now just divide by speedReducer for controlled movement
         vol = vol / this.settings.speedReducer;
-        
+
         // Calculate bottom and top frequency ranges
         const bottomEnd = Math.floor(data.length / 10);
         let bottom = 0;
@@ -98,7 +92,7 @@ export class SeventiesScene implements IScene {
         // Update all circles
         for (let i = this.circles.length - 1; i >= 0; i--) {
             const circle = this.circles[i];
-            
+
             circle.x += controller;
             circle.y += vol;
             circle.r += vol * this.settings.expansionSpeed;
@@ -121,8 +115,12 @@ export class SeventiesScene implements IScene {
             }
 
             // Remove circles that are off-screen
-            if (circle.x < -circle.r || circle.x > (this.canvas?.width || 0) + circle.r ||
-                circle.y < -circle.r || circle.y > (this.canvas?.height || 0) + circle.r) {
+            if (
+                circle.x < -circle.r ||
+                circle.x > (this.canvas?.width || 0) + circle.r ||
+                circle.y < -circle.r ||
+                circle.y > (this.canvas?.height || 0) + circle.r
+            ) {
                 this.circles.splice(i, 1);
             }
         }
@@ -134,7 +132,7 @@ export class SeventiesScene implements IScene {
         for (const circle of this.circles) {
             this.ctx.lineWidth = this.settings.lineWidth;
             this.ctx.strokeStyle = `hsla(${circle.hue}, ${this.settings.saturation}%, ${this.settings.lightness}%, ${circle.opacity})`;
-            
+
             this.ctx.beginPath();
             this.ctx.arc(circle.x, circle.y, circle.r, 0, 2 * Math.PI);
             this.ctx.stroke();
@@ -149,6 +147,7 @@ export class SeventiesScene implements IScene {
 
     private createCircle(vol: number): void {
         if (!this.canvas) return;
+        if (this.circles.length >= MAX_CIRCLES) return;
 
         const x = Math.random() * this.canvas.width;
         const y = Math.max(0, Math.min(this.canvas.height - vol / 10, this.canvas.height));
@@ -166,7 +165,7 @@ export class SeventiesScene implements IScene {
                 target: target_size + (Math.random() - 0.5) * this.settings.targetSizeVariation,
                 speed: speed,
                 hue: hue_start + i * this.settings.hueStep + (Math.random() - 0.5) * this.settings.hueVariation,
-                opacity: 1 - Math.abs(Math.cos(opacity_step * i))
+                opacity: 1 - Math.abs(Math.cos(opacity_step * i)),
             });
         }
     }
@@ -177,8 +176,10 @@ export class SeventiesScene implements IScene {
         }
 
         // Update canvas size
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
 
         // Clear background with optional fade for trails
         if (this.settings.enableTrails) {
@@ -206,6 +207,7 @@ export class SeventiesScene implements IScene {
 
         this.circles = [];
         this.canvas.remove();
+        this.canvas = null;
+        this.ctx = null;
     }
 }
-
