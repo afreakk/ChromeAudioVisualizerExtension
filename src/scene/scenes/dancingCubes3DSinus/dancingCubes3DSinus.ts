@@ -51,6 +51,8 @@ class CubeObject implements Cube {
     pos: vec3;
     modelViewMatrix: mat4;
     normalMatrix: mat4;
+    private scratchScale: vec3;
+    private scratchScaleMatrix: mat4;
 
     constructor(x: number, y: number, z: number) {
         this.x = x;
@@ -59,6 +61,8 @@ class CubeObject implements Cube {
         this.pos = vec3.create();
         this.modelViewMatrix = mat4.create();
         this.normalMatrix = mat4.create();
+        this.scratchScale = vec3.create();
+        this.scratchScaleMatrix = mat4.create();
     }
 
     update(v: number, speed: number, width: number, height: number, directionChangeSpeed: number): void {
@@ -69,10 +73,10 @@ class CubeObject implements Cube {
         this.pos[1] = this.y;
         this.pos[2] = this.z;
         mat4.fromTranslation(this.modelViewMatrix, this.pos);
-        const s = vec3.fromValues(width * v, height * v, width * v);
-        const scaleMatrix = mat4.create();
-        mat4.scale(scaleMatrix, scaleMatrix, s);
-        mat4.multiply(this.modelViewMatrix, this.modelViewMatrix, scaleMatrix);
+        vec3.set(this.scratchScale, width * v, height * v, width * v);
+        mat4.identity(this.scratchScaleMatrix);
+        mat4.scale(this.scratchScaleMatrix, this.scratchScaleMatrix, this.scratchScale);
+        mat4.multiply(this.modelViewMatrix, this.modelViewMatrix, this.scratchScaleMatrix);
         mat4.invert(this.normalMatrix, this.modelViewMatrix);
         mat4.transpose(this.normalMatrix, this.normalMatrix);
     }

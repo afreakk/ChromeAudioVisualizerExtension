@@ -38,6 +38,10 @@ export class PsychedelicCube implements IScene {
     private settings: PsychedelicCubeSetting;
     private soundValue: number = 0;
     private startTime: number;
+    private scratchRotationAxis: vec3;
+    private scratchScaleVec: vec3;
+    private scratchScaleMatrix: mat4;
+    private scratchSendMatrix: mat4;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -45,6 +49,10 @@ export class PsychedelicCube implements IScene {
         this.settings = new PsychedelicCubeSetting();
         this.modelMatrix = mat4.create();
         this.startTime = Date.now();
+        this.scratchRotationAxis = vec3.fromValues(0.5, 0.5, 0.5);
+        this.scratchScaleVec = vec3.create();
+        this.scratchScaleMatrix = mat4.create();
+        this.scratchSendMatrix = mat4.create();
     }
 
     streamType = streamType.normal;
@@ -336,21 +344,19 @@ export class PsychedelicCube implements IScene {
         if (Number.isNaN(volume)) volume = 0;
 
         // Rotate model based on volume
-        const rotationAxis = vec3.fromValues(0.5, 0.5, 0.5);
-        mat4.rotate(this.modelMatrix, this.modelMatrix, volume * this.settings.spinSpeed, rotationAxis);
+        mat4.rotate(this.modelMatrix, this.modelMatrix, volume * this.settings.spinSpeed, this.scratchRotationAxis);
 
         // Scale based on frequency bands
-        const scaleVec = vec3.fromValues(this.getHigh(), this.getMid(), this.getLow());
+        vec3.set(this.scratchScaleVec, this.getHigh(), this.getMid(), this.getLow());
         for (let i = 0; i < 3; i++) {
-            scaleVec[i] = Math.max(scaleVec[i] * this.settings.cubeVolumeScale, 0.1);
+            this.scratchScaleVec[i] = Math.max(this.scratchScaleVec[i] * this.settings.cubeVolumeScale, 0.1);
         }
-        const scaleMatrix = mat4.create();
-        mat4.scale(scaleMatrix, scaleMatrix, scaleVec);
+        mat4.identity(this.scratchScaleMatrix);
+        mat4.scale(this.scratchScaleMatrix, this.scratchScaleMatrix, this.scratchScaleVec);
 
         // Combine model and scale matrices
-        const sendMatrix = mat4.create();
-        mat4.multiply(sendMatrix, this.modelMatrix, scaleMatrix);
-        gl.uniformMatrix4fv(program.modelMatrix, false, sendMatrix);
+        mat4.multiply(this.scratchSendMatrix, this.modelMatrix, this.scratchScaleMatrix);
+        gl.uniformMatrix4fv(program.modelMatrix, false, this.scratchSendMatrix);
 
         // Update time-based uniforms
         this.soundValue += volume * this.settings.volumeMultiplier;
