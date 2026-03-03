@@ -54,7 +54,7 @@
 
 - [x] **Return `true` from async `onMessage` listener in background.ts** — `entrypoints/background.ts:73` — The listener uses `async` operations but never returns `true` to keep the message port open. Chrome logs "message port closed" warnings and async exceptions become unhandled promise rejections.
 
-- [ ] **Clean old scene before building new one to avoid WebGL context exhaustion** — `src/scene/sceneManager.ts:76-80` — New scene's `build()` (creates WebGL context) runs before old scene's `clean()` (destroys context). Two contexts exist simultaneously, counting against the browser's 8-16 context limit.
+- [x] **Clean old scene before building new one to avoid WebGL context exhaustion** — `src/scene/sceneManager.ts:76-80` — New scene's `build()` (creates WebGL context) runs before old scene's `clean()` (destroys context). Two contexts exist simultaneously, counting against the browser's 8-16 context limit.
 
 ## LOW: Minor Issues
 

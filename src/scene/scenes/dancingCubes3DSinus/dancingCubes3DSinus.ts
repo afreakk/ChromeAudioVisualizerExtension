@@ -327,21 +327,19 @@ export class DancingCubes3DSinus implements IScene {
         const gl = this.gl;
         const program = this.shaderProgram;
 
-        // Update canvas size and viewport
+        // Update canvas size, viewport, and projection matrix on resize
         if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
             this.canvas.width = window.innerWidth;
             this.canvas.height = window.innerHeight;
             gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            mat4.perspective(
+                this.projectionMatrix,
+                (45 * Math.PI) / 180,
+                this.canvas.clientWidth / this.canvas.clientHeight,
+                1,
+                1000,
+            );
         }
-
-        // Update projection matrix if canvas size changed
-        mat4.perspective(
-            this.projectionMatrix,
-            (45 * Math.PI) / 180,
-            this.canvas.clientWidth / this.canvas.clientHeight,
-            1,
-            1000,
-        );
 
         gl.useProgram(program);
         gl.uniform1f(program.cubeAlpha, this.settings.cubeAlphaModifier);
