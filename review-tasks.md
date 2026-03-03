@@ -14,7 +14,7 @@
 
 - [x] **Wrap `chrome.runtime.sendMessage` in try/catch in offscreenWindow and animationWindow** — `entrypoints/offscreenWindow/main.ts:179,199` and `entrypoints/animationWindow/main.js:25` — If the animation window is closed while the offscreen document is alive, `sendMessage` throws "Receiving end does not exist". The exception propagates up and the `setTimeout` on line 203 is never reached — the audio capture loop dies permanently. The extension becomes a silent no-op. Wrap all `sendMessage` calls in try/catch.
 
-- [ ] **Add retry backoff to stream recovery** — `entrypoints/offscreenWindow/main.ts:133-139` + `entrypoints/background.ts:75-77` — When `initiateStream()` fails, it sends `requestNewStream` to background, which calls `reinitiateStream()` → `initiateStream()` → sends back to offscreen, creating an infinite retry loop with no backoff and no retry limit. Add exponential backoff and a max retry count.
+- [x] **Add retry backoff to stream recovery** — `entrypoints/offscreenWindow/main.ts:133-139` + `entrypoints/background.ts:75-77` — When `initiateStream()` fails, it sends `requestNewStream` to background, which calls `reinitiateStream()` → `initiateStream()` → sends back to offscreen, creating an infinite retry loop with no backoff and no retry limit. Add exponential backoff and a max retry count.
 
 - [ ] **Log errors in `sceneManager.setScene()` instead of silently swallowing them** — `src/scene/sceneManager.ts:87-88` — The catch block is `catch (_error) {}`. If `build()` throws (WebGL context limit, shader compile failure), the error vanishes. The `finally` block still sends `StartStreamEvent` referencing the old scene. At minimum `console.error(_error)`. Consider showing a fallback or notifying the user.
 

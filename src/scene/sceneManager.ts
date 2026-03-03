@@ -85,6 +85,7 @@ export class SceneManager {
                 this.scene.updateSettings(settings);
             }
         } catch (_error) {
+            console.error('Failed to build scene:', _error);
         } finally {
             const animationWindowCreated = new StartStreamEvent(
                 messageTarget.offscreen,
