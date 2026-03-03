@@ -22,6 +22,12 @@ export enum streamType {
     normal = 'singleChannel',
 }
 export interface IAudioDataDto {
+    /**
+     * Audio frequency data (0-255 per bin), despite the name.
+     * For normal streams, this is populated via `getByteFrequencyData()` (frequency domain).
+     * For butterchurn streams, this is populated via `getByteTimeDomainData()` (time domain).
+     * The name is a historical misnomer retained for backwards compatibility.
+     */
     timeByteArray: number[];
     timestamp?: number; // Timestamp when audio was captured (performance.now())
 }
