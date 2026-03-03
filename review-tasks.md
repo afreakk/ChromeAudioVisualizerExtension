@@ -26,7 +26,7 @@
 
 - [x] **Fix PaintSplash division by zero** — `src/scene/scenes/paintSplash/paintSplash.ts` — `Math.floor(audioArray.length / this.settings.numSplashes)` produces 0 when `numSplashes > 256`. The subsequent `sum / binSize` produces `Infinity`, corrupting all splash positions. Guard with `Math.max(1, ...)`.
 
-- [ ] **Rename `timeByteArray` or add documentation clarifying it's frequency data** — `src/utils/eventMessage.ts:25` + `entrypoints/offscreenWindow/main.ts:170` — `NormalAudioDataDto.timeByteArray` is populated with `getByteFrequencyData()` (frequency domain), not time domain as the name implies. The butterchurn path correctly uses `getByteTimeDomainData`. This will confuse anyone writing a new scene.
+- [x] **Rename `timeByteArray` or add documentation clarifying it's frequency data** — `src/utils/eventMessage.ts:25` + `entrypoints/offscreenWindow/main.ts:170` — `NormalAudioDataDto.timeByteArray` is populated with `getByteFrequencyData()` (frequency domain), not time domain as the name implies. The butterchurn path correctly uses `getByteTimeDomainData`. This will confuse anyone writing a new scene.
 
 - [ ] **Remove `alert()` on shader failure in DancingHorizon** — `src/scene/scenes/dancingHorizon/dancingHorizon.ts` — `alert('Unable to initialize the shader program')` blocks the browser tab. No other scene does this. Replace with a silent return (consistent with other scenes) or `console.error`.
 

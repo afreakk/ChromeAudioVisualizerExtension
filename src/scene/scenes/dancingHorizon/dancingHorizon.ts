@@ -242,7 +242,7 @@ export class DancingHorizon implements IScene {
 
         this.shaderProgram = initShaderProgram(this.gl, vs, fs);
         if (!this.shaderProgram) {
-            alert('Unable to initialize the shader program');
+            console.error('DancingHorizon: Unable to initialize the shader program');
             return;
         }
 
