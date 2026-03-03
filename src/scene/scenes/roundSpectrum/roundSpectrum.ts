@@ -54,6 +54,8 @@ export class RoundSpectrum implements IScene {
     private colorOffset: number = 0.0;
     private rotation: number = 0.0;
     private time: number = 0.0;
+    private glowSprite: HTMLCanvasElement | null = null;
+    private static readonly GLOW_SPRITE_SIZE = 64;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -68,6 +70,26 @@ export class RoundSpectrum implements IScene {
         if (!this.ctx) {
             return;
         }
+        this.initGlowSprite();
+    }
+
+    private initGlowSprite(): void {
+        const size = RoundSpectrum.GLOW_SPRITE_SIZE;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const half = size / 2;
+        const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.15)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        this.glowSprite = canvas;
     }
 
     updateSettings(settings: RoundSpectrumSetting): void {
@@ -138,10 +160,7 @@ export class RoundSpectrum implements IScene {
         let z = 0;
         this.time += 0.016; // Increment time for animations
 
-        // Cache shadow settings to avoid repeated property assignments
         const hasGlow = xs.enableGlow;
-        let lastShadowBlur = -1;
-        let lastShadowColor = '';
 
         // Draw spectrum bars (optimized loop)
         for (let i = 0; i < actualBarCount; i++) {
@@ -178,18 +197,19 @@ export class RoundSpectrum implements IScene {
             // Get triangle points
             const p = getTriangle(theta, innerWidth, barWidth, outerWidth, centerX, centerY);
 
-            // Optimize glow: only set shadow properties when they change
-            if (hasGlow && specValue > xs.glowThreshold) {
-                const shadowBlur = xs.glowIntensity * (specValue / 255);
-                if (shadowBlur !== lastShadowBlur || fillColor !== lastShadowColor) {
-                    this.ctx.shadowBlur = shadowBlur;
-                    this.ctx.shadowColor = fillColor;
-                    lastShadowBlur = shadowBlur;
-                    lastShadowColor = fillColor;
-                }
-            } else if (lastShadowBlur !== 0) {
-                this.ctx.shadowBlur = 0;
-                lastShadowBlur = 0;
+            // Draw sprite-based glow instead of shadowBlur
+            if (hasGlow && specValue > xs.glowThreshold && this.glowSprite) {
+                const glowSize = xs.glowIntensity * (specValue / 255) * 0.5;
+                const spriteSize = RoundSpectrum.GLOW_SPRITE_SIZE;
+                const cx = (p[0] + p[2] + p[4] + p[6]) / 4;
+                const cy = (p[1] + p[3] + p[5] + p[7]) / 4;
+                this.ctx.globalCompositeOperation = 'lighter';
+                this.ctx.drawImage(
+                    this.glowSprite,
+                    0, 0, spriteSize, spriteSize,
+                    cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2,
+                );
+                this.ctx.globalCompositeOperation = 'source-over';
             }
 
             // Batch path operations
@@ -200,11 +220,6 @@ export class RoundSpectrum implements IScene {
             this.ctx.lineTo(p[6], p[7]);
             this.ctx.closePath();
             this.ctx.fill();
-        }
-
-        // Reset shadow after drawing
-        if (lastShadowBlur !== 0) {
-            this.ctx.shadowBlur = 0;
         }
 
         // Draw center circle for extra visual appeal

@@ -31,6 +31,8 @@ export class ParticleCircle implements IScene {
     private colorOffset: number = 0.0;
     private rotation: number = 0.0;
     private time: number = 0.0;
+    private glowSprite: HTMLCanvasElement | null = null;
+    private static readonly GLOW_SPRITE_SIZE = 64;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -45,6 +47,26 @@ export class ParticleCircle implements IScene {
         if (!this.ctx) {
             return;
         }
+        this.initGlowSprite();
+    }
+
+    private initGlowSprite(): void {
+        const size = ParticleCircle.GLOW_SPRITE_SIZE;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const half = size / 2;
+        const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.15)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        this.glowSprite = canvas;
     }
 
     updateSettings(settings: ParticleCircleSetting): void {
@@ -69,16 +91,20 @@ export class ParticleCircle implements IScene {
     private drawCircle(x: number, y: number, radius: number, color: string): void {
         if (!this.ctx || radius <= 0) return;
 
-        this.ctx.fillStyle = color;
-
-        // Optional glow effect
-        if (this.settings.enableGlow && radius > this.settings.glowThreshold) {
-            this.ctx.shadowBlur = this.settings.glowIntensity * (radius / this.settings.maxParticleSize);
-            this.ctx.shadowColor = color;
-        } else {
-            this.ctx.shadowBlur = 0;
+        // Draw sprite-based glow instead of shadowBlur
+        if (this.settings.enableGlow && radius > this.settings.glowThreshold && this.glowSprite) {
+            const glowSize = radius * this.settings.glowIntensity * 0.15;
+            const spriteSize = ParticleCircle.GLOW_SPRITE_SIZE;
+            this.ctx.globalCompositeOperation = 'lighter';
+            this.ctx.drawImage(
+                this.glowSprite,
+                0, 0, spriteSize, spriteSize,
+                x - glowSize, y - glowSize, glowSize * 2, glowSize * 2,
+            );
+            this.ctx.globalCompositeOperation = 'source-over';
         }
 
+        this.ctx.fillStyle = color;
         this.ctx.beginPath();
         this.ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
         this.ctx.fill();
@@ -178,9 +204,6 @@ export class ParticleCircle implements IScene {
 
             this.drawCircle(x, y, size, color);
         }
-
-        // Reset shadow after drawing
-        this.ctx.shadowBlur = 0;
 
         // Draw center circle for extra visual appeal
         if (this.settings.showCenterCircle) {
