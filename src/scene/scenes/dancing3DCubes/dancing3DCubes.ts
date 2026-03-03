@@ -413,9 +413,8 @@ export class Dancing3DCubes implements IScene {
 
         gl.uniformMatrix4fv(program.projectionMatrix, false, this.projectionMatrix);
 
-        // Update time for animation
-        this.time += 0.016; // ~60fps
-        if (this.time > 1000) this.time = 0; // Prevent overflow
+        // Update time for animation (wrap with modular arithmetic to avoid visual discontinuity)
+        this.time = (this.time + 0.016) % (2000 * Math.PI);
         gl.uniform1f(program.time, this.time);
 
         // Initialize cubes if needed
