@@ -70,11 +70,13 @@ export class SceneManager {
         const newScene = scene;
         this.buildingScene = true;
         try {
-            newScene.build();
-            // Clean up the current scene if there is one
+            // Clean up the current scene first to free WebGL context
+            // before building the new one (avoids hitting browser context limit)
             if (this.scene) {
                 this.scene.clean();
+                this.scene = null;
             }
+            newScene.build();
             // Set the new scene
             this.scene = newScene;
             // Apply settings only if non-empty (avoid overwriting defaults with {})

@@ -52,7 +52,7 @@
 
 - [x] **Stop `animationWindow/main.js` from forwarding all messages blindly** — `entrypoints/animationWindow/main.js:25` — `chrome.runtime.sendMessage(e.data)` forwards every `postMessage` from the sandbox to the runtime, including high-frequency FPS updates and audio data responses, broadcasting to all extension contexts.
 
-- [ ] **Return `true` from async `onMessage` listener in background.ts** — `entrypoints/background.ts:73` — The listener uses `async` operations but never returns `true` to keep the message port open. Chrome logs "message port closed" warnings and async exceptions become unhandled promise rejections.
+- [x] **Return `true` from async `onMessage` listener in background.ts** — `entrypoints/background.ts:73` — The listener uses `async` operations but never returns `true` to keep the message port open. Chrome logs "message port closed" warnings and async exceptions become unhandled promise rejections.
 
 - [ ] **Clean old scene before building new one to avoid WebGL context exhaustion** — `src/scene/sceneManager.ts:76-80` — New scene's `build()` (creates WebGL context) runs before old scene's `clean()` (destroys context). Two contexts exist simultaneously, counting against the browser's 8-16 context limit.
 
