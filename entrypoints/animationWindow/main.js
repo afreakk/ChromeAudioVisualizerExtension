@@ -21,7 +21,14 @@ chrome.runtime.onMessage.addListener((message) => {
     theFrame?.contentWindow?.postMessage(message, '*');
 });
 
+// Only forward messages that target extension contexts (background, offscreen, settings)
+// to avoid broadcasting high-frequency internal sandbox messages to all extension contexts
+const forwardTargets = new Set([messageTarget.background, messageTarget.offscreen, messageTarget.settings]);
+
 window.addEventListener('message', function (e) {
+    if (!e.data || !forwardTargets.has(e.data.target)) {
+        return;
+    }
     try {
         chrome.runtime.sendMessage(e.data);
     } catch (_ex) {

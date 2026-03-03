@@ -8,6 +8,7 @@ Accumulated learnings across task runs. Read this before starting work.
 - Optimized NeuralWeb: squared distance comparison in O(n^2) connection loop to skip sqrt for distant pairs; replaced per-node createRadialGradient() with pre-rendered glow sprite; moved lineWidth/audioBoost outside inner loop. Files: neuralWeb.ts.
 - Pre-allocated rotated vertex arrays in HexagonPulse: added rotatedVerts field to Hexagon interface, rotateVerticesInPlace() method updates in-place instead of .map() per hex per frame. Files: hexagonPulse.ts.
 - Fixed singleton scene problem: scenesMap now stores factory functions, creates fresh scene instances on each switch. Removed instanceof guard in sceneManager.setScene(). Files: sandbox/main.ts, sceneManager.ts.
+- Buffered latest audio data during scene transitions: SceneManager stores latest audio data when buildingScene=true and applies it after build completes. Files: sceneManager.ts.
 
 ## Discoveries
 - When initiateStream() sets state internally, partial failure after it means cleanup in catch should also undo the stream for future hardening
