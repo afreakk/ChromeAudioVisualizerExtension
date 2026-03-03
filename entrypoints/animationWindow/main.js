@@ -22,5 +22,9 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 window.addEventListener('message', function (e) {
-    chrome.runtime.sendMessage(e.data);
+    try {
+        chrome.runtime.sendMessage(e.data);
+    } catch (_ex) {
+        // Receiving end may not exist if extension context is invalidated
+    }
 });

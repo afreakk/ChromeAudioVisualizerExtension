@@ -54,7 +54,11 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
     switch (message.action) {
         case messageAction.toggleFullScreen: {
             const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
-            chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
+            try {
+                chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
+            } catch (_e) {
+                // Receiving end may not exist if animation window is closed
+            }
             break;
         }
         case messageAction.startStream: {
@@ -135,7 +139,11 @@ async function initiateStream(streamId: string) {
         initiateStreamId = null;
         // Request a new stream ID from background script
         const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
-        chrome.runtime.sendMessage(requestNewStream.toMessage());
+        try {
+            chrome.runtime.sendMessage(requestNewStream.toMessage());
+        } catch (_e) {
+            // Receiving end may not exist
+        }
         throw error; // Re-throw so caller knows it failed
     }
 }
@@ -160,7 +168,11 @@ async function startStream() {
             } else {
                 // Request a new stream ID from background script
                 const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
-                chrome.runtime.sendMessage(requestNewStream.toMessage());
+                try {
+                    chrome.runtime.sendMessage(requestNewStream.toMessage());
+                } catch (_e) {
+                    // Receiving end may not exist
+                }
                 return;
             }
         }
@@ -176,7 +188,11 @@ async function startStream() {
                 messageAction.updateAudioData,
                 audioData,
             );
-            chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            try {
+                chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            } catch (_e) {
+                // Receiving end may not exist if animation window is closed
+            }
         } else if (
             currentStreamType === streamType.butterChurn &&
             analyserButterChurn !== null &&
@@ -196,7 +212,11 @@ async function startStream() {
                 messageAction.updateAudioData,
                 audioData,
             );
-            chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            try {
+                chrome.runtime.sendMessage(audioDataMessage.toMessage());
+            } catch (_e) {
+                // Receiving end may not exist if animation window is closed
+            }
         }
 
         // Dynamic capture rate - matches render FPS
