@@ -26,6 +26,7 @@ export class CircleBurst implements IScene {
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
     private audioData: NormalAudioDataDto;
+    private audioBuffer: Uint8Array = new Uint8Array(256);
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -214,7 +215,8 @@ export class CircleBurst implements IScene {
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
         this.gl.uniform1i(this.audioTextureUniformLocation, 0);
-        bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl);
+        this.audioBuffer.set(this.audioData.timeByteArray);
+        bindAudioDataToTexture(this.audioBuffer, this.gl);
 
         this.gl.uniform2f(this.resolutionUniformLocation, this.canvas.width, this.canvas.height);
         this.gl.uniform1f(this.timeUniformLocation, performance.now() / 1000.0);

@@ -20,6 +20,7 @@ export class SynthBars implements IScene {
     private vertexBuffer: WebGLBuffer | null = null;
     private shaderProgram: WebGLProgram | null = null;
     private audioData: NormalAudioDataDto;
+    private audioBuffer: Uint8Array = new Uint8Array(256);
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
     }
@@ -149,7 +150,8 @@ export class SynthBars implements IScene {
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.audioTexture);
         this.gl.uniform1i(this.audioTextureUniformLocation, 0);
-        bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl);
+        this.audioBuffer.set(this.audioData.timeByteArray);
+        bindAudioDataToTexture(this.audioBuffer, this.gl);
 
         // Update resolution
         this.gl.uniform2f(this.resolutionUniformLocation, this.gl.canvas.width, this.gl.canvas.height);

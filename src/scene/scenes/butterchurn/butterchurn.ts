@@ -13,6 +13,9 @@ export class Butterchurn implements IScene {
     private lastTime: any;
     private lastCycleSeconds: number = 0;
     private cyclePresetInterval: NodeJS.Timeout | null = null;
+    private audioBuffer: Uint8Array = new Uint8Array(1024);
+    private audioBufferL: Uint8Array = new Uint8Array(1024);
+    private audioBufferR: Uint8Array = new Uint8Array(1024);
     constructor() {
         this.audioData = new ButterChurnAudioDataDto([], [], []);
     }
@@ -61,9 +64,12 @@ export class Butterchurn implements IScene {
             return;
         }
 
-        const data = new Uint8Array(this.audioData.timeByteArray);
-        const dataL = new Uint8Array(this.audioData.timeByteArrayLeft);
-        const dataR = new Uint8Array(this.audioData.timeByteArrayRight);
+        this.audioBuffer.set(this.audioData.timeByteArray);
+        this.audioBufferL.set(this.audioData.timeByteArrayLeft);
+        this.audioBufferR.set(this.audioData.timeByteArrayRight);
+        const data = this.audioBuffer;
+        const dataL = this.audioBufferL;
+        const dataR = this.audioBufferR;
         const currentTime = +Date.now();
         const elapsedTime = (currentTime - this.lastTime) / 1000;
         if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
