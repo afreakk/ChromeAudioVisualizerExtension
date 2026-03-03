@@ -3,6 +3,8 @@ import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { SeventiesSceneSetting } from './setting';
 
+const MAX_CIRCLES = 500;
+
 interface Circle {
     x: number;
     y: number;
@@ -145,6 +147,7 @@ export class SeventiesScene implements IScene {
 
     private createCircle(vol: number): void {
         if (!this.canvas) return;
+        if (this.circles.length >= MAX_CIRCLES) return;
 
         const x = Math.random() * this.canvas.width;
         const y = Math.max(0, Math.min(this.canvas.height - vol / 10, this.canvas.height));
