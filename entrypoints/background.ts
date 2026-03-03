@@ -49,7 +49,7 @@ export default defineBackground(() => {
                 await chrome.offscreen.createDocument({
                     url: 'offscreenWindow.html',
                     reasons: [chrome.offscreen.Reason.USER_MEDIA],
-                    justification: 'play sound effects',
+                    justification: 'Audio visualization capture and processing',
                 });
             }
             await initiateStream(tabId);

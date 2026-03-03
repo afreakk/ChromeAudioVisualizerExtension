@@ -70,8 +70,8 @@
 
 - [x] **Clean up shader/program on partial compile failure in openGl.ts** — `src/utils/openGl/openGl.ts:36-48` — If vertex shader compiles but fragment fails, vertex shader leaks. If linking fails, neither shaders nor program are deleted.
 
-- [ ] **Null analyser references in `stopStream()`** — `entrypoints/offscreenWindow/main.ts:209-224` — `analyserNormal`, `analyserButterChurn`, etc. and `stream`, `audioContext` are never set to null after cleanup.
+- [x] **Null analyser references in `stopStream()`** — `entrypoints/offscreenWindow/main.ts:209-224` — `analyserNormal`, `analyserButterChurn`, etc. and `stream`, `audioContext` are never set to null after cleanup.
 
-- [ ] **Fix HexagonPulse wireframe per-segment color bug** — `src/scene/scenes/hexagonPulse/hexagonPulse.ts:302` — `strokeStyle` changes per point but `stroke()` applies once per row, so only the last color is used. The wireframe has uniform color per row instead of per-segment variation.
+- [x] **Fix HexagonPulse wireframe per-segment color bug** — `src/scene/scenes/hexagonPulse/hexagonPulse.ts:302` — `strokeStyle` changes per point but `stroke()` applies once per row, so only the last color is used. The wireframe has uniform color per row instead of per-segment variation.
 
 - [ ] **Fix offscreen document justification string** — `entrypoints/background.ts:52` — Says "play sound effects", actually does audio visualization capture.
