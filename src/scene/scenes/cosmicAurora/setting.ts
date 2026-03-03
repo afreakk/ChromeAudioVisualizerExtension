@@ -24,6 +24,6 @@ export class CosmicAuroraSetting implements ISceneSetting {
     public colorCycleSpeed: number = 0.5;
 
     // Effects
-    public glowIntensity: number = 0.7;
+    public glowIntensity: number = 0.3;
     public trailLength: number = 0.85;
 }

@@ -139,8 +139,8 @@ export function cosmicAuroraSettings(
     const effectsFolder = settingsFolder.addFolder('Effects');
 
     effectsFolder
-        .add(settings, 'glowIntensity', 0, 2.0)
-        .name('Glow')
+        .add(settings, 'glowIntensity', 0, 1.0)
+        .name('Glow Intensity')
         .onChange((value: number) => {
             settings.glowIntensity = value;
             setSceneSettings(settings, sceneName, isExternalUi);
