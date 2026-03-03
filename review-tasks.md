@@ -66,7 +66,7 @@
 
 - [x] **Fix `Butterchurn.lastTime` type** — `src/scene/scenes/butterchurn/butterchurn.ts:22` — Typed as `any`, should be `number`.
 
-- [ ] **Cache FPS overlay DOM element** — `entrypoints/sandbox/main.ts:131` — `document.getElementById('fps-overlay')` called 60x/sec even when overlay is hidden.
+- [x] **Cache FPS overlay DOM element** — `entrypoints/sandbox/main.ts:131` — `document.getElementById('fps-overlay')` called 60x/sec even when overlay is hidden.
 
 - [ ] **Clean up shader/program on partial compile failure in openGl.ts** — `src/utils/openGl/openGl.ts:36-48` — If vertex shader compiles but fragment fails, vertex shader leaks. If linking fails, neither shaders nor program are deleted.
 

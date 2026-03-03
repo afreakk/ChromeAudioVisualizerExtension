@@ -36,15 +36,18 @@ export function initShaderProgram(gl: WebGLRenderingContext, vs: string, fs: str
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vs);
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fs);
 
+    // Clean up on partial shader compile failure
+    if (vertexShader === null || fragmentShader === null) {
+        if (vertexShader) gl.deleteShader(vertexShader);
+        if (fragmentShader) gl.deleteShader(fragmentShader);
+        return null;
+    }
+
     // Create the shader program
     const shaderProgram = gl.createProgram();
     if (shaderProgram === null) {
-        return null;
-    }
-    if (vertexShader === null) {
-        return null;
-    }
-    if (fragmentShader === null) {
+        gl.deleteShader(vertexShader);
+        gl.deleteShader(fragmentShader);
         return null;
     }
     gl.attachShader(shaderProgram, vertexShader);
@@ -53,6 +56,9 @@ export function initShaderProgram(gl: WebGLRenderingContext, vs: string, fs: str
 
     // Check if the program was linked successfully
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        gl.deleteShader(vertexShader);
+        gl.deleteShader(fragmentShader);
+        gl.deleteProgram(shaderProgram);
         return null;
     }
 
