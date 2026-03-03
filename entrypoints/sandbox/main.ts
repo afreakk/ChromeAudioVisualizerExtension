@@ -126,20 +126,21 @@ window.addEventListener(messageAction.showFpsOverlay, (event) => {
 // FPS overlay state
 let showFpsOverlay = loadSettings<boolean>('showFps') ?? false;
 let currentFps = 0;
+let cachedFpsOverlay: HTMLElement | null = null;
 
 function updateFpsOverlay() {
-    let overlay = document.getElementById('fps-overlay');
     if (showFpsOverlay) {
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'fps-overlay';
-            overlay.style.cssText =
+        if (!cachedFpsOverlay) {
+            cachedFpsOverlay = document.createElement('div');
+            cachedFpsOverlay.id = 'fps-overlay';
+            cachedFpsOverlay.style.cssText =
                 'position:fixed;top:8px;left:8px;z-index:999999;color:#00ff00;font-family:monospace;font-size:14px;background:rgba(0,0,0,0.5);padding:4px 8px;border-radius:4px;pointer-events:none;';
-            document.body.appendChild(overlay);
+            document.body.appendChild(cachedFpsOverlay);
         }
-        overlay.textContent = `${currentFps} FPS`;
-    } else if (overlay) {
-        overlay.remove();
+        cachedFpsOverlay.textContent = `${currentFps} FPS`;
+    } else if (cachedFpsOverlay) {
+        cachedFpsOverlay.remove();
+        cachedFpsOverlay = null;
     }
 }
 
