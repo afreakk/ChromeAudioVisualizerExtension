@@ -50,7 +50,7 @@
 
 - [x] **Buffer latest audio data during scene transitions** — `src/scene/sceneManager.ts:27-29` — When `buildingScene = true`, `updateAudioData()` returns early. If `build()` takes 100ms+ (butterchurn WebGL init), audio frames are silently lost. First render after transition uses stale data — visible as a "jump."
 
-- [ ] **Stop `animationWindow/main.js` from forwarding all messages blindly** — `entrypoints/animationWindow/main.js:25` — `chrome.runtime.sendMessage(e.data)` forwards every `postMessage` from the sandbox to the runtime, including high-frequency FPS updates and audio data responses, broadcasting to all extension contexts.
+- [x] **Stop `animationWindow/main.js` from forwarding all messages blindly** — `entrypoints/animationWindow/main.js:25` — `chrome.runtime.sendMessage(e.data)` forwards every `postMessage` from the sandbox to the runtime, including high-frequency FPS updates and audio data responses, broadcasting to all extension contexts.
 
 - [ ] **Return `true` from async `onMessage` listener in background.ts** — `entrypoints/background.ts:73` — The listener uses `async` operations but never returns `true` to keep the message port open. Chrome logs "message port closed" warnings and async exceptions become unhandled promise rejections.
 

@@ -70,30 +70,38 @@ export default defineBackground(() => {
         }
     });
 
-    chrome.runtime.onMessage.addListener(async (message: SettingsWindowEvent | GenericEvent) => {
-        // Handle request for new stream ID after hot-reload
-        if (message.target === messageTarget.background && message.action === messageAction.initiateStream) {
-            await reinitiateStream();
+    chrome.runtime.onMessage.addListener((message: SettingsWindowEvent | GenericEvent) => {
+        // Only handle messages targeted at background
+        if (message.target !== messageTarget.background) {
             return;
         }
 
-        if (message.target === messageTarget.background && message.action === messageAction.openSettingsWindow) {
-            const win = await chrome.windows.create({
-                url: chrome.runtime.getURL('settingsWindow.html'),
-                type: 'popup',
-                width: 400,
-                height: 600,
-            });
-            if (!win) {
-                throw new Error('Failed to create settings window');
-            }
-            settingsWindowId = win.id as number;
+        // Handle request for new stream ID after hot-reload
+        if (message.action === messageAction.initiateStream) {
+            reinitiateStream();
+            return true; // Keep message port open for async operation
+        }
 
-            const closeSettingsInAnimation = new SettingsWindowEvent(
-                messageTarget.animation,
-                messageAction.openSettingsWindow,
-            );
-            chrome.runtime.sendMessage(closeSettingsInAnimation.toMessage());
+        if (message.action === messageAction.openSettingsWindow) {
+            (async () => {
+                const win = await chrome.windows.create({
+                    url: chrome.runtime.getURL('settingsWindow.html'),
+                    type: 'popup',
+                    width: 400,
+                    height: 600,
+                });
+                if (!win) {
+                    throw new Error('Failed to create settings window');
+                }
+                settingsWindowId = win.id as number;
+
+                const closeSettingsInAnimation = new SettingsWindowEvent(
+                    messageTarget.animation,
+                    messageAction.openSettingsWindow,
+                );
+                chrome.runtime.sendMessage(closeSettingsInAnimation.toMessage());
+            })();
+            return true; // Keep message port open for async operation
         }
     });
     // Listen for windows being closed and handle both settings and animation windows
