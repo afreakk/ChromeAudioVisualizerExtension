@@ -74,4 +74,4 @@
 
 - [x] **Fix HexagonPulse wireframe per-segment color bug** — `src/scene/scenes/hexagonPulse/hexagonPulse.ts:302` — `strokeStyle` changes per point but `stroke()` applies once per row, so only the last color is used. The wireframe has uniform color per row instead of per-segment variation.
 
-- [ ] **Fix offscreen document justification string** — `entrypoints/background.ts:52` — Says "play sound effects", actually does audio visualization capture.
+- [x] **Fix offscreen document justification string** — `entrypoints/background.ts:52` — Says "play sound effects", actually does audio visualization capture.
