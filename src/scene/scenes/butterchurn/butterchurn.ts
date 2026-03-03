@@ -10,7 +10,7 @@ export class Butterchurn implements IScene {
     private canvas: HTMLCanvasElement | null = null;
     private audioData: ButterChurnAudioDataDto;
     private visualizer: any = null;
-    private lastTime: any;
+    private lastTime: number = 0;
     private lastCycleSeconds: number = 0;
     private cyclePresetInterval: NodeJS.Timeout | null = null;
     private audioBuffer: Uint8Array = new Uint8Array(1024);

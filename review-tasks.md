@@ -62,7 +62,7 @@
 
 - [x] **Fix `time` wrap discontinuity in Dancing3DCubes** — `src/scene/scenes/dancing3DCubes/dancing3DCubes.ts:416` — `if (this.time > 1000) this.time = 0` creates a visual jump. Use modular arithmetic or `performance.now()`.
 
-- [ ] **Wrap ChromaWave accumulated uniforms to prevent precision loss** — `src/scene/scenes/chromaWave/chromaWave.ts:246-248` — `this.low += delta` grows without bound. After hours of runtime, float precision loss makes animation freeze. Wrap modulo `2 * Math.PI * 1000`.
+- [x] **Wrap ChromaWave accumulated uniforms to prevent precision loss** — `src/scene/scenes/chromaWave/chromaWave.ts:246-248` — `this.low += delta` grows without bound. After hours of runtime, float precision loss makes animation freeze. Wrap modulo `2 * Math.PI * 1000`.
 
 - [ ] **Fix `Butterchurn.lastTime` type** — `src/scene/scenes/butterchurn/butterchurn.ts:22` — Typed as `any`, should be `number`.
 
