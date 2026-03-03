@@ -17,9 +17,17 @@ export class FloatingCubes implements IScene {
     private audioData: NormalAudioDataDto;
     private settings: FloatingCubesSetting = new FloatingCubesSetting();
     private cubes: Cube[] = [];
+    private cachedBgColor = { r: 0, g: 0, b: 0 };
+    private cachedBorderColor = { r: 0, g: 0, b: 0 };
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
+        this.cacheColors();
+    }
+
+    private cacheColors(): void {
+        this.cachedBgColor = hexToRgb(this.settings.backgroundColor) ?? { r: 0, g: 0, b: 0 };
+        this.cachedBorderColor = hexToRgb(this.settings.borderColor) ?? { r: 0, g: 0, b: 0 };
     }
 
     streamType = streamType.normal;
@@ -58,6 +66,7 @@ export class FloatingCubes implements IScene {
     updateSettings(settings: FloatingCubesSetting): void {
         const needsReinit = settings.cubeCount !== this.settings.cubeCount;
         this.settings = settings;
+        this.cacheColors();
         if (needsReinit) {
             this.initCubes();
         }
@@ -84,8 +93,8 @@ export class FloatingCubes implements IScene {
         }
 
         const { width, height } = this.canvas;
-        const bgColor = hexToRgb(this.settings.backgroundColor);
-        const borderColor = hexToRgb(this.settings.borderColor);
+        const bgColor = this.cachedBgColor;
+        const borderColor = this.cachedBorderColor;
 
         // Draw background - solid if resized, semi-transparent for trail effect otherwise
         if (needsResize) {

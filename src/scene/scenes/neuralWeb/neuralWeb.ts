@@ -18,9 +18,17 @@ export class NeuralWeb implements IScene {
     private audioData: NormalAudioDataDto;
     private settings: NeuralWebSetting = new NeuralWebSetting();
     private nodes: Node[] = [];
+    private cachedNodeColor = { r: 0, g: 0, b: 0 };
+    private cachedLineColor = { r: 0, g: 0, b: 0 };
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
+        this.cacheColors();
+    }
+
+    private cacheColors(): void {
+        this.cachedNodeColor = hexToRgb(this.settings.nodeColor) ?? { r: 0, g: 0, b: 0 };
+        this.cachedLineColor = hexToRgb(this.settings.lineColor) ?? { r: 0, g: 0, b: 0 };
     }
 
     streamType = streamType.normal;
@@ -55,6 +63,7 @@ export class NeuralWeb implements IScene {
     updateSettings(settings: NeuralWebSetting): void {
         const needsReinit = settings.nodeCount !== this.settings.nodeCount;
         this.settings = settings;
+        this.cacheColors();
         if (needsReinit) {
             this.initNodes();
         }
@@ -89,8 +98,8 @@ export class NeuralWeb implements IScene {
         this.ctx.fillStyle = this.settings.backgroundColor;
         this.ctx.fillRect(0, 0, width, height);
 
-        const nodeColor = hexToRgb(this.settings.nodeColor);
-        const lineColor = hexToRgb(this.settings.lineColor);
+        const nodeColor = this.cachedNodeColor;
+        const lineColor = this.cachedLineColor;
 
         // Update and draw nodes
         for (let i = 0; i < this.nodes.length; i++) {
