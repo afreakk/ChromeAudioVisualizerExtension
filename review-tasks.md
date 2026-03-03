@@ -36,7 +36,7 @@
 
 - [x] **Pre-allocate `Uint8Array` buffers in all WebGL scene render loops** — `circleBurst.ts`, `frostfire.ts`, `dancingHorizon.ts`, `sunflower.ts`, `synthBars.ts` all do `bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl)` every frame. Butterchurn does it 3 times (`butterchurn.ts:76-78`). Allocate a single `Uint8Array(256)` in `build()` and reuse it with `.set()`.
 
-- [ ] **Optimize NeuralWeb O(n^2) connection loop and per-node gradient** — `src/scene/scenes/neuralWeb/neuralWeb.ts:129-168` — Double loop checks all node pairs: O(n^2). At 100 nodes = 4,950 `Math.sqrt` calls + `ctx.stroke()` calls per frame. Then 100 `createRadialGradient()` calls for node glow. Compare squared distances (skip sqrt), use pre-rendered sprites for glow.
+- [x] **Optimize NeuralWeb O(n^2) connection loop and per-node gradient** — `src/scene/scenes/neuralWeb/neuralWeb.ts:129-168` — Double loop checks all node pairs: O(n^2). At 100 nodes = 4,950 `Math.sqrt` calls + `ctx.stroke()` calls per frame. Then 100 `createRadialGradient()` calls for node glow. Compare squared distances (skip sqrt), use pre-rendered sprites for glow.
 
 - [ ] **Pre-allocate HexagonPulse rotated vertex arrays** — `src/scene/scenes/hexagonPulse/hexagonPulse.ts:241,299` — `vertices.map()` called per hexagon per frame creates ~127 new arrays of 6 tuples each, doubled for highlighted hexes. Pre-allocate rotated vertex storage per hexagon.
 

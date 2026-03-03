@@ -7,6 +7,7 @@ interface Hexagon {
     x: number;
     y: number;
     vertices: [number, number][];
+    rotatedVerts: [number, number][];
     high: number;
     highlight: number;
     index: number;
@@ -87,7 +88,8 @@ export class HexagonPulse implements IScene {
             vertices.push([vx, vy]);
         }
 
-        return { x, y, vertices, high: 0, highlight: 0, index };
+        const rotatedVerts: [number, number][] = vertices.map((v) => [v[0], v[1]] as [number, number]);
+        return { x, y, vertices, rotatedVerts, high: 0, highlight: 0, index };
     }
 
     private buildStarfield(): void {
@@ -108,6 +110,17 @@ export class HexagonPulse implements IScene {
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
         return [x * cos - y * sin, x * sin + y * cos];
+    }
+
+    private rotateVerticesInPlace(hex: Hexagon, angle: number): void {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        for (let i = 0; i < hex.vertices.length; i++) {
+            const x = hex.vertices[i][0];
+            const y = hex.vertices[i][1];
+            hex.rotatedVerts[i][0] = x * cos - y * sin;
+            hex.rotatedVerts[i][1] = x * sin + y * cos;
+        }
     }
 
     updateSettings(settings: HexagonPulseSetting): void {
@@ -237,8 +250,8 @@ export class HexagonPulse implements IScene {
             val = Math.max(hex.high, 0);
 
             if (val > 0) {
-                // Rotate vertices
-                const rotatedVerts = hex.vertices.map((v) => this.rotatePoint(v[0], v[1], this.rotation));
+                // Rotate vertices in-place
+                this.rotateVerticesInPlace(hex, this.rotation);
 
                 // Calculate offset based on audio
                 const mentalFactor = Math.min(
@@ -247,12 +260,12 @@ export class HexagonPulse implements IScene {
                 );
 
                 this.ctx.beginPath();
-                const offset0 = this.calculateOffset(rotatedVerts[0], hex.high, mentalFactor);
-                this.ctx.moveTo(rotatedVerts[0][0] + offset0[0], rotatedVerts[0][1] + offset0[1]);
+                const offset0 = this.calculateOffset(hex.rotatedVerts[0], hex.high, mentalFactor);
+                this.ctx.moveTo(hex.rotatedVerts[0][0] + offset0[0], hex.rotatedVerts[0][1] + offset0[1]);
 
                 for (let i = 1; i < 6; i++) {
-                    const offset = this.calculateOffset(rotatedVerts[i], hex.high, mentalFactor);
-                    this.ctx.lineTo(rotatedVerts[i][0] + offset[0], rotatedVerts[i][1] + offset[1]);
+                    const offset = this.calculateOffset(hex.rotatedVerts[i], hex.high, mentalFactor);
+                    this.ctx.lineTo(hex.rotatedVerts[i][0] + offset[0], hex.rotatedVerts[i][1] + offset[1]);
                 }
                 this.ctx.closePath();
 
@@ -296,12 +309,13 @@ export class HexagonPulse implements IScene {
     private drawHighlight(hex: Hexagon): void {
         if (!this.ctx) return;
 
-        const rotatedVerts = hex.vertices.map((v) => this.rotatePoint(v[0], v[1], this.rotation));
+        // Rotate vertices in-place (may already be current if val > 0 path ran)
+        this.rotateVerticesInPlace(hex, this.rotation);
 
         this.ctx.beginPath();
-        this.ctx.moveTo(rotatedVerts[0][0], rotatedVerts[0][1]);
+        this.ctx.moveTo(hex.rotatedVerts[0][0], hex.rotatedVerts[0][1]);
         for (let i = 1; i < 6; i++) {
-            this.ctx.lineTo(rotatedVerts[i][0], rotatedVerts[i][1]);
+            this.ctx.lineTo(hex.rotatedVerts[i][0], hex.rotatedVerts[i][1]);
         }
         this.ctx.closePath();
 
