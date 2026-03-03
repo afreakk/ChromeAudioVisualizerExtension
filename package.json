@@ -2,7 +2,7 @@
     "name": "audiovisualizer",
     "description": "Visualizes music in a cool way",
     "private": true,
-    "version": "11.1.0",
+    "version": "12.0.0",
     "type": "module",
     "scripts": {
         "dev": "wxt",
