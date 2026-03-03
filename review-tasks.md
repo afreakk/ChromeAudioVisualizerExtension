@@ -16,7 +16,7 @@
 
 - [x] **Add retry backoff to stream recovery** — `entrypoints/offscreenWindow/main.ts:133-139` + `entrypoints/background.ts:75-77` — When `initiateStream()` fails, it sends `requestNewStream` to background, which calls `reinitiateStream()` → `initiateStream()` → sends back to offscreen, creating an infinite retry loop with no backoff and no retry limit. Add exponential backoff and a max retry count.
 
-- [ ] **Log errors in `sceneManager.setScene()` instead of silently swallowing them** — `src/scene/sceneManager.ts:87-88` — The catch block is `catch (_error) {}`. If `build()` throws (WebGL context limit, shader compile failure), the error vanishes. The `finally` block still sends `StartStreamEvent` referencing the old scene. At minimum `console.error(_error)`. Consider showing a fallback or notifying the user.
+- [x] **Log errors in `sceneManager.setScene()` instead of silently swallowing them** — `src/scene/sceneManager.ts:87-88` — The catch block is `catch (_error) {}`. If `build()` throws (WebGL context limit, shader compile failure), the error vanishes. The `finally` block still sends `StartStreamEvent` referencing the old scene. At minimum `console.error(_error)`. Consider showing a fallback or notifying the user.
 
 - [ ] **Null all references in `clean()` across all scenes** — Multiple scenes remove the canvas/delete GL resources but don't null their references, so guards like `if (!this.canvas) return` don't trip. Affected scenes and missing nulls:
   - `dancing3DCubes.ts` — `canvas`, `gl`, `shaderProgram`, `vxBuffer`, `nrmBuffer`, `ixBuffer`, `projectionMatrix`

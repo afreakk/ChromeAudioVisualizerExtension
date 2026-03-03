@@ -224,5 +224,8 @@ export class ParticleCircle implements IScene {
         }
 
         this.canvas.remove();
+        this.canvas = null;
+        this.ctx = null;
+        this.glowSprite = null;
     }
 }

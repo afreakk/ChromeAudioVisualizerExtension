@@ -192,5 +192,17 @@ export class SynthBars implements IScene {
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vertexBuffer = null;
+        this.audioTexture = null;
+        this.audioTextureUniformLocation = null;
+        this.resolutionUniformLocation = null;
+        this.timeUniformLocation = null;
+        this.bottomColorUniformLocation = null;
+        this.topColorUniformLocation = null;
+        this.numberOfbarsUniformLocation = null;
+        this.noiseGainUniformLocation = null;
     }
 }

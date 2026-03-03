@@ -207,5 +207,7 @@ export class SeventiesScene implements IScene {
 
         this.circles = [];
         this.canvas.remove();
+        this.canvas = null;
+        this.ctx = null;
     }
 }

@@ -493,5 +493,12 @@ export class Dancing3DCubes implements IScene {
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vxBuffer = null;
+        this.nrmBuffer = null;
+        this.ixBuffer = null;
+        this.projectionMatrix = null;
     }
 }

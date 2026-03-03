@@ -361,5 +361,25 @@ export class DancingHorizon implements IScene {
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.canvas.remove();
+        this.canvas = null;
+        this.gl = null;
+        this.shaderProgram = null;
+        this.vertexBuffer = null;
+        this.audioTexture = null;
+        this.audioTextureUniformLocation = null;
+        this.resolutionUniformLocation = null;
+        this.horizonColorNightUniformLocation = null;
+        this.horizonColorDayUniformLocation = null;
+        this.skyColorNightUniformLocation = null;
+        this.skyColorDayUniformLocation = null;
+        this.oceanColorNightUniformLocation = null;
+        this.oceanColorDayUniformLocation = null;
+        this.moonColorUniformLocation = null;
+        this.sunColorUniformLocation = null;
+        this.timeGainUniformLocation = null;
+        this.noiseGainUniformLocation = null;
+        this.cloudGainUniformLocation = null;
+        this.cloudDensityUniformLocation = null;
+        this.timeUniformLocation = null;
     }
 }
