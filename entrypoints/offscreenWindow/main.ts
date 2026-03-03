@@ -31,6 +31,18 @@ const butterChurnDataArray = new Uint8Array(numSamplesButterChurn);
 const butterChurnDataArrayL = new Uint8Array(numSamplesButterChurn);
 const butterChurnDataArrayR = new Uint8Array(numSamplesButterChurn);
 
+// Pre-allocated plain arrays for message serialization (avoids Array.from() per frame)
+const normalPlainArray: number[] = new Array(numSamplesNormal / 4).fill(0);
+const butterChurnPlainArray: number[] = new Array(numSamplesButterChurn).fill(0);
+const butterChurnPlainArrayL: number[] = new Array(numSamplesButterChurn).fill(0);
+const butterChurnPlainArrayR: number[] = new Array(numSamplesButterChurn).fill(0);
+
+function copyToPlainArray(src: Uint8Array, dst: number[]): void {
+    for (let i = 0; i < src.length; i++) {
+        dst[i] = src[i];
+    }
+}
+
 let analyserNormal: AnalyserNode | null = null;
 let analyserButterChurn: AnalyserNode | null = null;
 let analyserButterChurnL: AnalyserNode | null = null;
@@ -208,8 +220,8 @@ async function startStream() {
         if (currentStreamType === streamType.normal && analyserNormal !== null) {
             analyserNormal.getByteFrequencyData(normalDataArray);
 
-            const data = Array.from(normalDataArray);
-            const audioData = new NormalAudioDataDto(data, captureTimestamp);
+            copyToPlainArray(normalDataArray, normalPlainArray);
+            const audioData = new NormalAudioDataDto(normalPlainArray, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,
@@ -230,10 +242,10 @@ async function startStream() {
             analyserButterChurnL.getByteTimeDomainData(butterChurnDataArrayL);
             analyserButterChurnR.getByteTimeDomainData(butterChurnDataArrayR);
 
-            const data = Array.from(butterChurnDataArray);
-            const dataL = Array.from(butterChurnDataArrayL);
-            const dataR = Array.from(butterChurnDataArrayR);
-            const audioData = new ButterChurnAudioDataDto(data, dataL, dataR, captureTimestamp);
+            copyToPlainArray(butterChurnDataArray, butterChurnPlainArray);
+            copyToPlainArray(butterChurnDataArrayL, butterChurnPlainArrayL);
+            copyToPlainArray(butterChurnDataArrayR, butterChurnPlainArrayR);
+            const audioData = new ButterChurnAudioDataDto(butterChurnPlainArray, butterChurnPlainArrayL, butterChurnPlainArrayR, captureTimestamp);
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,
