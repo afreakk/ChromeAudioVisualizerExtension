@@ -68,7 +68,7 @@
 
 - [x] **Cache FPS overlay DOM element** — `entrypoints/sandbox/main.ts:131` — `document.getElementById('fps-overlay')` called 60x/sec even when overlay is hidden.
 
-- [ ] **Clean up shader/program on partial compile failure in openGl.ts** — `src/utils/openGl/openGl.ts:36-48` — If vertex shader compiles but fragment fails, vertex shader leaks. If linking fails, neither shaders nor program are deleted.
+- [x] **Clean up shader/program on partial compile failure in openGl.ts** — `src/utils/openGl/openGl.ts:36-48` — If vertex shader compiles but fragment fails, vertex shader leaks. If linking fails, neither shaders nor program are deleted.
 
 - [ ] **Null analyser references in `stopStream()`** — `entrypoints/offscreenWindow/main.ts:209-224` — `analyserNormal`, `analyserButterChurn`, etc. and `stream`, `audioContext` are never set to null after cleanup.
 

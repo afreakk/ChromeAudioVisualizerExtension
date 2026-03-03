@@ -280,8 +280,14 @@ async function stopStream() {
         for (const track of stream.getTracks()) {
             track.stop();
         }
+        stream = null;
     }
     if (audioContext) {
         await audioContext.close();
+        audioContext = null;
     }
+    analyserNormal = null;
+    analyserButterChurn = null;
+    analyserButterChurnL = null;
+    analyserButterChurnR = null;
 }
