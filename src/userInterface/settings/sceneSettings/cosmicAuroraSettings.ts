@@ -1,17 +1,17 @@
+import type { CosmicAuroraSetting } from '@/src/scene/scenes/cosmicAurora/setting';
 import { setSceneSettings } from '../settingsManager';
-import { CosmicAuroraSetting } from '@/src/scene/scenes/cosmicAurora/setting';
 
 export function cosmicAuroraSettings(
     sceneName: string,
     settings: CosmicAuroraSetting,
     settingsFolder: any,
-    isExternalUi: boolean
+    isExternalUi: boolean,
 ): void {
     // Aurora folder
     const auroraFolder = settingsFolder.addFolder('Aurora');
 
     auroraFolder
-        .add(settings, 'auroraIntensity', 0.1, 3.0)
+        .add(settings, 'auroraIntensity', 0.01, 1.0)
         .name('Intensity')
         .onChange((value: number) => {
             settings.auroraIntensity = value;
@@ -110,7 +110,7 @@ export function cosmicAuroraSettings(
     const audioFolder = settingsFolder.addFolder('Audio Reactivity');
 
     audioFolder
-        .add(settings, 'audioSensitivity', 0.5, 4.0)
+        .add(settings, 'audioSensitivity', 0.5, 10.0)
         .name('Sensitivity')
         .onChange((value: number) => {
             settings.audioSensitivity = value;

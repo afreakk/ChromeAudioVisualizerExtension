@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class NeuralWebSetting implements ISceneSetting {
     // Nodes
@@ -24,5 +24,5 @@ export class NeuralWebSetting implements ISceneSetting {
     // Effects
     public glowIntensity: number = 0.6;
     public pulseOnBeat: boolean = true;
-    public audioSensitivity: number = 1.2;
+    public audioSensitivity: number = 9;
 }

@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class ChromaWaveSetting implements ISceneSetting {
     // Audio sensitivity - how strongly the visual reacts to audio

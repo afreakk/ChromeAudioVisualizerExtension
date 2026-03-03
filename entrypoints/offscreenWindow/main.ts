@@ -1,14 +1,14 @@
 import {
-    StartStreamEvent,
-    GenericEvent,
     AudioDataEvent,
-    NormalAudioDataDto,
     ButterChurnAudioDataDto,
+    GenericEvent,
+    type InitiateStreamEvent,
     messageAction,
     messageTarget,
+    NormalAudioDataDto,
+    type SetFpsEvent,
+    type StartStreamEvent,
     streamType,
-    InitiateStreamEvent,
-    SetFpsEvent,
 } from '@/src/utils/eventMessage';
 
 // Extend Window interface for offscreen-specific properties
@@ -22,8 +22,8 @@ let currentStreamType: streamType | null = null;
 let stream: MediaStream | null = null;
 let audioContext: AudioContext | null = null;
 
-let numSamplesNormal = 2048;
-let numSamplesButterChurn = 1024;
+const numSamplesNormal = 2048;
+const numSamplesButterChurn = 1024;
 
 // Pre-allocated buffers to avoid per-frame GC pressure
 const normalDataArray = new Uint8Array(numSamplesNormal / 4);
@@ -46,7 +46,6 @@ let targetFps = 60;
 let captureTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent | InitiateStreamEvent | SetFpsEvent) => {
-    
     // Only process messages targeted at offscreen
     if (message.target !== messageTarget.offscreen) {
         return;
@@ -132,14 +131,10 @@ async function initiateStream(streamId: string) {
         splitter.connect(analyserButterChurnR, 1);
         window.captureIsActive = true;
     } catch (error) {
-        console.error('Error initiating stream with stream ID:', error);
         // Clear the invalid stream ID
         initiateStreamId = null;
         // Request a new stream ID from background script
-        const requestNewStream = new GenericEvent(
-            messageTarget.background,
-            messageAction.initiateStream
-        );
+        const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
         chrome.runtime.sendMessage(requestNewStream.toMessage());
         throw error; // Re-throw so caller knows it failed
     }
@@ -164,20 +159,14 @@ async function startStream() {
                 }
             } else {
                 // Request a new stream ID from background script
-                const requestNewStream = new GenericEvent(
-                    messageTarget.background,
-                    messageAction.initiateStream
-                );
+                const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
                 chrome.runtime.sendMessage(requestNewStream.toMessage());
                 return;
             }
         }
         const captureTimestamp = Date.now(); // Capture timestamp as early as possible (using Date.now() for cross-context synchronization)
-        
-        if (
-            currentStreamType === streamType.normal &&
-            analyserNormal !== null
-        ) {
+
+        if (currentStreamType === streamType.normal && analyserNormal !== null) {
             analyserNormal.getByteFrequencyData(normalDataArray);
 
             const data = Array.from(normalDataArray);
@@ -185,7 +174,7 @@ async function startStream() {
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,
-                audioData
+                audioData,
             );
             chrome.runtime.sendMessage(audioDataMessage.toMessage());
         } else if (
@@ -205,7 +194,7 @@ async function startStream() {
             const audioDataMessage = new AudioDataEvent(
                 messageTarget.animation,
                 messageAction.updateAudioData,
-                audioData
+                audioData,
             );
             chrome.runtime.sendMessage(audioDataMessage.toMessage());
         }
@@ -225,7 +214,9 @@ async function stopStream() {
         captureTimeoutId = null;
     }
     if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+        for (const track of stream.getTracks()) {
+            track.stop();
+        }
     }
     if (audioContext) {
         await audioContext.close();

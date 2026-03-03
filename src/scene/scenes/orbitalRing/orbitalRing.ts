@@ -1,4 +1,4 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
 import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { OrbitalRingSetting } from './setting';
@@ -21,7 +21,6 @@ export class OrbitalRing implements IScene {
         this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to get 2D context');
             return;
         }
     }
@@ -74,7 +73,7 @@ export class OrbitalRing implements IScene {
             totalAudio += audioValue;
 
             // Calculate angle with rotation offset
-            const angle = ((i / this.settings.dotCount) * Math.PI * 2) + this.rotationOffset;
+            const angle = (i / this.settings.dotCount) * Math.PI * 2 + this.rotationOffset;
 
             // Calculate radius based on audio
             const baseR = this.settings.baseRadius * minDim;
@@ -86,11 +85,11 @@ export class OrbitalRing implements IScene {
             const y = centerY + Math.cos(angle) * radius;
 
             // Calculate color
-            const hue = (i / this.settings.dotCount) + this.colorOffset;
+            const hue = i / this.settings.dotCount + this.colorOffset;
             const color = this.hslToString(
                 hue,
                 this.settings.colorSaturation,
-                this.settings.colorBrightness * (0.5 + audioValue * 0.5)
+                this.settings.colorBrightness * (0.5 + audioValue * 0.5),
             );
 
             positions.push({ x, y, hue, audioValue });
@@ -109,7 +108,10 @@ export class OrbitalRing implements IScene {
 
             if (this.settings.glowIntensity > 0) {
                 const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, dotRadius * 3);
-                gradient.addColorStop(0, this.hslToString(hue, this.settings.colorSaturation, this.settings.colorBrightness, 0.5));
+                gradient.addColorStop(
+                    0,
+                    this.hslToString(hue, this.settings.colorSaturation, this.settings.colorBrightness, 0.5),
+                );
                 gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 this.ctx.fillStyle = gradient;
                 this.ctx.globalAlpha = this.settings.glowIntensity * audioValue;
@@ -135,7 +137,7 @@ export class OrbitalRing implements IScene {
             this.ctx.strokeStyle = this.hslToString(
                 first.hue,
                 this.settings.colorSaturation,
-                this.settings.colorBrightness * 0.5
+                this.settings.colorBrightness * 0.5,
             );
             this.ctx.beginPath();
             this.ctx.moveTo(lastPos.x, lastPos.y);

@@ -1,4 +1,5 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { FloatingCubesSetting } from './setting';
@@ -24,18 +25,9 @@ export class FloatingCubes implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to get 2D context');
             return;
         }
 
@@ -111,8 +103,16 @@ export class FloatingCubes implements IScene {
             const audioValue = ((audioArray[cube.audioIndex] || 0) / 255) * this.settings.audioSensitivity;
 
             // Update position based on audio
-            const moveX = Math.sin(audioValue * this.settings.directionChangeSpeed * 100) * audioValue * this.settings.danceSpeed * 100;
-            const moveY = Math.cos(audioValue * this.settings.directionChangeSpeed * 100) * audioValue * this.settings.danceSpeed * 100;
+            const moveX =
+                Math.sin(audioValue * this.settings.directionChangeSpeed * 100) *
+                audioValue *
+                this.settings.danceSpeed *
+                100;
+            const moveY =
+                Math.cos(audioValue * this.settings.directionChangeSpeed * 100) *
+                audioValue *
+                this.settings.danceSpeed *
+                100;
 
             cube.x += moveX;
             cube.y += moveY;
@@ -134,8 +134,12 @@ export class FloatingCubes implements IScene {
             if (this.settings.glowIntensity > 0 && audioValue > 0.1) {
                 const glowSize = size * 2 * this.settings.glowIntensity;
                 const gradient = this.ctx.createRadialGradient(
-                    cube.x + halfSize, cube.y + halfSize, 0,
-                    cube.x + halfSize, cube.y + halfSize, glowSize
+                    cube.x + halfSize,
+                    cube.y + halfSize,
+                    0,
+                    cube.x + halfSize,
+                    cube.y + halfSize,
+                    glowSize,
                 );
                 // '40' was likely meant as 40% opacity for glow effect
                 gradient.addColorStop(0, this.hslToString(cube.hue, 80, 50, 0.4));
@@ -145,7 +149,7 @@ export class FloatingCubes implements IScene {
                     cube.x + halfSize - glowSize,
                     cube.y + halfSize - glowSize,
                     glowSize * 2,
-                    glowSize * 2
+                    glowSize * 2,
                 );
             }
 

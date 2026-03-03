@@ -1,10 +1,10 @@
-import { IScene } from '@/src/scene/scene';
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { IScene } from '@/src/scene/scene';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import {
-    IAudioDataDto,
-    StartStreamEvent,
+    type IAudioDataDto,
     messageAction,
     messageTarget,
+    StartStreamEvent,
     streamType,
 } from '@/src/utils/eventMessage';
 
@@ -27,12 +27,12 @@ export class SceneManager {
         if (this.buildingScene) {
             return;
         }
-        
+
         // Measure latency if timestamp is available
         if (data.timestamp !== undefined) {
             const now = Date.now(); // Use Date.now() for cross-context synchronization
             const latency = now - data.timestamp;
-            
+
             // Update stats
             this.latencyStats.count++;
             this.latencyStats.total += latency;
@@ -70,7 +70,7 @@ export class SceneManager {
             return;
         }
 
-        let newScene = scene;
+        const newScene = scene;
         this.buildingScene = true;
         try {
             newScene.build();
@@ -80,22 +80,22 @@ export class SceneManager {
             }
             // Set the new scene
             this.scene = newScene;
-
+            // Apply settings only if non-empty (avoid overwriting defaults with {})
+            if (settings && Object.keys(settings).length > 0) {
+                this.scene.updateSettings(settings);
+            }
+        } catch (_error) {
+        } finally {
             const animationWindowCreated = new StartStreamEvent(
                 messageTarget.offscreen,
                 messageAction.startStream,
-                this.scene.streamType
+                this.scene ? this.scene.streamType : streamType.normal,
             );
             if (window.sandboxEventMessageHolder?.source) {
-                window.sandboxEventMessageHolder.source.postMessage(
-                    animationWindowCreated.toMessage(),
-                    { targetOrigin: window.sandboxEventMessageHolder.origin }
-                );
+                window.sandboxEventMessageHolder.source.postMessage(animationWindowCreated.toMessage(), {
+                    targetOrigin: window.sandboxEventMessageHolder.origin,
+                });
             }
-            this.scene.updateSettings(settings);
-        } catch (error) {
-            console.error('Error building scene:', error);
-        } finally {
             this.buildingScene = false;
         }
     }

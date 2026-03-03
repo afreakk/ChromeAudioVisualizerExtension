@@ -1,9 +1,12 @@
-import { DancingHorizonSetting } from "@/src/scene/scenes/dancingHorizon/setting";
-import { setSceneSettings } from "../settingsManager";
-import { SynthBarsSetting } from "@/src/scene/scenes/synthBars/setting";
+import type { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
+import { setSceneSettings } from '../settingsManager';
 
-export function dancingHorizonSettings(sceneName: string, dancingHorizonSettings: DancingHorizonSetting, settingsFolder: any, isExternalUi: boolean): void {
-
+export function dancingHorizonSettings(
+    sceneName: string,
+    dancingHorizonSettings: DancingHorizonSetting,
+    settingsFolder: any,
+    isExternalUi: boolean,
+): void {
     settingsFolder.addColor(dancingHorizonSettings, 'horizonColorNight').onChange((value: string) => {
         dancingHorizonSettings.horizonColorNight = value;
         setSceneSettings(dancingHorizonSettings, sceneName, isExternalUi);

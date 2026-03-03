@@ -9,3 +9,9 @@ export function createFullscreenCanvas(): HTMLCanvasElement {
     document.body.insertBefore(canvas, document.body.firstChild);
     return canvas;
 }
+
+export function createFullscreenWebGLCanvas(): { canvas: HTMLCanvasElement; gl: WebGLRenderingContext | null } {
+    const canvas = createFullscreenCanvas();
+    const gl = canvas.getContext('webgl');
+    return { canvas, gl };
+}

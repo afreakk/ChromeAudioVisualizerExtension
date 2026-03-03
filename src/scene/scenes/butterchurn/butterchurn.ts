@@ -1,12 +1,9 @@
-import { IScene } from '@/src/scene/scene';
-import { ButterchurnSetting, getRandomPreset } from './setting';
-import {
-    ButterChurnAudioDataDto,
-    IAudioDataDto,
-    streamType,
-} from '@/src/utils/eventMessage';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
+import type { IScene } from '@/src/scene/scene';
+import { ButterChurnAudioDataDto, streamType } from '@/src/utils/eventMessage';
+import { type ButterchurnSetting, getRandomPreset } from './setting';
+
 const presets = butterchurnPresets.getPresets();
 
 export class Butterchurn implements IScene {
@@ -45,10 +42,7 @@ export class Butterchurn implements IScene {
         this.visualizer.loadPreset(preset, settings.blendLength);
         if (!settings.cyclePresets) {
             clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
-        } else if (
-            settings.cycleSeconds != this.lastCycleSeconds ||
-            this.cyclePresetInterval === null
-        ) {
+        } else if (settings.cycleSeconds !== this.lastCycleSeconds || this.cyclePresetInterval === null) {
             clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
             this.lastCycleSeconds = settings.cycleSeconds;
             this.cyclePresetInterval = setInterval(() => {

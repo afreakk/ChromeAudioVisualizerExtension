@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class WormSceneSetting implements ISceneSetting {
     public moveLength: number = 0.01;
@@ -12,4 +12,3 @@ export class WormSceneSetting implements ISceneSetting {
     public spectrumJumps: number = 10.0;
     public innSnevring: number = 0.001;
 }
-

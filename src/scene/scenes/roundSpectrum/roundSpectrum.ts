@@ -1,14 +1,15 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { RoundSpectrumSetting } from './setting';
 
 function componentToHex(c: number): string {
     const hex = Math.min(Math.round(c), 255).toString(16);
-    return hex.length === 1 ? "0" + hex : hex;
+    return hex.length === 1 ? `0${hex}` : hex;
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+    return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
 }
 
 function indexSpinner(i: number, velocity: number, max: number): number {
@@ -28,20 +29,20 @@ function getTriangle(
     barWidth: number,
     outerWidth: number,
     centerX: number,
-    centerY: number
+    centerY: number,
 ): number[] {
     return [
         Math.sin(theta) * baseWidth + centerX,
         Math.cos(theta) * baseWidth + centerY,
 
-        (Math.sin(theta) * baseWidth) * outerWidth + centerX,
-        (Math.cos(theta) * baseWidth) * outerWidth + centerY,
+        Math.sin(theta) * baseWidth * outerWidth + centerX,
+        Math.cos(theta) * baseWidth * outerWidth + centerY,
 
-        (Math.sin(theta + barWidth) * baseWidth) * outerWidth + centerX,
-        (Math.cos(theta + barWidth) * baseWidth) * outerWidth + centerY,
+        Math.sin(theta + barWidth) * baseWidth * outerWidth + centerX,
+        Math.cos(theta + barWidth) * baseWidth * outerWidth + centerY,
 
         Math.sin(theta + barWidth) * baseWidth + centerX,
-        Math.cos(theta + barWidth) * baseWidth + centerY
+        Math.cos(theta + barWidth) * baseWidth + centerY,
     ];
 }
 
@@ -62,18 +63,9 @@ export class RoundSpectrum implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to initialize Canvas 2D. Your browser may not support it.');
             return;
         }
     }
@@ -91,14 +83,10 @@ export class RoundSpectrum implements IScene {
         const r = (Math.sin(rgbS) / 2.0 + 0.5) * scaled_average_c;
         const g = (Math.cos(rgbS) / 2.0 + 0.5) * scaled_average_c;
         const b = (Math.sin(rgbS + this.settings.colorOffset) / 2.0 + 0.5) * scaled_average_c;
-        
+
         // Boost colors for more dramatic effect
         const boost = 1.0 + this.settings.colorBoost;
-        return rgbToHex(
-            Math.min(255, r * boost),
-            Math.min(255, g * boost),
-            Math.min(255, b * boost)
-        );
+        return rgbToHex(Math.min(255, r * boost), Math.min(255, g * boost), Math.min(255, b * boost));
     }
 
     render(): void {
@@ -130,7 +118,7 @@ export class RoundSpectrum implements IScene {
         const centerX = this.canvas.width / 2;
         const centerY = this.canvas.height / 2;
         const frequencyBinCount = data.length;
-        
+
         // Update rotation for spinning effect
         if (this.settings.enableRotation) {
             this.rotation += this.settings.rotationSpeed;
@@ -141,12 +129,12 @@ export class RoundSpectrum implements IScene {
 
         // Calculate inner radius based on canvas size
         const innerWidth = Math.min(this.canvas.width, this.canvas.height) / xs.innerRadiusDivisor;
-        
+
         // Optimize: Limit number of bars and skip some for performance
         const effectiveBarCount = Math.min(frequencyBinCount, xs.maxBars);
         const actualBarCount = Math.floor(effectiveBarCount / xs.barSkip);
         const barWidth = xs.circleMax / actualBarCount;
-        
+
         let z = 0;
         this.time += 0.016; // Increment time for animations
 
@@ -160,29 +148,29 @@ export class RoundSpectrum implements IScene {
             const originalIndex = i * xs.barSkip;
             z = indexSpinner(z, xs.spectrumJumps, frequencyBinCount - 1);
             const specValue = data[z] || 0;
-            
+
             // Skip very low values to save performance
             if (specValue < 5 && !hasGlow) {
                 continue;
             }
-            
+
             // Enhanced color calculation with time-based animation
             // Adjust color speed based on bar count for smoother transitions
             const colorStrength = xs.colorStrength * specValue;
             const colorSpeed = (xs.colorWidth / actualBarCount) * 50 - specValue / xs.musicColorInfluenceReducer;
             this.colorOffset += colorSpeed;
-            
+
             // Add time-based color animation with bar-based offset for better distribution
             const timeOffset = this.time * xs.colorAnimationSpeed;
             const barColorOffset = (i / actualBarCount) * Math.PI * 2; // Distribute colors around circle
             const rgbS = this.colorOffset + timeOffset + barColorOffset;
-            
+
             const fillColor = this.getClr(rgbS, colorStrength);
             this.ctx.fillStyle = fillColor;
 
             // Calculate angle with rotation
             const theta = (originalIndex / effectiveBarCount) * xs.circleMax + this.rotation;
-            
+
             // Calculate outer width with enhanced responsiveness
             const baseOuterWidth = xs.staticWidth + specValue * xs.musicHeightPower;
             const outerWidth = baseOuterWidth * (1.0 + xs.heightMultiplier * (specValue / 255));
@@ -213,7 +201,7 @@ export class RoundSpectrum implements IScene {
             this.ctx.closePath();
             this.ctx.fill();
         }
-        
+
         // Reset shadow after drawing
         if (lastShadowBlur !== 0) {
             this.ctx.shadowBlur = 0;
@@ -240,4 +228,3 @@ export class RoundSpectrum implements IScene {
         this.canvas.remove();
     }
 }
-

@@ -1,17 +1,12 @@
-import {
-    messageAction,
-    messageTarget,
-    AudioDataEvent,
-    GenericEvent,
-    SetFpsEvent,
-} from '@/src/utils/eventMessage';
-import { IScene } from '@/src/scene/scene';
+import type { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
+import type { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
+import type { IScene } from '@/src/scene/scene';
 import { SceneManager } from '@/src/scene/sceneManager';
-import { ISceneSetting } from '@/src/scene/sceneSetting';
-import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
-import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
-import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
+import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
+import { type AudioDataEvent, GenericEvent, messageAction, messageTarget, SetFpsEvent } from '@/src/utils/eventMessage';
+import { loadSettings } from '@/src/utils/settings';
 
 // Extend Window interface for sandbox-specific properties
 declare global {
@@ -52,35 +47,35 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
     // Route messages based on action
     switch (action) {
-        case messageAction.toggleFullScreen:
+        case messageAction.toggleFullScreen: {
             if (!window.sandboxEventMessageHolder?.source) break;
-            const fullScreenEventMessage = new GenericEvent(
-                messageTarget.animation,
-                messageAction.toggleFullScreen
-            );
-            window.sandboxEventMessageHolder.source.postMessage(
-                fullScreenEventMessage.toMessage(),
-                { targetOrigin: window.sandboxEventMessageHolder.origin }
-            );
+            const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
+            window.sandboxEventMessageHolder.source.postMessage(fullScreenEventMessage.toMessage(), {
+                targetOrigin: window.sandboxEventMessageHolder.origin,
+            });
             break;
+        }
 
-        case messageAction.setScene:
+        case messageAction.setScene: {
             const setSceneMessage = message as MessageEvent<SetSceneEvent>;
             const setSceneInstance = scenesMap.get(setSceneMessage.data.sceneName);
             if (setSceneInstance) {
                 sceneManager.setScene(setSceneInstance, setSceneMessage.data.sceneSettings);
             }
             break;
+        }
 
-        case messageAction.setSceneSettings:
+        case messageAction.setSceneSettings: {
             const setSceneSettingsMessage = message as MessageEvent<SetSceneSettingsEvent>;
             sceneManager.updateSettings(setSceneSettingsMessage.data.sceneSettings);
             break;
+        }
 
-        case messageAction.updateAudioData:
+        case messageAction.updateAudioData: {
             const audioDataMessage = message as MessageEvent<AudioDataEvent>;
             sceneManager.updateAudioData(audioDataMessage.data.audioData);
             break;
+        }
 
         case messageAction.openSettingsWindow:
             settingsUserInterface.destroy();
@@ -89,22 +84,24 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
         case messageAction.closeSettingsWindow:
             settingsUserInterface.buildScene();
             break;
+
+        case messageAction.showFpsOverlay: {
+            const showFpsMessage = message.data as GenericEvent & { value: boolean };
+            showFpsOverlay = showFpsMessage.value;
+            break;
+        }
     }
 });
 
 // Custom event listeners (for events dispatched via CustomEvent, not postMessage)
-window.addEventListener(messageAction.toggleFullScreen, (event) => {
+window.addEventListener(messageAction.toggleFullScreen, (_event) => {
     if (!window.sandboxEventMessageHolder?.source) return;
-    
-    const toggleFullScreenViaOffscreen = new GenericEvent(
-        messageTarget.offscreen,
-        messageAction.toggleFullScreen
-    );
 
-    window.sandboxEventMessageHolder.source.postMessage(
-        toggleFullScreenViaOffscreen.toMessage(),
-        { targetOrigin: window.sandboxEventMessageHolder.origin }
-    );
+    const toggleFullScreenViaOffscreen = new GenericEvent(messageTarget.offscreen, messageAction.toggleFullScreen);
+
+    window.sandboxEventMessageHolder.source.postMessage(toggleFullScreenViaOffscreen.toMessage(), {
+        targetOrigin: window.sandboxEventMessageHolder.origin,
+    });
 });
 
 window.addEventListener(messageAction.setScene, (event) => {
@@ -121,6 +118,31 @@ window.addEventListener(messageAction.setSceneSettings, (event) => {
     const sceneSettingsEvent = customEvent.detail.event;
     sceneManager.updateSettings(sceneSettingsEvent.sceneSettings);
 });
+window.addEventListener(messageAction.showFpsOverlay, (event) => {
+    const customEvent = event as CustomEvent<{ event: GenericEvent; value: boolean }>;
+    showFpsOverlay = customEvent.detail.value;
+});
+
+// FPS overlay state
+let showFpsOverlay = loadSettings<boolean>('showFps') ?? false;
+let currentFps = 0;
+
+function updateFpsOverlay() {
+    let overlay = document.getElementById('fps-overlay');
+    if (showFpsOverlay) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'fps-overlay';
+            overlay.style.cssText =
+                'position:fixed;top:8px;left:8px;z-index:999999;color:#00ff00;font-family:monospace;font-size:14px;background:rgba(0,0,0,0.5);padding:4px 8px;border-radius:4px;pointer-events:none;';
+            document.body.appendChild(overlay);
+        }
+        overlay.textContent = `${currentFps} FPS`;
+    } else if (overlay) {
+        overlay.remove();
+    }
+}
+
 // FPS measurement for dynamic audio capture rate
 let lastFrameTime = performance.now();
 let lastFpsUpdate = Date.now();
@@ -131,19 +153,20 @@ const MAX_FRAME_SAMPLES = 120; // Keep last 120 frames for averaging
 function render() {
     const currentFrameTime = performance.now();
     sceneManager.renderScene();
-    
+
     // Measure actual frame time (time between frames, not render time)
     const frameTime = currentFrameTime - lastFrameTime;
     lastFrameTime = currentFrameTime;
-    
+
     // Track frame times (skip first frame which might be inaccurate)
-    if (frameTime > 0 && frameTime < 100) { // Sanity check: frame time should be 0-100ms
+    if (frameTime > 0 && frameTime < 100) {
+        // Sanity check: frame time should be 0-100ms
         frameTimes.push(frameTime);
         if (frameTimes.length > MAX_FRAME_SAMPLES) {
             frameTimes.shift();
         }
     }
-    
+
     // Send FPS update every 2 seconds
     const now = Date.now();
     if (now - lastFpsUpdate >= FPS_UPDATE_INTERVAL && frameTimes.length >= 30) {
@@ -151,30 +174,26 @@ function render() {
             // Calculate average frame time from recent frames
             const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
             const fps = Math.round(1000 / avgFrameTime);
-            
+            currentFps = fps;
+
             // Clamp FPS to reasonable range (30-120fps)
             const clampedFps = Math.max(30, Math.min(120, fps));
-            
+
             // Send FPS to offscreen window via animation window (postMessage pattern)
             if (window.sandboxEventMessageHolder?.source) {
-                const fpsUpdate = new SetFpsEvent(
-                    messageTarget.offscreen,
-                    messageAction.setFps,
-                    clampedFps
-                );
-                window.sandboxEventMessageHolder.source.postMessage(
-                    fpsUpdate.toMessage(),
-                    { targetOrigin: window.sandboxEventMessageHolder.origin }
-                );
+                const fpsUpdate = new SetFpsEvent(messageTarget.offscreen, messageAction.setFps, clampedFps);
+                window.sandboxEventMessageHolder.source.postMessage(fpsUpdate.toMessage(), {
+                    targetOrigin: window.sandboxEventMessageHolder.origin,
+                });
             }
-            
+
             lastFpsUpdate = now;
-        } catch (error) {
-            console.error('Error sending FPS update:', error);
+        } catch (_error) {
             // Don't break the render loop on error
         }
     }
-    
+
+    updateFpsOverlay();
     requestAnimationFrame(render);
 }
 render();

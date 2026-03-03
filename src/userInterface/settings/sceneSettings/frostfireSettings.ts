@@ -1,8 +1,12 @@
-import { setSceneSettings } from "../settingsManager";
-import { FrostFireSetting } from "@/src/scene/scenes/frostfire/setting";
+import type { FrostFireSetting } from '@/src/scene/scenes/frostfire/setting';
+import { setSceneSettings } from '../settingsManager';
 
-export function frostFireSettings(sceneName: string, frostFireSettings: FrostFireSetting, settingsFolder: any, isExternalUi: boolean): void {
-
+export function frostFireSettings(
+    sceneName: string,
+    frostFireSettings: FrostFireSetting,
+    settingsFolder: any,
+    isExternalUi: boolean,
+): void {
     settingsFolder.addColor(frostFireSettings, 'frostColor').onChange((value: string) => {
         frostFireSettings.frostColor = value;
         setSceneSettings(frostFireSettings, sceneName, isExternalUi);

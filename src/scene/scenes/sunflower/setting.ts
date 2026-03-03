@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class SunFlowerSetting implements ISceneSetting {
     public innerColor: string = '#FFD700';

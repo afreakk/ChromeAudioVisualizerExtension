@@ -17,5 +17,9 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Lint (Biome)
+        run: pnpm run lint
+      - name: Scene registration consistency
+        run: pnpm run check:scenes
       - name: Type check
         run: pnpm run compile

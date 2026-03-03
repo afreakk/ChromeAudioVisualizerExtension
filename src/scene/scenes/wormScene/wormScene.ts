@@ -1,18 +1,21 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
 import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { WormSceneSetting } from './setting';
 
 function componentToHex(c: number): string {
     const hex = Math.min(Math.round(c), 255).toString(16);
-    return hex.length === 1 ? "0" + hex : hex;
+    return hex.length === 1 ? `0${hex}` : hex;
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+    return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
 }
 
 function spin(i: number, data: number[]): number {
+    if (data.length === 0) {
+        return 0;
+    }
     const max = data.length - 1;
     if (i > max) {
         i = 0 + (i - max);
@@ -46,7 +49,6 @@ export class WormScene implements IScene {
         this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to initialize Canvas 2D. Your browser may not support it.');
             return;
         }
     }
@@ -63,7 +65,7 @@ export class WormScene implements IScene {
         return rgbToHex(
             (Math.sin(rgbS) / 2.0 + 0.5) * scaled_average_c,
             (Math.cos(rgbS) / 2.0 + 0.5) * scaled_average_c,
-            (Math.sin(rgbS + this.settings.colorOffset) / 2.0 + 0.5) * scaled_average_c
+            (Math.sin(rgbS + this.settings.colorOffset) / 2.0 + 0.5) * scaled_average_c,
         );
     }
 
@@ -87,7 +89,7 @@ export class WormScene implements IScene {
         const circleHeight = this.canvas.height * xs.circleSize;
         const circleSpread = (Math.PI * 4) / xs.numBars;
         const data = this.audioData.timeByteArray;
-        const bin_size = Math.floor(data.length / xs.numBars);
+        const _bin_size = Math.floor(data.length / xs.numBars);
         let sumtotal = 0;
         let z = 0;
         let yy = 0;
@@ -95,7 +97,9 @@ export class WormScene implements IScene {
         const heightInHalf = this.canvas.height / 2;
 
         for (let i = 0; i < xs.numBars; i += 1) {
-            const sum = Math.max(spin(z += xs.spectrumJumps, data) - (yy += xs.innSnevring), 0);
+            z += xs.spectrumJumps;
+            yy += xs.innSnevring;
+            const sum = Math.max(spin(z, data) - yy, 0);
             const scaled_average_c = sum * xs.colorStrength;
             const scaled_average_v = sum * xs.circleSize;
             const scaled_average_m = sum * xs.moveLength;
@@ -130,4 +134,3 @@ export class WormScene implements IScene {
         this.ctx = null;
     }
 }
-

@@ -66,7 +66,7 @@ Verifies the extension installs in Chromium, the MV3 service worker registers, a
 Opens `animationWindow.html`, verifies the `#theFrame` sandbox iframe loads, sends the `animationWindowReadyEvent` message, and confirms dat.gui settings UI elements (`.dg` class) are present.
 
 **3. Cycle through all scenes with synthetic audio and capture**
-Iterates all 21 non-Butterchurn scenes. For each scene:
+Iterates all 20 non-Butterchurn scenes. For each scene:
 - Sends `set-scene` message to the sandbox
 - Pumps 60 frames (~1 second) of synthetic audio at 60fps pacing
 - Verifies a `<canvas>` element exists
@@ -83,7 +83,7 @@ Sets ChromaWave scene, applies modified settings (`audioSensitivity: 5.0`, `patt
 - No `TypeError`/`ReferenceError` exceptions during the update
 
 **5. No WebGL errors across all scenes**
-Rapid-cycles through all 21 scenes, collecting:
+Rapid-cycles through all 20 scenes, collecting:
 - `page.on('pageerror')` — uncaught exceptions
 - `page.on('console', 'error')` — console.error calls
 - `gl.getError()` — WebGL runtime errors
@@ -107,7 +107,7 @@ The scene cycle test identifies which rendering backend each scene uses:
 | Backend | Scenes |
 |---------|--------|
 | **WebGL** | SunFlower, FrostFire, SynthBars, DancingHorizon, DancingCubes3DSinus, Dancing3DCubes, PsychedelicCube, CircleBurst, ChromaWave, CosmicAurora |
-| **2D Canvas** | WormScene, RoundSpectrum, SeventiesScene, ParticleCircle, PulsingGrid, AudioTerrain, PaintSplash, HexagonPulse, OrbitalRing, NeuralWeb, FloatingCubes |
+| **2D Canvas** | WormScene, RoundSpectrum, SeventiesScene, ParticleCircle, AudioTerrain, PaintSplash, HexagonPulse, OrbitalRing, NeuralWeb, FloatingCubes |
 | **Butterchurn** | Butterchurn (not tested — requires stereo audio) |
 
 ## Adding Tests for a New Scene

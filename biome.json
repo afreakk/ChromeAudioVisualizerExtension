@@ -1,0 +1,50 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.4.2/schema.json",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
+    },
+    "files": {
+        "includes": ["src/**/*.ts", "entrypoints/**/*.ts", "tests/**/*.ts"]
+    },
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "single",
+            "trailingCommas": "all",
+            "semicolons": "always",
+            "arrowParentheses": "always"
+        }
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "correctness": {
+                "noUnusedImports": "error",
+                "noUnusedVariables": "warn"
+            },
+            "suspicious": {
+                "noExplicitAny": "warn",
+                "noConsole": "warn"
+            },
+            "style": {
+                "useConst": "error",
+                "noNonNullAssertion": "warn"
+            }
+        }
+    },
+    "assist": {
+        "actions": {
+            "source": {
+                "organizeImports": "on"
+            }
+        }
+    }
+}

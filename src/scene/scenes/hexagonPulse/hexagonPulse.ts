@@ -1,4 +1,5 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { HexagonPulseSetting } from './setting';
 
@@ -36,18 +37,9 @@ export class HexagonPulse implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to get 2D context');
             return;
         }
 
@@ -86,12 +78,12 @@ export class HexagonPulse implements IScene {
     private createHexagon(gridX: number, gridY: number, size: number, index: number): Hexagon {
         const step = Math.round(Math.cos(Math.PI / 6) * size * 2);
         const y = Math.round(step * Math.sin(Math.PI / 3) * -gridY);
-        const x = Math.round(gridX * step + gridY * step / 2);
+        const x = Math.round(gridX * step + (gridY * step) / 2);
 
         const vertices: [number, number][] = [];
         for (let i = 1; i <= 6; i++) {
-            const vx = x + size * Math.cos(i * 2 * Math.PI / 6 + Math.PI / 6);
-            const vy = y + size * Math.sin(i * 2 * Math.PI / 6 + Math.PI / 6);
+            const vx = x + size * Math.cos((i * 2 * Math.PI) / 6 + Math.PI / 6);
+            const vy = y + size * Math.sin((i * 2 * Math.PI) / 6 + Math.PI / 6);
             vertices.push([vx, vy]);
         }
 
@@ -150,11 +142,15 @@ export class HexagonPulse implements IScene {
 
         // Calculate volume
         const audioArray = this.audioData.timeByteArray;
-        let sum = 0;
-        for (let i = 0; i < audioArray.length; i++) {
-            sum += audioArray[i] || 0;
+        if (audioArray.length === 0) {
+            this.volume = 0;
+        } else {
+            let sum = 0;
+            for (let i = 0; i < audioArray.length; i++) {
+                sum += audioArray[i] || 0;
+            }
+            this.volume = (sum / audioArray.length) * this.settings.pulseIntensity;
         }
-        this.volume = sum / audioArray.length * this.settings.pulseIntensity;
 
         // Clear background
         this.ctx.fillStyle = `rgb(${Math.floor(this.settings.backgroundR * 255)}, ${Math.floor(this.settings.backgroundG * 255)}, ${Math.floor(this.settings.backgroundB * 255)})`;
@@ -187,26 +183,21 @@ export class HexagonPulse implements IScene {
 
             // Draw star as line
             this.ctx.strokeStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
-            this.ctx.lineWidth = 0.5 + distance / 2000 * Math.max(star.size / 2, 1);
+            this.ctx.lineWidth = 0.5 + (distance / 2000) * Math.max(star.size / 2, 1);
             this.ctx.beginPath();
             this.ctx.moveTo(star.x, star.y);
 
-            const lengthFactor = 1 + Math.min(
-                Math.pow(distance, 2) / 30000 * Math.pow(this.volume, 2) / 6000,
-                distance
-            ) * this.settings.starSpeed;
+            const lengthFactor =
+                1 + Math.min(((distance ** 2 / 30000) * this.volume ** 2) / 6000, distance) * this.settings.starSpeed;
 
             const toX = Math.cos(star.angle) * -lengthFactor;
             const toY = Math.sin(star.angle) * -lengthFactor;
 
-            this.ctx.lineTo(
-                star.x + (star.x > 0 ? toX : -toX),
-                star.y + (star.y > 0 ? toY : -toY)
-            );
+            this.ctx.lineTo(star.x + (star.x > 0 ? toX : -toX), star.y + (star.y > 0 ? toY : -toY));
             this.ctx.stroke();
 
             // Update star position
-            const speed = lengthFactor / 20 * star.size * this.settings.starSpeed;
+            const speed = (lengthFactor / 20) * star.size * this.settings.starSpeed;
             star.speed = Math.max(star.speed - 0.0001, 0);
             if (speed > star.speed) star.speed = speed;
 
@@ -219,8 +210,8 @@ export class HexagonPulse implements IScene {
             const limitY = this.canvas.height / 2 + 500;
             const limitX = this.canvas.width / 2 + 500;
             if (Math.abs(star.y) > limitY || Math.abs(star.x) > limitX) {
-                star.x = (Math.random() - 0.5) * this.canvas.width / 3;
-                star.y = (Math.random() - 0.5) * this.canvas.height / 3;
+                star.x = ((Math.random() - 0.5) * this.canvas.width) / 3;
+                star.y = ((Math.random() - 0.5) * this.canvas.height) / 3;
                 star.angle = Math.atan2(star.y, star.x);
             }
         }
@@ -233,8 +224,8 @@ export class HexagonPulse implements IScene {
 
         for (const hex of this.hexagons) {
             // Get audio value for this hexagon
-            const bucket = Math.ceil(audioArray.length / this.hexagons.length * hex.index);
-            let val = Math.pow((audioArray[bucket] || 0) / 255, 2) * 255;
+            const bucket = Math.ceil((audioArray.length / this.hexagons.length) * hex.index);
+            let val = ((audioArray[bucket] || 0) / 255) ** 2 * 255;
             val *= hex.index > 42 ? 1.1 : 1;
 
             // Update high value with decay
@@ -247,12 +238,13 @@ export class HexagonPulse implements IScene {
 
             if (val > 0) {
                 // Rotate vertices
-                const rotatedVerts = hex.vertices.map(v =>
-                    this.rotatePoint(v[0], v[1], this.rotation)
-                );
+                const rotatedVerts = hex.vertices.map((v) => this.rotatePoint(v[0], v[1], this.rotation));
 
                 // Calculate offset based on audio
-                const mentalFactor = Math.min(Math.max(Math.tan(this.volume / 6000) * this.settings.distortionAmount, -20), 2);
+                const mentalFactor = Math.min(
+                    Math.max(Math.tan(this.volume / 6000) * this.settings.distortionAmount, -20),
+                    2,
+                );
 
                 this.ctx.beginPath();
                 const offset0 = this.calculateOffset(rotatedVerts[0], hex.high, mentalFactor);
@@ -297,16 +289,14 @@ export class HexagonPulse implements IScene {
     private calculateOffset(coords: [number, number], high: number, mentalFactor: number): [number, number] {
         const distance = Math.sqrt(coords[0] * coords[0] + coords[1] * coords[1]);
         const angle = Math.atan2(coords[1], coords[0]);
-        const offsetFactor = Math.pow(distance / 3, 2) * (this.volume / 2000000) * Math.pow(high, 1.3) / 300 * mentalFactor;
+        const offsetFactor = (((distance / 3) ** 2 * (this.volume / 2000) * high ** 1.3) / 300) * mentalFactor;
         return [Math.cos(angle) * offsetFactor, Math.sin(angle) * offsetFactor];
     }
 
     private drawHighlight(hex: Hexagon): void {
         if (!this.ctx) return;
 
-        const rotatedVerts = hex.vertices.map(v =>
-            this.rotatePoint(v[0], v[1], this.rotation)
-        );
+        const rotatedVerts = hex.vertices.map((v) => this.rotatePoint(v[0], v[1], this.rotation));
 
         this.ctx.beginPath();
         this.ctx.moveTo(rotatedVerts[0][0], rotatedVerts[0][1]);

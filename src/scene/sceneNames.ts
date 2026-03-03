@@ -11,7 +11,6 @@ export enum sceneNames {
     SeventiesScene = 'SeventiesScene',
     ParticleCircle = 'ParticleCircle',
     PsychedelicCube = 'PsychedelicCube',
-    PulsingGrid = 'PulsingGrid',
     AudioTerrain = 'AudioTerrain',
     CircleBurst = 'CircleBurst',
     PaintSplash = 'PaintSplash',

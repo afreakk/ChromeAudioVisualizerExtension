@@ -1,16 +1,12 @@
 import * as dat from 'dat.gui';
-import {
-    GenericEvent,
-    messageAction,
-    messageTarget,
-} from '@/src/utils/eventMessage';
-import { ISceneSetting } from '@/src/scene/sceneSetting';
-import { loadSettings } from '@/src/utils/settings';
 import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
-import { setSceneSettings } from './settingsManager';
 import { sceneNames } from '@/src/scene/sceneNames';
-import { SettingsWindowEvent } from './events/SettingsWindowEvent';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
+import { GenericEvent, messageAction, messageTarget } from '@/src/utils/eventMessage';
+import { loadSettings, saveSettings } from '@/src/utils/settings';
+import { SettingsWindowEvent } from './events/SettingsWindowEvent';
+import { setSceneSettings } from './settingsManager';
 
 export class SettingsUserInterface {
     private gui: dat.GUI | null = null;
@@ -35,19 +31,17 @@ export class SettingsUserInterface {
                 .add(
                     {
                         openInWindow: () => {
-                            const openSettingsWindowEvent =
-                                new SettingsWindowEvent(
-                                    messageTarget.background,
-                                    messageAction.openSettingsWindow
-                                );
-
-                            window.sandboxEventMessageHolder?.source?.postMessage(
-                                openSettingsWindowEvent.toMessage(),
-                                { targetOrigin: window.sandboxEventMessageHolder.origin }
+                            const openSettingsWindowEvent = new SettingsWindowEvent(
+                                messageTarget.background,
+                                messageAction.openSettingsWindow,
                             );
+
+                            window.sandboxEventMessageHolder?.source?.postMessage(openSettingsWindowEvent.toMessage(), {
+                                targetOrigin: window.sandboxEventMessageHolder.origin,
+                            });
                         },
                     },
-                    'openInWindow'
+                    'openInWindow',
                 )
                 .name('Open settings in Window');
         }
@@ -58,18 +52,33 @@ export class SettingsUserInterface {
                         this.toggleFullScreen();
                     },
                 },
-                'toggleFullScreen'
+                'toggleFullScreen',
             )
             .name('Toggle Fullscreen');
+        const fpsState = { showFps: loadSettings<boolean>('showFps') ?? false };
+        this.generalSettingsFolder
+            .add(fpsState, 'showFps')
+            .name('Show FPS')
+            .onChange((value: unknown) => {
+                const enabled = value as boolean;
+                saveSettings('showFps', enabled);
+                const showFpsEventMessage = new GenericEvent(messageTarget.animation, messageAction.showFpsOverlay);
+                if (!this.isExternalUI) {
+                    const showFpsEvent = new CustomEvent(messageAction.showFpsOverlay, {
+                        detail: { event: showFpsEventMessage.toMessage(), value: enabled },
+                    });
+                    window.dispatchEvent(showFpsEvent);
+                } else {
+                    chrome.runtime.sendMessage({ ...showFpsEventMessage.toMessage(), value: enabled });
+                }
+            });
         this.generalSettingsFolder.open();
 
         const selection = {
             selectedSceneName: this.sceneNames[0].toString(),
         };
         this.sceneFolder = this.gui.addFolder('Scenes');
-        const sceneSelector = this.sceneFolder
-            .add(selection, 'selectedSceneName', sceneNames)
-            .name('Select Scene');
+        const sceneSelector = this.sceneFolder.add(selection, 'selectedSceneName', sceneNames).name('Select Scene');
 
         sceneSelector.onChange((selectedSceneName) => {
             this.setScene(selectedSceneName as string);
@@ -80,17 +89,11 @@ export class SettingsUserInterface {
         this.setScene(selection.selectedSceneName);
     }
     private toggleFullScreen() {
-        const fullScreenEventMessage = new GenericEvent(
-            messageTarget.animation,
-            messageAction.toggleFullScreen
-        );
+        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
         if (!this.isExternalUI) {
-            const fullScreenEvent = new CustomEvent(
-                messageAction.toggleFullScreen,
-                {
-                    detail: { event: fullScreenEventMessage.toMessage() },
-                }
-            );
+            const fullScreenEvent = new CustomEvent(messageAction.toggleFullScreen, {
+                detail: { event: fullScreenEventMessage.toMessage() },
+            });
             window.dispatchEvent(fullScreenEvent);
         } else {
             chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
@@ -102,7 +105,7 @@ export class SettingsUserInterface {
             messageTarget.animation,
             messageAction.setScene,
             sceneName,
-            settings
+            settings,
         );
         if (!this.isExternalUI) {
             const changeSceneEvent = new CustomEvent(messageAction.setScene, {
@@ -122,15 +125,12 @@ export class SettingsUserInterface {
         this.sceneSettingsFolder = this.sceneFolder!.addFolder('Scene Settings');
         this.sceneSettingsFolder.open();
 
-        const entry = sceneRegistry.find(
-            (e) => e.sceneName.toString() === sceneName
-        );
+        const entry = sceneRegistry.find((e) => e.sceneName.toString() === sceneName);
         if (!entry) {
             return {};
         }
 
-        let settings: ISceneSetting =
-            loadSettings<ISceneSetting>(sceneName) ?? entry.createDefaultSettings();
+        let settings: ISceneSetting = loadSettings<ISceneSetting>(sceneName) ?? entry.createDefaultSettings();
 
         setSceneSettings(settings, sceneName, this.isExternalUI);
 
@@ -143,16 +143,11 @@ export class SettingsUserInterface {
                         this.buildSettings(sceneName);
                     },
                 },
-                'reset'
+                'reset',
             )
             .name('Reset Settings');
 
-        entry.buildSettingsUI(
-            sceneName,
-            settings,
-            this.sceneSettingsFolder,
-            this.isExternalUI
-        );
+        entry.buildSettingsUI(sceneName, settings, this.sceneSettingsFolder, this.isExternalUI);
 
         return settings;
     }

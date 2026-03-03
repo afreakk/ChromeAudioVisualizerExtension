@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class PsychedelicCubeSetting implements ISceneSetting {
     public volumeMultiplier: number = 0.01;

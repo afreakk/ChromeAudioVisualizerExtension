@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class DancingCubes3DSinusSetting implements ISceneSetting {
     public danceSpeed: number = 0.00005;
@@ -20,4 +20,3 @@ export class DancingCubes3DSinusSetting implements ISceneSetting {
     public bgAlpha: number = 0.4;
     public cubeAlphaModifier: number = 0.1;
 }
-

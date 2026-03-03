@@ -1,5 +1,6 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
 import { getFrequencyBands } from '@/src/utils/audio';
+import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { CosmicAuroraSetting } from './setting';
@@ -45,6 +46,27 @@ interface NebulaCloud {
     phase: number;
 }
 
+interface PulseRing {
+    x: number;
+    y: number;
+    radius: number;
+    maxRadius: number;
+    hue: number;
+    alpha: number;
+    lineWidth: number;
+}
+
+interface AuroraParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    maxLife: number;
+    hue: number;
+    size: number;
+}
+
 export class CosmicAurora implements IScene {
     private canvas: HTMLCanvasElement | null = null;
     private ctx: CanvasRenderingContext2D | null = null;
@@ -55,8 +77,15 @@ export class CosmicAurora implements IScene {
     private shootingStars: ShootingStar[] = [];
     private auroraRibbons: AuroraRibbon[] = [];
     private nebulaClouds: NebulaCloud[] = [];
+    private pulseRings: PulseRing[] = [];
+    private auroraParticles: AuroraParticle[] = [];
     private starSprite: HTMLCanvasElement | null = null;
+    private particleSprite: HTMLCanvasElement | null = null;
     private static readonly STAR_SPRITE_SIZE = 64;
+    private static readonly PARTICLE_SPRITE_SIZE = 32;
+    private static readonly MAX_AURORA_PARTICLES = 100;
+
+    private cachedColors: { r: number; g: number; b: number }[] = [];
 
     private time: number = 0;
     private lastBass: number = 0;
@@ -65,6 +94,7 @@ export class CosmicAurora implements IScene {
     private smoothedHigh: number = 0;
     private colorPhase: number = 0;
     private lastPeakTime: number = 0;
+    private beatFlash: number = 0;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -73,17 +103,12 @@ export class CosmicAurora implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
+        this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
 
         this.initStarSprite();
+        this.initParticleSprite();
+        this.cacheColors();
         this.initStars();
         this.initAuroraRibbons();
         this.initNebulaClouds();
@@ -99,13 +124,40 @@ export class CosmicAurora implements IScene {
 
         const half = size / 2;
         const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-        gradient.addColorStop(0.3, 'rgba(200, 220, 255, 0.6)');
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+        gradient.addColorStop(0.2, 'rgba(200, 220, 255, 0.3)');
+        gradient.addColorStop(0.6, 'rgba(100, 150, 255, 0.05)');
         gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, size, size);
         this.starSprite = canvas;
+    }
+
+    private initParticleSprite(): void {
+        const size = CosmicAurora.PARTICLE_SPRITE_SIZE;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const half = size / 2;
+        const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        this.particleSprite = canvas;
+    }
+
+    private cacheColors(): void {
+        this.cachedColors = [
+            hexToRgb(this.settings.auroraColor1),
+            hexToRgb(this.settings.auroraColor2),
+            hexToRgb(this.settings.auroraColor3),
+        ];
     }
 
     private initStars(): void {
@@ -149,7 +201,7 @@ export class CosmicAurora implements IScene {
                 speed: 0.5 + Math.random() * 0.5,
                 amplitude: 50 + Math.random() * 100,
                 yOffset: height * (0.15 + i * 0.08),
-                thickness: 80 + Math.random() * 60,
+                thickness: 40 + Math.random() * 40,
             });
         }
     }
@@ -177,6 +229,7 @@ export class CosmicAurora implements IScene {
         const oldStarCount = this.settings.starCount;
         const oldWaveCount = this.settings.auroraWaveCount;
         this.settings = settings;
+        this.cacheColors();
 
         if (oldStarCount !== settings.starCount) {
             this.initStars();
@@ -208,20 +261,30 @@ export class CosmicAurora implements IScene {
         };
     }
 
-    private renderStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
+    private renderStars(
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        audio: ReturnType<typeof this.getAudioBands>,
+    ): void {
         if (!this.starSprite) return;
 
-        const audioBoost = 1 + audio.high * this.settings.audioSensitivity;
+        const audioBoost = 1 + this.smoothedBass * this.settings.audioSensitivity * 1.5;
         const savedAlpha = ctx.globalAlpha;
+        const layerSpeeds = [0.15, 0.4, 0.8];
 
         for (const star of this.stars) {
             star.twinklePhase += this.settings.starTwinkleSpeed * 0.02 * star.twinkleSpeed;
+
+            // Parallax drift — deeper layers move slower
+            star.x -= layerSpeeds[star.layer] * (1 + this.smoothedMid * 0.5);
+            if (star.x < -10) star.x = width + 10;
 
             const twinkle = (Math.sin(star.twinklePhase) + 1) / 2;
             const layerBrightness = [0.4, 0.7, 1.0][star.layer];
             const brightness = (star.brightness * 0.5 + twinkle * 0.5) * layerBrightness * audioBoost;
 
-            const d = star.size * (1 + audio.average * 0.5) * 6;
+            const d = star.size * (1 + this.smoothedBass * 1.5) * 3;
 
             ctx.globalAlpha = brightness;
             ctx.drawImage(this.starSprite, star.x - d / 2, star.y - d / 2, d, d);
@@ -230,8 +293,13 @@ export class CosmicAurora implements IScene {
         ctx.globalAlpha = savedAlpha;
     }
 
-    private renderShootingStars(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
-        if (this.settings.showShootingStars && audio.bass > 0.6 && this.time - this.lastPeakTime > 30) {
+    private renderShootingStars(
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        audio: ReturnType<typeof this.getAudioBands>,
+    ): void {
+        if (this.settings.showShootingStars && audio.bass > 0.4 && this.time - this.lastPeakTime > 20) {
             this.lastPeakTime = this.time;
             const startX = Math.random() * width;
             const startY = Math.random() * height * 0.3;
@@ -250,7 +318,7 @@ export class CosmicAurora implements IScene {
             });
         }
 
-        this.shootingStars = this.shootingStars.filter(star => {
+        this.shootingStars = this.shootingStars.filter((star) => {
             star.x += star.vx;
             star.y += star.vy;
             star.life++;
@@ -260,18 +328,25 @@ export class CosmicAurora implements IScene {
 
             if (alpha <= 0) return false;
 
-            const tailX = star.x - star.vx * (star.length / Math.sqrt(star.vx * star.vx + star.vy * star.vy));
-            const tailY = star.y - star.vy * (star.length / Math.sqrt(star.vx * star.vx + star.vy * star.vy));
+            const speed = Math.sqrt(star.vx * star.vx + star.vy * star.vy);
+            const tailX = star.x - star.vx * (star.length / speed);
+            const tailY = star.y - star.vy * (star.length / speed);
 
-            const gradient = ctx.createLinearGradient(tailX, tailY, star.x, star.y);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            gradient.addColorStop(0.7, `hsla(${star.hue}, 80%, 70%, ${alpha * 0.5})`);
-            gradient.addColorStop(1, `hsla(${star.hue}, 100%, 90%, ${alpha})`);
+            // Two solid line segments instead of gradient
+            const midX = (tailX + star.x) / 2;
+            const midY = (tailY + star.y) / 2;
 
             ctx.beginPath();
-            ctx.strokeStyle = gradient;
+            ctx.strokeStyle = `hsla(${star.hue}, 80%, 70%, ${alpha * 0.3})`;
             ctx.lineWidth = 2;
             ctx.moveTo(tailX, tailY);
+            ctx.lineTo(midX, midY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.strokeStyle = `hsla(${star.hue}, 100%, 90%, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.moveTo(midX, midY);
             ctx.lineTo(star.x, star.y);
             ctx.stroke();
 
@@ -284,12 +359,16 @@ export class CosmicAurora implements IScene {
         });
     }
 
-    private renderNebulaClouds(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
-        const intensity = this.settings.nebulaIntensity * (1 + audio.average * this.settings.audioSensitivity);
+    private renderNebulaClouds(
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+    ): void {
+        const intensity = this.settings.nebulaIntensity * (1 + this.smoothedBass * this.settings.audioSensitivity * 2);
 
         for (const cloud of this.nebulaClouds) {
-            cloud.x += cloud.vx * this.settings.nebulaSpeed;
-            cloud.y += cloud.vy * this.settings.nebulaSpeed;
+            cloud.x += cloud.vx * this.settings.nebulaSpeed * (1 + this.smoothedBass);
+            cloud.y += cloud.vy * this.settings.nebulaSpeed * (1 + this.smoothedBass);
             cloud.phase += 0.01;
 
             if (cloud.x < -cloud.radius) cloud.x = width + cloud.radius;
@@ -297,22 +376,14 @@ export class CosmicAurora implements IScene {
             if (cloud.y < -cloud.radius) cloud.y = height + cloud.radius;
             if (cloud.y > height + cloud.radius) cloud.y = -cloud.radius;
 
-            const pulseRadius = cloud.radius * (1 + Math.sin(cloud.phase) * 0.2 + audio.bass * 0.3);
+            const pulseRadius = cloud.radius * (1 + Math.sin(cloud.phase) * 0.2 + this.smoothedBass * 0.8);
             const hueShift = (this.colorPhase * 30) % 360;
 
-            const gradient = ctx.createRadialGradient(
-                cloud.x,
-                cloud.y,
-                0,
-                cloud.x,
-                cloud.y,
-                pulseRadius
-            );
+            const gradient = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, pulseRadius);
 
             const alpha = cloud.alpha * intensity;
             gradient.addColorStop(0, `hsla(${(cloud.hue + hueShift) % 360}, 70%, 50%, ${alpha * 0.8})`);
-            gradient.addColorStop(0.4, `hsla(${(cloud.hue + hueShift + 30) % 360}, 60%, 40%, ${alpha * 0.4})`);
-            gradient.addColorStop(0.7, `hsla(${(cloud.hue + hueShift + 60) % 360}, 50%, 30%, ${alpha * 0.2})`);
+            gradient.addColorStop(0.5, `hsla(${(cloud.hue + hueShift + 30) % 360}, 60%, 35%, ${alpha * 0.3})`);
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
             ctx.beginPath();
@@ -322,15 +393,83 @@ export class CosmicAurora implements IScene {
         }
     }
 
-    private renderAurora(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
-        const audioArray = this.audioData.timeByteArray;
-        const intensity = this.settings.auroraIntensity * (1 + audio.average * this.settings.audioSensitivity);
+    private spawnAuroraParticles(ribbon: AuroraRibbon): void {
+        // Pick a random point on the ribbon to spawn from
+        const idx = Math.floor(Math.random() * ribbon.points.length);
+        const point = ribbon.points[idx];
+        const count = 2 + Math.floor(Math.random() * 3);
 
-        const colors = [
-            hexToRgb(this.settings.auroraColor1),
-            hexToRgb(this.settings.auroraColor2),
-            hexToRgb(this.settings.auroraColor3),
-        ];
+        for (let i = 0; i < count; i++) {
+            if (this.auroraParticles.length >= CosmicAurora.MAX_AURORA_PARTICLES) {
+                this.auroraParticles.shift();
+            }
+            this.auroraParticles.push({
+                x: point.x,
+                y: point.y,
+                vx: (Math.random() - 0.5) * 3,
+                vy: -1 - Math.random() * 3,
+                life: 0,
+                maxLife: 30 + Math.random() * 40,
+                hue: ribbon.hue + Math.random() * 40 - 20,
+                size: 2 + Math.random() * 4,
+            });
+        }
+    }
+
+    private renderAuroraParticles(ctx: CanvasRenderingContext2D): void {
+        const sprite = this.particleSprite;
+        if (!sprite) return;
+
+        const savedAlpha = ctx.globalAlpha;
+
+        this.auroraParticles = this.auroraParticles.filter((p) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy -= 0.02; // float upward
+            p.life++;
+
+            const progress = p.life / p.maxLife;
+            if (progress >= 1) return false;
+
+            const alpha = progress < 0.2 ? progress * 5 : (1 - progress) * 1.25;
+            const drawSize = p.size * (1 - progress * 0.5) * 2;
+
+            ctx.globalAlpha = alpha * 0.8;
+            ctx.drawImage(sprite, p.x - drawSize / 2, p.y - drawSize / 2, drawSize, drawSize);
+
+            return true;
+        });
+
+        ctx.globalAlpha = savedAlpha;
+    }
+
+    private renderPulseRings(ctx: CanvasRenderingContext2D): void {
+        this.pulseRings = this.pulseRings.filter((ring) => {
+            ring.radius += 6;
+            const progress = ring.radius / ring.maxRadius;
+            if (progress >= 1) return false;
+
+            ring.alpha = (1 - progress) * 0.4;
+
+            ctx.beginPath();
+            ctx.strokeStyle = `hsla(${ring.hue}, 80%, 60%, ${ring.alpha})`;
+            ctx.lineWidth = ring.lineWidth * (1 - progress * 0.7);
+            ctx.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            return true;
+        });
+    }
+
+    private renderAurora(
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+    ): void {
+        const audioArray = this.audioData.timeByteArray;
+        const intensity = this.settings.auroraIntensity * (1 + this.smoothedBass * this.settings.audioSensitivity * 2);
+
+        const colors = this.cachedColors;
 
         for (let ribbonIndex = 0; ribbonIndex < this.auroraRibbons.length; ribbonIndex++) {
             const ribbon = this.auroraRibbons[ribbonIndex];
@@ -341,17 +480,22 @@ export class CosmicAurora implements IScene {
                 const audioValue = (audioArray?.[audioIndex] || 0) / 255;
 
                 const waveOffset =
-                    Math.sin(point.phase + this.time * 0.02 * ribbon.speed * this.settings.auroraSpeed) *
+                    Math.sin(point.phase + this.time * 0.06 * ribbon.speed * this.settings.auroraSpeed) *
                     ribbon.amplitude *
-                    (1 + audioValue * this.settings.audioSensitivity);
+                    (1 + audioValue * this.settings.audioSensitivity * 2);
 
-                const bassWave =
-                    Math.sin(point.phase * 0.5 + this.time * 0.01) *
-                    this.smoothedBass *
-                    50;
+                // Direct audio displacement — each point is pushed by its corresponding audio bin
+                const directDisplacement = audioValue * 80 * this.settings.audioSensitivity;
 
-                point.y = ribbon.yOffset + waveOffset + bassWave;
-                point.phase += 0.001 * this.settings.auroraSpeed;
+                const bassWave = Math.sin(point.phase * 0.5 + this.time * 0.03) * this.smoothedBass * 120;
+
+                point.y = ribbon.yOffset + waveOffset + bassWave - directDisplacement;
+                point.phase += 0.004 * this.settings.auroraSpeed;
+            }
+
+            // Spawn particles from aurora on beats
+            if (this.beatFlash > 0.3 && Math.random() < 0.4) {
+                this.spawnAuroraParticles(ribbon);
             }
 
             const colorIndex = ribbonIndex % colors.length;
@@ -359,35 +503,34 @@ export class CosmicAurora implements IScene {
             const color1 = colors[colorIndex];
             const color2 = colors[nextColorIndex];
 
-            ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
-
             const auroraGradient = ctx.createLinearGradient(0, 0, 0, height);
-            auroraGradient.addColorStop(0, `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${0.02 * intensity})`);
-            auroraGradient.addColorStop(0.3, `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${0.15 * intensity})`);
-            auroraGradient.addColorStop(0.6, `rgba(${color2.r}, ${color2.g}, ${color2.b}, ${0.08 * intensity})`);
+            auroraGradient.addColorStop(0, `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${0.01 * intensity})`);
+            auroraGradient.addColorStop(0.3, `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${0.06 * intensity})`);
+            auroraGradient.addColorStop(0.6, `rgba(${color2.r}, ${color2.g}, ${color2.b}, ${0.03 * intensity})`);
             auroraGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-            const fillPath = new Path2D();
-            fillPath.moveTo(ribbon.points[0].x, ribbon.points[0].y);
+            // Direct ctx path instead of Path2D allocation
+            ctx.beginPath();
+            ctx.moveTo(ribbon.points[0].x, ribbon.points[0].y);
 
             for (let i = 1; i < ribbon.points.length - 2; i++) {
                 const xc = (ribbon.points[i].x + ribbon.points[i + 1].x) / 2;
                 const yc = (ribbon.points[i].y + ribbon.points[i + 1].y) / 2;
-                fillPath.quadraticCurveTo(ribbon.points[i].x, ribbon.points[i].y, xc, yc);
+                ctx.quadraticCurveTo(ribbon.points[i].x, ribbon.points[i].y, xc, yc);
             }
 
-            fillPath.lineTo(width, ribbon.points[ribbon.points.length - 1].y);
-            fillPath.lineTo(width, height);
-            fillPath.lineTo(0, height);
-            fillPath.closePath();
+            ctx.lineTo(width, ribbon.points[ribbon.points.length - 1].y);
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
 
             ctx.fillStyle = auroraGradient;
-            ctx.fill(fillPath);
+            ctx.fill();
 
+            // Dual-stroke glow instead of shadowBlur
             for (let layer = 0; layer < 3; layer++) {
                 const layerOffset = layer * 15;
-                const layerAlpha = (0.3 - layer * 0.08) * intensity;
+                const layerAlpha = (0.15 - layer * 0.04) * intensity;
 
                 ctx.beginPath();
                 ctx.moveTo(ribbon.points[0].x, ribbon.points[0].y + layerOffset);
@@ -395,46 +538,64 @@ export class CosmicAurora implements IScene {
                 for (let i = 1; i < ribbon.points.length - 2; i++) {
                     const xc = (ribbon.points[i].x + ribbon.points[i + 1].x) / 2;
                     const yc = (ribbon.points[i].y + ribbon.points[i + 1].y) / 2 + layerOffset;
-                    ctx.quadraticCurveTo(
-                        ribbon.points[i].x,
-                        ribbon.points[i].y + layerOffset,
-                        xc,
-                        yc
-                    );
+                    ctx.quadraticCurveTo(ribbon.points[i].x, ribbon.points[i].y + layerOffset, xc, yc);
                 }
 
                 const layerColor = colors[(colorIndex + layer) % colors.length];
                 const bright = Math.min(255, layerColor.r + 50 - layer * 25);
                 const brightG = Math.min(255, layerColor.g + 50 - layer * 25);
                 const brightB = Math.min(255, layerColor.b + 50 - layer * 25);
-                ctx.strokeStyle = `rgba(${bright}, ${brightG}, ${brightB}, ${layerAlpha})`;
-                ctx.lineWidth = ribbon.thickness / (layer + 1);
+
+                const baseLineWidth = ribbon.thickness / (layer + 2);
+
+                // Glow stroke — wider, dimmer, using color1
+                ctx.strokeStyle = `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${layerAlpha * 0.25 * this.settings.glowIntensity})`;
+                ctx.lineWidth = baseLineWidth * (2 + this.settings.glowIntensity);
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
+                ctx.stroke();
 
-                ctx.shadowColor = `rgba(${color1.r}, ${color1.g}, ${color1.b}, ${layerAlpha * 0.5})`;
-                ctx.shadowBlur = 30 * this.settings.glowIntensity;
+                // Sharp stroke on top
+                ctx.strokeStyle = `rgba(${bright}, ${brightG}, ${brightB}, ${layerAlpha})`;
+                ctx.lineWidth = baseLineWidth;
                 ctx.stroke();
             }
-
-            ctx.shadowBlur = 0;
-            ctx.restore();
         }
     }
 
-    private renderCentralGlow(ctx: CanvasRenderingContext2D, width: number, height: number, audio: ReturnType<typeof this.getAudioBands>): void {
-        const glowRadius = Math.min(width, height) * 0.4 * (1 + audio.bass * 0.5);
+    private renderCentralGlow(
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+    ): void {
+        const glowRadius = Math.min(width, height) * 0.4 * (1 + this.smoothedBass * 1.0);
         const centerX = width / 2;
         const centerY = height * 0.7;
 
         const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowRadius);
 
         const hueShift = this.colorPhase * 60;
-        gradient.addColorStop(0, `hsla(${(180 + hueShift) % 360}, 80%, 30%, ${0.1 * this.settings.glowIntensity * audio.average})`);
-        gradient.addColorStop(0.5, `hsla(${(220 + hueShift) % 360}, 70%, 20%, ${0.05 * this.settings.glowIntensity})`);
+        const bassGlow = 0.05 + this.smoothedBass * 0.25;
+        gradient.addColorStop(
+            0,
+            `hsla(${(180 + hueShift) % 360}, 80%, 30%, ${bassGlow * this.settings.glowIntensity})`,
+        );
+        gradient.addColorStop(0.5, `hsla(${(220 + hueShift) % 360}, 70%, 20%, ${bassGlow * 0.4 * this.settings.glowIntensity})`);
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    private renderBeatFlash(
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+    ): void {
+        if (this.beatFlash <= 0) return;
+
+        const hueShift = this.colorPhase * 60;
+        ctx.fillStyle = `hsla(${(200 + hueShift) % 360}, 60%, 50%, ${this.beatFlash * 0.08})`;
         ctx.fillRect(0, 0, width, height);
     }
 
@@ -453,26 +614,55 @@ export class CosmicAurora implements IScene {
 
         const ctx = this.ctx;
         this.time++;
-        this.colorPhase += this.settings.colorCycleSpeed * 0.01;
+        this.colorPhase += this.settings.colorCycleSpeed * 0.01 * (1 + this.smoothedBass * 2);
 
         const audio = this.getAudioBands();
-        this.smoothedBass += (audio.bass - this.smoothedBass) * 0.1;
-        this.smoothedMid += (audio.mid - this.smoothedMid) * 0.1;
-        this.smoothedHigh += (audio.high - this.smoothedHigh) * 0.1;
+        this.smoothedBass += (audio.bass - this.smoothedBass) * 0.3;
+        this.smoothedMid += (audio.mid - this.smoothedMid) * 0.25;
+        this.smoothedHigh += (audio.high - this.smoothedHigh) * 0.25;
 
-        if (audio.bass > this.lastBass + 0.3) {
+        // Detect beat — sharp rise in bass
+        const beatDelta = audio.bass - this.lastBass;
+        if (beatDelta > 0.15 && this.time - this.lastPeakTime > 10) {
             this.lastPeakTime = this.time;
+            this.beatFlash = Math.min(beatDelta * 3, 1.0);
+
+            // Spawn a pulse ring on strong beats
+            if (beatDelta > 0.25) {
+                const hueShift = (this.colorPhase * 60) % 360;
+                this.pulseRings.push({
+                    x: width * (0.3 + Math.random() * 0.4),
+                    y: height * (0.3 + Math.random() * 0.4),
+                    radius: 10,
+                    maxRadius: Math.min(width, height) * (0.3 + beatDelta * 0.5),
+                    hue: (180 + hueShift + Math.random() * 60) % 360,
+                    alpha: 0.5,
+                    lineWidth: 3 + beatDelta * 8,
+                });
+            }
         }
         this.lastBass = audio.bass;
+
+        // Decay beat flash
+        this.beatFlash *= 0.85;
 
         ctx.fillStyle = `rgba(0, 0, 8, ${1 - this.settings.trailLength})`;
         ctx.fillRect(0, 0, width, height);
 
-        this.renderCentralGlow(ctx, width, height, audio);
-        this.renderNebulaClouds(ctx, width, height, audio);
+        // Default composite renders
+        this.renderCentralGlow(ctx, width, height);
+        this.renderNebulaClouds(ctx, width, height);
         this.renderStars(ctx, width, height, audio);
-        this.renderAurora(ctx, width, height, audio);
+        this.renderPulseRings(ctx);
         this.renderShootingStars(ctx, width, height, audio);
+
+        // Batch 'lighter' composite for aurora, particles, and beat flash
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        this.renderAurora(ctx, width, height);
+        this.renderAuroraParticles(ctx);
+        this.renderBeatFlash(ctx, width, height);
+        ctx.restore();
     }
 
     clean(): void {
@@ -488,6 +678,9 @@ export class CosmicAurora implements IScene {
         this.shootingStars = [];
         this.auroraRibbons = [];
         this.nebulaClouds = [];
+        this.pulseRings = [];
+        this.auroraParticles = [];
         this.starSprite = null;
+        this.particleSprite = null;
     }
 }

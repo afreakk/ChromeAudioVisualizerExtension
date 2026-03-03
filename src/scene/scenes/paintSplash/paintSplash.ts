@@ -1,6 +1,6 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
 import { createFullscreenCanvas } from '@/src/utils/canvas';
-import { hslToRgb } from '@/src/utils/color';
+import { hslToCssString } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { PaintSplashSetting } from './setting';
 
@@ -29,7 +29,6 @@ export class PaintSplash implements IScene {
         this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to get 2D context');
             return;
         }
 
@@ -88,7 +87,7 @@ export class PaintSplash implements IScene {
         }
 
         const audioArray = this.audioData.timeByteArray;
-        const binSize = Math.floor(audioArray.length / this.settings.numSplashes);
+        const binSize = audioArray.length > 0 ? Math.floor(audioArray.length / this.settings.numSplashes) : 0;
 
         let totalAudio = 0;
 
@@ -96,13 +95,16 @@ export class PaintSplash implements IScene {
             const particle = this.particles[i];
 
             // Get audio value for this particle
-            let sum = 0;
-            const startBin = (i * binSize) % audioArray.length;
-            for (let j = 0; j < binSize; j++) {
-                const idx = (startBin + j) % audioArray.length;
-                sum += audioArray[idx] || 0;
+            let audioValue = 0;
+            if (binSize > 0 && audioArray.length > 0) {
+                let sum = 0;
+                const startBin = (i * binSize) % audioArray.length;
+                for (let j = 0; j < binSize; j++) {
+                    const idx = (startBin + j) % audioArray.length;
+                    sum += audioArray[idx] || 0;
+                }
+                audioValue = (sum / binSize / 255) * this.settings.audioSensitivity;
             }
-            const audioValue = (sum / binSize / 255) * this.settings.audioSensitivity;
             totalAudio += audioValue;
 
             // Calculate position based on audio
@@ -117,16 +119,19 @@ export class PaintSplash implements IScene {
 
             // Color
             const hue = (particle.hue + this.colorOffset * 360) % 360;
-            const color = hslToRgb(
+            const color = hslToCssString(
                 hue,
                 this.settings.colorSaturation,
-                this.settings.colorBrightness * (0.5 + audioValue * 0.5)
+                this.settings.colorBrightness * (0.5 + audioValue * 0.5),
             );
 
             // Draw glow
             if (this.settings.glowIntensity > 0) {
                 const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, size * 2);
-                gradient.addColorStop(0, hslToRgb(hue, this.settings.colorSaturation, this.settings.colorBrightness * 0.3));
+                gradient.addColorStop(
+                    0,
+                    hslToCssString(hue, this.settings.colorSaturation, this.settings.colorBrightness * 0.3),
+                );
                 gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 this.ctx.fillStyle = gradient;
                 this.ctx.globalAlpha = this.settings.glowIntensity * audioValue;

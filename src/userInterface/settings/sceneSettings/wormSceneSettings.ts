@@ -1,20 +1,23 @@
-import { setSceneSettings } from "../settingsManager";
-import { WormSceneSetting } from "@/src/scene/scenes/wormScene/setting";
+import type { WormSceneSetting } from '@/src/scene/scenes/wormScene/setting';
+import { setSceneSettings } from '../settingsManager';
 
 export function wormSceneSettings(
     sceneName: string,
     settings: WormSceneSetting,
     settingsFolder: any,
-    isExternalUi: boolean
+    isExternalUi: boolean,
 ): void {
     settingsFolder.add(settings, 'moveLength', 0.0, 0.1).onChange((value: number) => {
         settings.moveLength = value;
         setSceneSettings(settings, sceneName, isExternalUi);
     });
-    settingsFolder.add(settings, 'numBars', 1, 200).step(1).onChange((value: number) => {
-        settings.numBars = value;
-        setSceneSettings(settings, sceneName, isExternalUi);
-    });
+    settingsFolder
+        .add(settings, 'numBars', 1, 200)
+        .step(1)
+        .onChange((value: number) => {
+            settings.numBars = value;
+            setSceneSettings(settings, sceneName, isExternalUi);
+        });
     settingsFolder.add(settings, 'circleSize', 0.0, 1.0).onChange((value: number) => {
         settings.circleSize = value;
         setSceneSettings(settings, sceneName, isExternalUi);
@@ -48,4 +51,3 @@ export function wormSceneSettings(
         setSceneSettings(settings, sceneName, isExternalUi);
     });
 }
-

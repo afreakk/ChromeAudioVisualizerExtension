@@ -1,4 +1,4 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
 import { createFullscreenCanvas } from '@/src/utils/canvas';
 import { hexToRgb } from '@/src/utils/color';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
@@ -29,7 +29,6 @@ export class NeuralWeb implements IScene {
         this.canvas = createFullscreenCanvas();
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
-            console.error('Unable to get 2D context');
             return;
         }
 
@@ -79,10 +78,12 @@ export class NeuralWeb implements IScene {
 
         // Calculate average audio level
         let avgAudio = 0;
-        for (let i = 0; i < audioArray.length; i++) {
-            avgAudio += audioArray[i] || 0;
+        if (audioArray.length > 0) {
+            for (let i = 0; i < audioArray.length; i++) {
+                avgAudio += audioArray[i] || 0;
+            }
+            avgAudio = (avgAudio / audioArray.length / 255) * this.settings.audioSensitivity;
         }
-        avgAudio = (avgAudio / audioArray.length / 255) * this.settings.audioSensitivity;
 
         // Clear background
         this.ctx.fillStyle = this.settings.backgroundColor;
@@ -154,11 +155,11 @@ export class NeuralWeb implements IScene {
 
             // Draw glow
             if (this.settings.glowIntensity > 0) {
-                const gradient = this.ctx.createRadialGradient(
-                    node.x, node.y, 0,
-                    node.x, node.y, size * 4
+                const gradient = this.ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 4);
+                gradient.addColorStop(
+                    0,
+                    `rgba(${nodeColor.r}, ${nodeColor.g}, ${nodeColor.b}, ${0.3 * this.settings.glowIntensity})`,
                 );
-                gradient.addColorStop(0, `rgba(${nodeColor.r}, ${nodeColor.g}, ${nodeColor.b}, ${0.3 * this.settings.glowIntensity})`);
                 gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 this.ctx.fillStyle = gradient;
                 this.ctx.beginPath();

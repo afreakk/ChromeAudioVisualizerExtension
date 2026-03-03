@@ -1,13 +1,12 @@
 import { SettingsWindowEvent } from '@/src/userInterface/settings/events/SettingsWindowEvent';
-import { InitiateStreamEvent, messageTarget, messageAction, GenericEvent } from '@/src/utils/eventMessage';
+import { GenericEvent, InitiateStreamEvent, messageAction, messageTarget } from '@/src/utils/eventMessage';
 
-
-export default defineBackground(async () => {
+export default defineBackground(() => {
     let streaming = false;
     let animationWindowId: number | null = null;
     let settingsWindowId: number | null = null;
     let tabId: number;
-    
+
     async function initiateStream(targetTabId: number) {
         const streamId = await chrome.tabCapture.getMediaStreamId({
             targetTabId: targetTabId,
@@ -16,7 +15,7 @@ export default defineBackground(async () => {
         const startStreamMessage = new InitiateStreamEvent(
             messageTarget.offscreen,
             messageAction.initiateStream,
-            streamId as string
+            streamId as string,
         );
         chrome.runtime.sendMessage(startStreamMessage.toMessage());
         streaming = true;
@@ -28,15 +27,11 @@ export default defineBackground(async () => {
         if (audibleTab?.id) {
             await initiateStream(audibleTab.id);
         } else {
-            console.warn('No audible tab found, cannot re-initiate stream');
         }
     }
-    
+
     function stopStream() {
-        const stopStreamMessage = new GenericEvent(
-            messageTarget.offscreen,
-            messageAction.stopStream
-        );
+        const stopStreamMessage = new GenericEvent(messageTarget.offscreen, messageAction.stopStream);
         chrome.runtime.sendMessage(stopStreamMessage.toMessage());
         streaming = false;
     }
@@ -49,9 +44,7 @@ export default defineBackground(async () => {
 
         try {
             const existingContexts = await chrome.runtime.getContexts({});
-            const offscreenDocument = existingContexts.find(
-                (c) => c.contextType === 'OFFSCREEN_DOCUMENT'
-            );
+            const offscreenDocument = existingContexts.find((c) => c.contextType === 'OFFSCREEN_DOCUMENT');
             if (!offscreenDocument) {
                 await chrome.offscreen.createDocument({
                     url: 'offscreenWindow.html',
@@ -72,55 +65,44 @@ export default defineBackground(async () => {
                 throw new Error('Failed to create animation window');
             }
             animationWindowId = win.id as number;
-        } catch (error) {
-            console.error('Failed to start visualization:', error);
+        } catch (_error) {
             streaming = false;
         }
     });
 
-    chrome.runtime.onMessage.addListener(
-        async (message: SettingsWindowEvent | GenericEvent) => {
-            // Handle request for new stream ID after hot-reload
-            if (
-                message.target === messageTarget.background &&
-                message.action === messageAction.initiateStream
-            ) {
-                await reinitiateStream();
-                return;
-            }
-            
-            if (
-                message.target === messageTarget.background &&
-                message.action === messageAction.openSettingsWindow
-            ) {
-                const win = await chrome.windows.create({
-                    url: chrome.runtime.getURL('settingsWindow.html'),
-                    type: 'popup',
-                    width: 400,
-                    height: 600,
-                });
-                if (!win) {
-                    throw new Error('Failed to create settings window');
-                }
-                settingsWindowId = win.id as number;
-
-                const closeSettingsInAnimation = new SettingsWindowEvent(
-                    messageTarget.animation,
-                    messageAction.openSettingsWindow
-                );
-                chrome.runtime.sendMessage(
-                    closeSettingsInAnimation.toMessage()
-                );
-            }
+    chrome.runtime.onMessage.addListener(async (message: SettingsWindowEvent | GenericEvent) => {
+        // Handle request for new stream ID after hot-reload
+        if (message.target === messageTarget.background && message.action === messageAction.initiateStream) {
+            await reinitiateStream();
+            return;
         }
-    );
+
+        if (message.target === messageTarget.background && message.action === messageAction.openSettingsWindow) {
+            const win = await chrome.windows.create({
+                url: chrome.runtime.getURL('settingsWindow.html'),
+                type: 'popup',
+                width: 400,
+                height: 600,
+            });
+            if (!win) {
+                throw new Error('Failed to create settings window');
+            }
+            settingsWindowId = win.id as number;
+
+            const closeSettingsInAnimation = new SettingsWindowEvent(
+                messageTarget.animation,
+                messageAction.openSettingsWindow,
+            );
+            chrome.runtime.sendMessage(closeSettingsInAnimation.toMessage());
+        }
+    });
     // Listen for windows being closed and handle both settings and animation windows
     chrome.windows.onRemoved.addListener((windowId) => {
         if (windowId === settingsWindowId) {
             settingsWindowId = null;
             const closeSettingsWindow = new SettingsWindowEvent(
                 messageTarget.animation,
-                messageAction.closeSettingsWindow
+                messageAction.closeSettingsWindow,
             );
             chrome.runtime.sendMessage(closeSettingsWindow.toMessage());
         }

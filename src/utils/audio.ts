@@ -12,7 +12,9 @@ export function getFrequencyBands(audioData: number[], sensitivity: number = 1.0
     if (len === 0) return { bass: 0, mid: 0, high: 0 };
     const bassEnd = Math.floor(len * BASS_END);
     const midEnd = Math.floor(len * MID_END);
-    let bassSum = 0, midSum = 0, highSum = 0;
+    let bassSum = 0,
+        midSum = 0,
+        highSum = 0;
     for (let i = 0; i < bassEnd; i++) bassSum += audioData[i] || 0;
     for (let i = bassEnd; i < midEnd; i++) midSum += audioData[i] || 0;
     for (let i = midEnd; i < len; i++) highSum += audioData[i] || 0;

@@ -1,5 +1,5 @@
-import { IAudioDataDto, streamType } from "@/src/utils/eventMessage";
-import { ISceneSetting } from "./sceneSetting";
+import type { IAudioDataDto, streamType } from '@/src/utils/eventMessage';
+import type { ISceneSetting } from './sceneSetting';
 export interface IScene {
     streamType: streamType;
     build(): void;
@@ -8,4 +8,3 @@ export interface IScene {
     render(): void;
     clean(): void;
 }
-

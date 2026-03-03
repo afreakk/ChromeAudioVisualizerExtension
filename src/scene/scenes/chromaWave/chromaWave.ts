@@ -1,5 +1,6 @@
-import { IScene } from '@/src/scene/scene';
+import type { IScene } from '@/src/scene/scene';
 import { getFrequencyBands } from '@/src/utils/audio';
+import { createFullscreenWebGLCanvas } from '@/src/utils/canvas';
 import { NormalAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { initShaderProgram } from '@/src/utils/openGl/openGl';
 import { ChromaWaveSetting } from './setting';
@@ -41,18 +42,10 @@ export class ChromaWave implements IScene {
     streamType = streamType.normal;
 
     build(): void {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.position = 'fixed';
-        this.canvas.style.left = '0';
-        this.canvas.style.top = '0';
-        this.canvas.style.zIndex = '-1';
-        document.body.insertBefore(this.canvas, document.body.firstChild);
-
-        this.gl = this.canvas.getContext('webgl');
+        const { canvas, gl } = createFullscreenWebGLCanvas();
+        this.canvas = canvas;
+        this.gl = gl;
         if (!this.gl) {
-            console.error('Unable to initialize WebGL.');
             return;
         }
 
@@ -177,9 +170,7 @@ export class ChromaWave implements IScene {
             }
         `;
 
-        const vertices = new Float32Array([
-            -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0,
-        ]);
+        const vertices = new Float32Array([-1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0]);
 
         this.vertexBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -187,7 +178,6 @@ export class ChromaWave implements IScene {
 
         this.shaderProgram = initShaderProgram(this.gl, vs, fs);
         if (!this.shaderProgram) {
-            console.error('Unable to initialize the shader program');
             return;
         }
 
@@ -211,7 +201,6 @@ export class ChromaWave implements IScene {
         this.distortionUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'distortion');
         this.audioSensitivityUniformLocation = this.gl.getUniformLocation(this.shaderProgram, 'audioSensitivity');
     }
-
 
     updateSettings(settings: ChromaWaveSetting): void {
         this.settings = settings;

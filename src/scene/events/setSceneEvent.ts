@@ -1,5 +1,5 @@
-import { GenericEvent, messageTarget, messageAction } from "@/src/utils/eventMessage";
-import { ISceneSetting } from "../sceneSetting";
+import { GenericEvent, type messageAction, type messageTarget } from '@/src/utils/eventMessage';
+import type { ISceneSetting } from '../sceneSetting';
 
 export class SetSceneEvent extends GenericEvent {
     sceneName: string;

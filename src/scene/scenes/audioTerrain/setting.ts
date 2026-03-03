@@ -1,4 +1,4 @@
-import { ISceneSetting } from '@/src/scene/sceneSetting';
+import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 export class AudioTerrainSetting implements ISceneSetting {
     // Grid dimensions - reduced for performance
