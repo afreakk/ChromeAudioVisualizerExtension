@@ -3,7 +3,7 @@ on:
   push:
     branches: [master, wxt-and-manifest-v3]
   pull_request:
-    branches: [master]
+    branches: [master, wxt-and-manifest-v3]
 jobs:
   check:
     runs-on: ubuntu-latest
