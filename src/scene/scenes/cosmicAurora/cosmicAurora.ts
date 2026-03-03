@@ -84,6 +84,8 @@ export class CosmicAurora implements IScene {
     private static readonly STAR_SPRITE_SIZE = 64;
     private static readonly PARTICLE_SPRITE_SIZE = 32;
     private static readonly MAX_AURORA_PARTICLES = 100;
+    private static readonly MAX_PULSE_RINGS = 20;
+    private static readonly MAX_SHOOTING_STARS = 10;
 
     private cachedColors: { r: number; g: number; b: number }[] = [];
 
@@ -299,7 +301,7 @@ export class CosmicAurora implements IScene {
         height: number,
         audio: ReturnType<typeof this.getAudioBands>,
     ): void {
-        if (this.settings.showShootingStars && audio.bass > 0.4 && this.time - this.lastPeakTime > 20) {
+        if (this.settings.showShootingStars && audio.bass > 0.4 && this.time - this.lastPeakTime > 20 && this.shootingStars.length < CosmicAurora.MAX_SHOOTING_STARS) {
             this.lastPeakTime = this.time;
             const startX = Math.random() * width;
             const startY = Math.random() * height * 0.3;
@@ -628,7 +630,7 @@ export class CosmicAurora implements IScene {
             this.beatFlash = Math.min(beatDelta * 3, 1.0);
 
             // Spawn a pulse ring on strong beats
-            if (beatDelta > 0.25) {
+            if (beatDelta > 0.25 && this.pulseRings.length < CosmicAurora.MAX_PULSE_RINGS) {
                 const hueShift = (this.colorPhase * 60) % 360;
                 this.pulseRings.push({
                     x: width * (0.3 + Math.random() * 0.4),

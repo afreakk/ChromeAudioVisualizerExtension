@@ -34,7 +34,7 @@
 
 - [x] **Eliminate `Array.from()` on every audio capture tick** — `entrypoints/offscreenWindow/main.ts:172,190-192` — `Array.from(normalDataArray)` runs 60x/sec (3x for butterchurn path). The data then gets JSON-serialized through `chrome.runtime.sendMessage` and again through `postMessage` to the sandbox — 3 serialization hops per frame. Reuse a plain array and copy values into it, or investigate `Transferable` objects for the postMessage hop.
 
-- [ ] **Pre-allocate `Uint8Array` buffers in all WebGL scene render loops** — `circleBurst.ts`, `frostfire.ts`, `dancingHorizon.ts`, `sunflower.ts`, `synthBars.ts` all do `bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl)` every frame. Butterchurn does it 3 times (`butterchurn.ts:76-78`). Allocate a single `Uint8Array(256)` in `build()` and reuse it with `.set()`.
+- [x] **Pre-allocate `Uint8Array` buffers in all WebGL scene render loops** — `circleBurst.ts`, `frostfire.ts`, `dancingHorizon.ts`, `sunflower.ts`, `synthBars.ts` all do `bindAudioDataToTexture(new Uint8Array(this.audioData.timeByteArray), this.gl)` every frame. Butterchurn does it 3 times (`butterchurn.ts:76-78`). Allocate a single `Uint8Array(256)` in `build()` and reuse it with `.set()`.
 
 - [ ] **Optimize NeuralWeb O(n^2) connection loop and per-node gradient** — `src/scene/scenes/neuralWeb/neuralWeb.ts:129-168` — Double loop checks all node pairs: O(n^2). At 100 nodes = 4,950 `Math.sqrt` calls + `ctx.stroke()` calls per frame. Then 100 `createRadialGradient()` calls for node glow. Compare squared distances (skip sqrt), use pre-rendered sprites for glow.
 
