@@ -46,7 +46,7 @@
 
 ## MEDIUM: Architectural / Design Issues
 
-- [ ] **Reset scene animation state on re-selection (singleton problem)** — `entrypoints/sandbox/main.ts:19-22` — All scenes are `createScene()` once at module load. Switching A→B→A reuses the same instance with stale `this.time`, `this.colorOffset`, `this.circles`, etc. Either call `createScene()` on each switch, or reset animation state in `build()`.
+- [x] **Reset scene animation state on re-selection (singleton problem)** — `entrypoints/sandbox/main.ts:19-22` — All scenes are `createScene()` once at module load. Switching A→B→A reuses the same instance with stale `this.time`, `this.colorOffset`, `this.circles`, etc. Either call `createScene()` on each switch, or reset animation state in `build()`.
 
 - [ ] **Buffer latest audio data during scene transitions** — `src/scene/sceneManager.ts:27-29` — When `buildingScene = true`, `updateAudioData()` returns early. If `build()` takes 100ms+ (butterchurn WebGL init), audio frames are silently lost. First render after transition uses stale data — visible as a "jump."
 

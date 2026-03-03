@@ -11,6 +11,7 @@ import {
 export class SceneManager {
     private scene: IScene | null = null;
     private buildingScene = false;
+    private bufferedAudioData: IAudioDataDto | null = null;
     private latencyStats = {
         count: 0,
         total: 0,
@@ -23,8 +24,9 @@ export class SceneManager {
         if (!this.scene) {
             return;
         }
-        // Return if the scene is still being built
+        // Buffer audio data during scene transitions so the first render uses fresh data
         if (this.buildingScene) {
+            this.bufferedAudioData = data;
             return;
         }
 
@@ -93,6 +95,11 @@ export class SceneManager {
                 });
             }
             this.buildingScene = false;
+            // Apply buffered audio data so the first render uses fresh data
+            if (this.bufferedAudioData && this.scene) {
+                this.scene.updateAudioData(this.bufferedAudioData);
+                this.bufferedAudioData = null;
+            }
         }
     }
 
