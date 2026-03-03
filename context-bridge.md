@@ -6,6 +6,7 @@ Accumulated learnings across task runs. Read this before starting work.
 
 - Lowered CosmicAurora glowIntensity default from 0.7 to 0.3, capped slider range to 0-1.0, renamed label to "Glow Intensity". No shadowBlur calls remain -- glow is implemented via dual-stroke alpha/width multipliers. Files: setting.ts, cosmicAuroraSettings.ts.
 - Optimized NeuralWeb: squared distance comparison in O(n^2) connection loop to skip sqrt for distant pairs; replaced per-node createRadialGradient() with pre-rendered glow sprite; moved lineWidth/audioBoost outside inner loop. Files: neuralWeb.ts.
+- Pre-allocated rotated vertex arrays in HexagonPulse: added rotatedVerts field to Hexagon interface, rotateVerticesInPlace() method updates in-place instead of .map() per hex per frame. Files: hexagonPulse.ts.
 
 ## Discoveries
 - When initiateStream() sets state internally, partial failure after it means cleanup in catch should also undo the stream for future hardening

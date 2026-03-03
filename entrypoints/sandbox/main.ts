@@ -15,10 +15,10 @@ declare global {
     }
 }
 
-// Initialize scenes from registry
-const scenesMap = new Map<string, IScene>();
+// Build scene factory map from registry (creates fresh instances on each switch)
+const sceneFactoryMap = new Map<string, () => IScene>();
 for (const entry of sceneRegistry) {
-    scenesMap.set(entry.sceneName.toString(), entry.createScene());
+    sceneFactoryMap.set(entry.sceneName.toString(), entry.createScene);
 }
 // Initialize scene manager
 const sceneManager = new SceneManager();
@@ -58,9 +58,9 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
         case messageAction.setScene: {
             const setSceneMessage = message as MessageEvent<SetSceneEvent>;
-            const setSceneInstance = scenesMap.get(setSceneMessage.data.sceneName);
-            if (setSceneInstance) {
-                sceneManager.setScene(setSceneInstance, setSceneMessage.data.sceneSettings);
+            const createScene = sceneFactoryMap.get(setSceneMessage.data.sceneName);
+            if (createScene) {
+                sceneManager.setScene(createScene(), setSceneMessage.data.sceneSettings);
             }
             break;
         }
@@ -107,9 +107,9 @@ window.addEventListener(messageAction.toggleFullScreen, (_event) => {
 window.addEventListener(messageAction.setScene, (event) => {
     const customEvent = event as CustomEvent<{ event: SetSceneEvent }>;
     const sceneEvent = customEvent.detail.event;
-    const customSceneInstance = scenesMap.get(sceneEvent.sceneName);
-    if (customSceneInstance) {
-        sceneManager.setScene(customSceneInstance, sceneEvent.sceneSettings as ISceneSetting);
+    const createScene = sceneFactoryMap.get(sceneEvent.sceneName);
+    if (createScene) {
+        sceneManager.setScene(createScene(), sceneEvent.sceneSettings as ISceneSetting);
     }
 });
 

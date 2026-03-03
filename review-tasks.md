@@ -38,11 +38,11 @@
 
 - [x] **Optimize NeuralWeb O(n^2) connection loop and per-node gradient** — `src/scene/scenes/neuralWeb/neuralWeb.ts:129-168` — Double loop checks all node pairs: O(n^2). At 100 nodes = 4,950 `Math.sqrt` calls + `ctx.stroke()` calls per frame. Then 100 `createRadialGradient()` calls for node glow. Compare squared distances (skip sqrt), use pre-rendered sprites for glow.
 
-- [ ] **Pre-allocate HexagonPulse rotated vertex arrays** — `src/scene/scenes/hexagonPulse/hexagonPulse.ts:241,299` — `vertices.map()` called per hexagon per frame creates ~127 new arrays of 6 tuples each, doubled for highlighted hexes. Pre-allocate rotated vertex storage per hexagon.
+- [x] **Pre-allocate HexagonPulse rotated vertex arrays** — `src/scene/scenes/hexagonPulse/hexagonPulse.ts:241,299` — `vertices.map()` called per hexagon per frame creates ~127 new arrays of 6 tuples each, doubled for highlighted hexes. Pre-allocate rotated vertex storage per hexagon.
 
 - [x] **Cap CosmicAurora `pulseRings` and `shootingStars` arrays** — `src/scene/scenes/cosmicAurora/cosmicAurora.ts:309,633` — Both grow on beats with no hard cap. Only `auroraParticles` has `MAX_AURORA_PARTICLES`. Add hard caps. The `.filter()` calls also allocate new arrays each frame — consider in-place removal.
 
-- [ ] **Cache `hexToRgb()` results in `updateSettings()` instead of calling per frame** — `src/scene/scenes/neuralWeb/neuralWeb.ts:92-93`, `src/scene/scenes/floatingCubes/floatingCubes.ts:87-88` — Parses hex color string with regex every frame. Settings only change on user interaction.
+- [x] **Cache `hexToRgb()` results in `updateSettings()` instead of calling per frame** — `src/scene/scenes/neuralWeb/neuralWeb.ts:92-93`, `src/scene/scenes/floatingCubes/floatingCubes.ts:87-88` — Parses hex color string with regex every frame. Settings only change on user interaction.
 
 ## MEDIUM: Architectural / Design Issues
 
