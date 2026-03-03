@@ -2,7 +2,7 @@
 
 ## WILL-FREEZE: Issues That Can Lock Up the Extension
 
-- [ ] **Add hard cap to SeventiesScene circle array** — `src/scene/scenes/seventiesScene/seventiesScene.ts:60-64` — `startCircles()` runs every frame with only a soft throttle. Loud sustained audio (EDM, metal) can grow the array to thousands of entries, each needing `arc()` + `stroke()`. Add `if (this.circles.length >= MAX_CIRCLES) return;` at the top of `createCircle()`. A cap of 500-1000 is reasonable.
+- [x] **Add hard cap to SeventiesScene circle array** — `src/scene/scenes/seventiesScene/seventiesScene.ts:60-64` — `startCircles()` runs every frame with only a soft throttle. Loud sustained audio (EDM, metal) can grow the array to thousands of entries, each needing `arc()` + `stroke()`. Add `if (this.circles.length >= MAX_CIRCLES) return;` at the top of `createCircle()`. A cap of 500-1000 is reasonable.
 
 - [ ] **Pre-allocate AudioTerrain grid instead of per-frame allocation** — `src/scene/scenes/audioTerrain/audioTerrain.ts:264-281` — Every `render()` allocates a 2D `points[][]` with `gridW * gridH` objects (~1200+), each using object spread (`{ ...projected, worldY }`). Combined with `lerpColor()` returning a new `rgb()` string per cell and the scanline loop (360 `fillRect` calls at 1080p on line 378-381), this scene will stutter. Pre-allocate the grid in `build()` and update values in-place. Replace the scanline loop with `ctx.createPattern()`.
 
