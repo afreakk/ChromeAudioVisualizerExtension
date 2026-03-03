@@ -243,9 +243,11 @@ export class ChromaWave implements IScene {
         const midDelta = bands.mid * this.settings.midSpeed + this.settings.baseMidSpeed;
         const highDelta = bands.high * this.settings.highSpeed + this.settings.baseHighSpeed;
 
-        this.low += lowDelta;
-        this.mid += midDelta;
-        this.high += highDelta;
+        // Wrap accumulated values to prevent float precision loss after hours of runtime
+        const wrapLimit = 2 * Math.PI * 1000;
+        this.low = (this.low + lowDelta) % wrapLimit;
+        this.mid = (this.mid + midDelta) % wrapLimit;
+        this.high = (this.high + highDelta) % wrapLimit;
 
         this.gl.uniform2f(this.resolutionUniformLocation, this.canvas.width, this.canvas.height);
 

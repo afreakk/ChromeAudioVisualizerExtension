@@ -60,7 +60,7 @@
 
 - [x] **Move projection matrix computation inside resize check** — `src/scene/scenes/dancing3DCubes/dancing3DCubes.ts:388-395` — Comment says "if canvas size changed" but `mat4.perspective` runs unconditionally every frame. Same in `dancingCubes3DSinus.ts:333-340`.
 
-- [ ] **Fix `time` wrap discontinuity in Dancing3DCubes** — `src/scene/scenes/dancing3DCubes/dancing3DCubes.ts:416` — `if (this.time > 1000) this.time = 0` creates a visual jump. Use modular arithmetic or `performance.now()`.
+- [x] **Fix `time` wrap discontinuity in Dancing3DCubes** — `src/scene/scenes/dancing3DCubes/dancing3DCubes.ts:416` — `if (this.time > 1000) this.time = 0` creates a visual jump. Use modular arithmetic or `performance.now()`.
 
 - [ ] **Wrap ChromaWave accumulated uniforms to prevent precision loss** — `src/scene/scenes/chromaWave/chromaWave.ts:246-248` — `this.low += delta` grows without bound. After hours of runtime, float precision loss makes animation freeze. Wrap modulo `2 * Math.PI * 1000`.
 
