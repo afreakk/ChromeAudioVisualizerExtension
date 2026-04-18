@@ -15,6 +15,7 @@ Accumulated learnings across task runs. Read this before starting work.
 - Butterchurn scene: switched NodeJS.Timeout to ReturnType<typeof setInterval>, added explicit null guards around clearInterval (browser type requires non-null), removed dead timeByteArrayLeft narrowing. Files: src/scene/scenes/butterchurn/butterchurn.ts.
 - Typed the sandbox message bus: added UpdateSettingsCacheEvent, ShowFpsOverlayEvent, AnimationReadyEvent + messageAction.animationReady enum; sandbox/main.ts no longer uses `as unknown as` casts; legacy 'animationWindowReadyEvent' string replaced with proper target='animation'/action='animation-ready' shape across animationWindow/main.js and Playwright tests. Files: src/utils/eventMessage.ts, entrypoints/sandbox/main.ts, entrypoints/animationWindow/main.js, tests/extension.spec.ts.
 - Broadened stale-scene recovery: settingsUserInterface now validates stored selectedScene against sceneRegistry, falls back to default (this.sceneNames[0]) and persists correction with a warning when a non-custom-preset scene name is unknown. Files: src/userInterface/settings/settingsUserInterface.ts.
+- loadAllPresets() now validates structure and drops presets with missing baseScene or malformed shape; persists cleanup. Files: src/utils/presetManager.ts.
 
 ## Discoveries
 - When initiateStream() sets state internally, partial failure after it means cleanup in catch should also undo the stream for future hardening

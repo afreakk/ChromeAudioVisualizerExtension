@@ -1,3 +1,4 @@
+import { sceneNames } from '@/src/scene/sceneNames';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import { loadSettings, saveSettings } from './settings';
 
@@ -19,7 +20,36 @@ export function customPresetKey(name: string): string {
 }
 
 export function loadAllPresets(): PresetMap {
-    return loadSettings<PresetMap>(PRESETS_KEY) ?? {};
+    const raw = loadSettings<PresetMap>(PRESETS_KEY) ?? {};
+    const validScenes = new Set(Object.values(sceneNames) as string[]);
+    const cleaned: PresetMap = {};
+    let dropped = 0;
+
+    for (const [name, preset] of Object.entries(raw)) {
+        if (
+            !preset ||
+            typeof preset !== 'object' ||
+            typeof preset.baseScene !== 'string' ||
+            !preset.settings
+        ) {
+            dropped++;
+            continue;
+        }
+
+        if (!validScenes.has(preset.baseScene)) {
+            console.warn(`Preset "${name}" references missing scene "${preset.baseScene}"; dropping`);
+            dropped++;
+            continue;
+        }
+
+        cleaned[name] = preset;
+    }
+
+    if (dropped > 0) {
+        saveSettings(PRESETS_KEY, cleaned);
+    }
+
+    return cleaned;
 }
 
 export function savePreset(name: string, baseScene: string, settings: ISceneSetting): void {
