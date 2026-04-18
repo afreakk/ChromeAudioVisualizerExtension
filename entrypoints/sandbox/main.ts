@@ -6,7 +6,7 @@ import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
 import { type AudioDataEvent, GenericEvent, messageAction, messageTarget, SetFpsEvent } from '@/src/utils/eventMessage';
-import { loadSettings } from '@/src/utils/settings';
+import { loadSettings, populateSettingsCache, updateCacheEntry } from '@/src/utils/settings';
 
 // Extend Window interface for sandbox-specific properties
 declare global {
@@ -34,8 +34,24 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
     const { target, action } = message.data;
 
+    // Handle settings cache updates from other windows (via storage event)
+    if (action === messageAction.updateSettingsCache) {
+        const { key, value } = message.data as unknown as { key: string; value: string | null };
+        updateCacheEntry(key, value);
+        if (key === 'customPresets') {
+            settingsUserInterface.onPresetsChanged();
+        }
+        return;
+    }
+
     // Handle special case for animation window ready event
     if ((target as string) === 'animationWindowReadyEvent') {
+        // Populate settings cache from stored settings sent by animation window
+        const storedSettings = (message.data as { storedSettings?: Record<string, string> }).storedSettings;
+        if (storedSettings) {
+            populateSettingsCache(storedSettings);
+        }
+        showFpsOverlay = loadSettings<boolean>('showFps') ?? false;
         settingsUserInterface.buildScene();
         return;
     }
@@ -123,8 +139,19 @@ window.addEventListener(messageAction.showFpsOverlay, (event) => {
     showFpsOverlay = customEvent.detail.value;
 });
 
+// Forward preset cycle notifications to the settings window (for external UI)
+window.addEventListener('butterchurn-preset-cycled', (event) => {
+    const preset = (event as CustomEvent<string>).detail;
+    if (window.sandboxEventMessageHolder?.source) {
+        window.sandboxEventMessageHolder.source.postMessage(
+            { target: messageTarget.settings, action: 'butterchurn-preset-cycled', preset },
+            { targetOrigin: window.sandboxEventMessageHolder.origin },
+        );
+    }
+});
+
 // FPS overlay state
-let showFpsOverlay = loadSettings<boolean>('showFps') ?? false;
+let showFpsOverlay = false;
 let currentFps = 0;
 let cachedFpsOverlay: HTMLElement | null = null;
 

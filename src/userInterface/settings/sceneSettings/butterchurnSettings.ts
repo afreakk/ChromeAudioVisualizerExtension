@@ -7,13 +7,22 @@ export function buildButterchurnSetting(
     butterchurnSettings: ButterchurnSetting,
     settingsFolder: any,
     isExternalUi: boolean,
+    onCleanup?: (cb: () => void) => void,
 ): void {
     settingsFolder
         .add(butterchurnSettings, 'preset', Object.keys(butterchurnPresets.getPresets()))
         .onChange((value: string) => {
             butterchurnSettings.preset = value;
             setSceneSettings(butterchurnSettings, sceneName, isExternalUi);
-        });
+        })
+        .listen();
+
+    // Update dropdown when preset cycles automatically
+    const presetCycleListener = (event: Event) => {
+        butterchurnSettings.preset = (event as CustomEvent<string>).detail;
+    };
+    window.addEventListener('butterchurn-preset-cycled', presetCycleListener);
+    onCleanup?.(() => window.removeEventListener('butterchurn-preset-cycled', presetCycleListener));
     settingsFolder.add(butterchurnSettings, 'blendLength').onChange((value: number) => {
         butterchurnSettings.blendLength = value;
         setSceneSettings(butterchurnSettings, sceneName, isExternalUi);

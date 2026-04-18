@@ -72,7 +72,13 @@ export interface SceneRegistryEntry {
     sceneName: sceneNames;
     createScene: () => IScene;
     createDefaultSettings: () => ISceneSetting;
-    buildSettingsUI: (sceneName: string, settings: any, settingsFolder: any, isExternalUi: boolean) => void;
+    buildSettingsUI: (
+        sceneName: string,
+        settings: any,
+        settingsFolder: any,
+        isExternalUi: boolean,
+        onCleanup?: (cb: () => void) => void,
+    ) => void;
 }
 
 export const sceneRegistry: SceneRegistryEntry[] = [];

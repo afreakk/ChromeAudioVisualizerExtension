@@ -51,6 +51,7 @@ export class Butterchurn implements IScene {
             this.lastCycleSeconds = settings.cycleSeconds;
             this.cyclePresetInterval = setInterval(() => {
                 settings.preset = getRandomPreset();
+                window.dispatchEvent(new CustomEvent('butterchurn-preset-cycled', { detail: settings.preset }));
                 this.updateSettings(settings);
             }, settings.cycleSeconds * 1000);
         }

@@ -16,6 +16,8 @@ export enum messageAction {
     toggleFullScreen = 'toggle-full-screen',
     setFps = 'set-fps',
     showFpsOverlay = 'show-fps-overlay',
+    saveSettings = 'save-settings',
+    updateSettingsCache = 'update-settings-cache',
 }
 export enum streamType {
     butterChurn = 'butterChurn',

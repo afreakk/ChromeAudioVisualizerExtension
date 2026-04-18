@@ -4,6 +4,14 @@ import { sceneNames } from '@/src/scene/sceneNames';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import { GenericEvent, messageAction, messageTarget } from '@/src/utils/eventMessage';
+import {
+    customPresetKey,
+    customPresetName,
+    deletePreset,
+    isCustomPreset,
+    loadAllPresets,
+    savePreset,
+} from '@/src/utils/presetManager';
 import { loadSettings, saveSettings } from '@/src/utils/settings';
 import { SettingsWindowEvent } from './events/SettingsWindowEvent';
 import { setSceneSettings } from './settingsManager';
@@ -15,6 +23,11 @@ export class SettingsUserInterface {
     private generalSettingsFolder: dat.GUIFolder | null = null;
     private isExternalUI: boolean = false;
     private sceneNames: string[] = [];
+    private sceneCleanups: (() => void)[] = [];
+    private currentBaseScene: string | null = null;
+    private sceneSelectorController: dat.GUIController | null = null;
+    private currentSceneKey: string = '';
+    private currentSettings: ISceneSetting = {};
 
     constructor(isExternalUI: boolean) {
         this.isExternalUI = isExternalUI;
@@ -74,15 +87,20 @@ export class SettingsUserInterface {
             });
         this.generalSettingsFolder.open();
 
+        let selectedScene = loadSettings<string>('selectedScene') ?? this.sceneNames[0].toString();
+        if (isCustomPreset(selectedScene)) {
+            const presets = loadAllPresets();
+            if (!presets[customPresetName(selectedScene)]) {
+                selectedScene = this.sceneNames[0].toString();
+                saveSettings('selectedScene', selectedScene);
+            }
+        }
         const selection = {
-            selectedSceneName: this.sceneNames[0].toString(),
+            selectedSceneName: selectedScene,
         };
         this.sceneFolder = this.gui.addFolder('Scenes');
-        const sceneSelector = this.sceneFolder.add(selection, 'selectedSceneName', sceneNames).name('Select Scene');
 
-        sceneSelector.onChange((selectedSceneName) => {
-            this.setScene(selectedSceneName as string);
-        });
+        this.buildSceneSelector(selection);
 
         this.sceneFolder.open();
 
@@ -99,12 +117,46 @@ export class SettingsUserInterface {
             chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
         }
     }
-    private setScene(sceneName: string) {
-        const settings = this.buildSettings(sceneName);
+    private buildSceneOptions(): Record<string, string> {
+        const options: Record<string, string> = {};
+        for (const scene in sceneNames) {
+            options[scene] = scene;
+        }
+        const presets = loadAllPresets();
+        for (const name of Object.keys(presets)) {
+            options[`* ${name}`] = customPresetKey(name);
+        }
+        return options;
+    }
+
+    private buildSceneSelector(selection: { selectedSceneName: string }): void {
+        if (this.sceneSelectorController) {
+            this.sceneSelectorController.remove();
+        }
+        const options = this.buildSceneOptions();
+        this.sceneSelectorController = this.sceneFolder!.add(selection, 'selectedSceneName', options).name(
+            'Select Scene',
+        );
+        this.sceneSelectorController.onChange((selectedSceneName) => {
+            saveSettings('selectedScene', selectedSceneName as string);
+            this.setScene(selectedSceneName as string);
+        });
+    }
+
+    private rebuildSceneSelector(selectedValue: string): void {
+        const selection = { selectedSceneName: selectedValue };
+        this.buildSceneSelector(selection);
+        saveSettings('selectedScene', selectedValue);
+        this.setScene(selectedValue);
+    }
+
+    private setScene(sceneKey: string) {
+        const settings = this.buildSettings(sceneKey);
+        const baseScene = this.currentBaseScene ?? sceneKey;
         const sceneEventMessage = new SetSceneEvent(
             messageTarget.animation,
             messageAction.setScene,
-            sceneName,
+            baseScene,
             settings,
         );
         if (!this.isExternalUI) {
@@ -117,7 +169,10 @@ export class SettingsUserInterface {
         }
     }
 
-    private buildSettings(sceneName: string): ISceneSetting {
+    private buildSettings(sceneKey: string): ISceneSetting {
+        for (const cleanup of this.sceneCleanups) cleanup();
+        this.sceneCleanups = [];
+
         if (this.sceneSettingsFolder && this.sceneFolder) {
             this.sceneFolder.removeFolder(this.sceneSettingsFolder);
         }
@@ -125,34 +180,133 @@ export class SettingsUserInterface {
         this.sceneSettingsFolder = this.sceneFolder!.addFolder('Scene Settings');
         this.sceneSettingsFolder.open();
 
-        const entry = sceneRegistry.find((e) => e.sceneName.toString() === sceneName);
+        this.currentSceneKey = sceneKey;
+
+        let baseSceneName: string;
+        let settings: ISceneSetting;
+
+        if (isCustomPreset(sceneKey)) {
+            const presetName = customPresetName(sceneKey);
+            const presets = loadAllPresets();
+            const preset = presets[presetName];
+            if (!preset) {
+                this.currentBaseScene = null;
+                return {};
+            }
+            baseSceneName = preset.baseScene;
+            settings = JSON.parse(JSON.stringify(preset.settings));
+        } else {
+            baseSceneName = sceneKey;
+            const entry = sceneRegistry.find((e) => e.sceneName.toString() === baseSceneName);
+            if (!entry) {
+                this.currentBaseScene = null;
+                return {};
+            }
+            settings = entry.createDefaultSettings();
+        }
+
+        this.currentBaseScene = baseSceneName;
+        this.currentSettings = settings;
+
+        const entry = sceneRegistry.find((e) => e.sceneName.toString() === baseSceneName);
         if (!entry) {
             return {};
         }
 
-        let settings: ISceneSetting = loadSettings<ISceneSetting>(sceneName) ?? entry.createDefaultSettings();
-
-        setSceneSettings(settings, sceneName, this.isExternalUI);
+        setSceneSettings(settings, baseSceneName, this.isExternalUI);
 
         this.sceneSettingsFolder
             .add(
                 {
                     reset: () => {
                         settings = entry.createDefaultSettings();
-                        setSceneSettings(settings, sceneName, this.isExternalUI);
-                        this.buildSettings(sceneName);
+                        this.currentSettings = settings;
+                        setSceneSettings(settings, baseSceneName, this.isExternalUI);
+                        this.buildSettings(sceneKey);
                     },
                 },
                 'reset',
             )
             .name('Reset Settings');
 
-        entry.buildSettingsUI(sceneName, settings, this.sceneSettingsFolder, this.isExternalUI);
+        entry.buildSettingsUI(baseSceneName, settings, this.sceneSettingsFolder, this.isExternalUI, (cb) =>
+            this.sceneCleanups.push(cb),
+        );
+
+        // Custom Scenes sub-folder (collapsed by default)
+        const customScenesFolder = this.sceneSettingsFolder.addFolder('Custom Scenes');
+
+        const saveAsNewState = { presetName: '' };
+        customScenesFolder.add(saveAsNewState, 'presetName').name('New Scene Name');
+        customScenesFolder
+            .add(
+                {
+                    saveAsNew: () => {
+                        const trimmed = saveAsNewState.presetName.trim();
+                        if (!trimmed) return;
+                        savePreset(trimmed, baseSceneName, this.currentSettings);
+                        saveAsNewState.presetName = '';
+                        this.rebuildSceneSelector(customPresetKey(trimmed));
+                    },
+                },
+                'saveAsNew',
+            )
+            .name('Save as New Scene');
+
+        if (isCustomPreset(sceneKey)) {
+            const presetName = customPresetName(sceneKey);
+            customScenesFolder
+                .add(
+                    {
+                        savePreset: () => {
+                            savePreset(presetName, baseSceneName, this.currentSettings);
+                        },
+                    },
+                    'savePreset',
+                )
+                .name('Save Scene');
+
+            const deleteState = { armed: false };
+            const deleteController = customScenesFolder
+                .add(
+                    {
+                        deletePreset: () => {
+                            if (!deleteState.armed) {
+                                deleteState.armed = true;
+                                deleteController.name('Click again to confirm');
+                                return;
+                            }
+                            deletePreset(presetName);
+                            this.rebuildSceneSelector(this.sceneNames[0]);
+                        },
+                    },
+                    'deletePreset',
+                )
+                .name('Delete Scene');
+        }
 
         return settings;
     }
 
+    public onPresetsChanged(): void {
+        if (!this.sceneSelectorController || !this.sceneFolder) return;
+        const current = this.currentSceneKey;
+        if (isCustomPreset(current)) {
+            const presets = loadAllPresets();
+            const name = customPresetName(current);
+            if (!presets[name]) {
+                this.rebuildSceneSelector(this.sceneNames[0]);
+                return;
+            }
+        }
+        const selection = { selectedSceneName: current };
+        this.buildSceneSelector(selection);
+    }
+
     public destroy(): void {
+        for (const cleanup of this.sceneCleanups) cleanup();
+        this.sceneCleanups = [];
+
         // Proper cleanup of GUI components
         if (this.sceneSettingsFolder !== null && this.sceneFolder !== null) {
             this.sceneFolder.removeFolder(this.sceneSettingsFolder);

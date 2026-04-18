@@ -1,15 +1,21 @@
+import { messageAction } from './eventMessage';
+
+const STORAGE_PREFIX = 'audio-visualizer-settings-';
+
 function keyGenerator(name: string): string {
-    return `audio-visualizer-settings-${name}`;
+    return `${STORAGE_PREFIX}${name}`;
 }
+
+export { STORAGE_PREFIX };
 
 const settingsCache: Record<string, string> = {};
 
-function isLocalStorageAvailable(): boolean {
-    try {
-        localStorage; // Access check — throws in sandboxed iframes
-        return true;
-    } catch {
-        return false;
+const isSandboxed = window.parent !== window;
+
+/** Bulk-populate the in-memory cache (used by sandbox on init). */
+export function populateSettingsCache(entries: Record<string, string>): void {
+    for (const [key, value] of Object.entries(entries)) {
+        settingsCache[key] = value;
     }
 }
 
@@ -18,7 +24,7 @@ export function loadSettings<T>(settingsName: string): T | null {
     if (cached !== undefined) {
         return JSON.parse(cached) as T;
     }
-    if (!isLocalStorageAvailable()) {
+    if (isSandboxed) {
         return null;
     }
     const stored = localStorage.getItem(keyGenerator(settingsName));
@@ -28,10 +34,21 @@ export function loadSettings<T>(settingsName: string): T | null {
     }
     return null;
 }
+export function updateCacheEntry(key: string, value: string | null): void {
+    if (value === null) {
+        delete settingsCache[key];
+    } else {
+        settingsCache[key] = value;
+    }
+}
+
 export function saveSettings<T>(settingsName: string, settings: T): void {
     const json = JSON.stringify(settings);
     settingsCache[settingsName] = json;
-    if (isLocalStorageAvailable()) {
+    if (!isSandboxed) {
         localStorage.setItem(keyGenerator(settingsName), json);
+    } else {
+        // In sandbox: relay save to animation window (parent) which has localStorage
+        window.parent.postMessage({ action: messageAction.saveSettings, key: settingsName, value: json }, '*');
     }
 }
