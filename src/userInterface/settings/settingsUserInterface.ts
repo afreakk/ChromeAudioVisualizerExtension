@@ -87,11 +87,19 @@ export class SettingsUserInterface {
             });
         this.generalSettingsFolder.open();
 
-        let selectedScene = loadSettings<string>('selectedScene') ?? this.sceneNames[0].toString();
+        const defaultScene = this.sceneNames[0].toString();
+        const storedSelectedScene = loadSettings<string>('selectedScene');
+        const validSceneNames = new Set(sceneRegistry.map((entry) => entry.sceneName.toString()));
+        let selectedScene = storedSelectedScene ?? defaultScene;
+        if (storedSelectedScene && !isCustomPreset(storedSelectedScene) && !validSceneNames.has(storedSelectedScene)) {
+            console.warn(`Stored scene "${storedSelectedScene}" no longer exists; falling back to default`);
+            selectedScene = defaultScene;
+            saveSettings('selectedScene', selectedScene);
+        }
         if (isCustomPreset(selectedScene)) {
             const presets = loadAllPresets();
             if (!presets[customPresetName(selectedScene)]) {
-                selectedScene = this.sceneNames[0].toString();
+                selectedScene = defaultScene;
                 saveSettings('selectedScene', selectedScene);
             }
         }
