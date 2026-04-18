@@ -17,6 +17,7 @@ Accumulated learnings across task runs. Read this before starting work.
 - Broadened stale-scene recovery: settingsUserInterface now validates stored selectedScene against sceneRegistry, falls back to default (this.sceneNames[0]) and persists correction with a warning when a non-custom-preset scene name is unknown. Files: src/userInterface/settings/settingsUserInterface.ts.
 - loadAllPresets() now validates structure and drops presets with missing baseScene or malformed shape; persists cleanup. Files: src/utils/presetManager.ts.
 - Playwright: SCENES now includes Butterchurn; helper createStereoAudioData adds timeByteArrayLeft/Right for all audio pumps; WEBGL_SWEEP_SCENES excludes Butterchurn in the generic no-WebGL-errors sweep; getSceneBuildDelay gives Butterchurn 1000ms init. Files: tests/extension.spec.ts.
+- Added two Playwright tests: malformed-JSON-in-localStorage bootstrap survives; rapid scene cycle x2 doesn't lose WebGL context. Hardened src/utils/settings.ts with try/catch around JSON.parse, clearing corrupt cache/localStorage entry on parse failure. Files: tests/extension.spec.ts, src/utils/settings.ts.
 
 ## Discoveries
 - When initiateStream() sets state internally, partial failure after it means cleanup in catch should also undo the stream for future hardening

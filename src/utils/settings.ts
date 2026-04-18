@@ -19,10 +19,23 @@ export function populateSettingsCache(entries: Record<string, string>): void {
     }
 }
 
+function parseSettingValue<T>(settingsName: string, raw: string): T | null {
+    try {
+        return JSON.parse(raw) as T;
+    } catch (error) {
+        delete settingsCache[settingsName];
+        if (!isSandboxed) {
+            localStorage.removeItem(keyGenerator(settingsName));
+        }
+        console.warn(`Failed to parse stored setting "${settingsName}"; falling back to default`, error);
+        return null;
+    }
+}
+
 export function loadSettings<T>(settingsName: string): T | null {
     const cached = settingsCache[settingsName];
     if (cached !== undefined) {
-        return JSON.parse(cached) as T;
+        return parseSettingValue<T>(settingsName, cached);
     }
     if (isSandboxed) {
         return null;
@@ -30,7 +43,7 @@ export function loadSettings<T>(settingsName: string): T | null {
     const stored = localStorage.getItem(keyGenerator(settingsName));
     if (stored !== null) {
         settingsCache[settingsName] = stored;
-        return JSON.parse(stored) as T;
+        return parseSettingValue<T>(settingsName, stored);
     }
     return null;
 }

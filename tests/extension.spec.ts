@@ -2089,3 +2089,61 @@ test('butterchurn preset cycle updates settings state', async () => {
 
     await page.close();
 });
+
+test('malformed settings in localStorage does not crash', async () => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
+
+    // Seed corruption before the sandbox reads settings
+    await page.evaluate(() => {
+        localStorage.setItem('audio-visualizer-settings-selectedScene', '{not valid json');
+        localStorage.setItem('audio-visualizer-settings-customPresets', 'null');
+    });
+
+    await page.reload();
+
+    const frame = page.frameLocator('#theFrame');
+    await frame.locator('body').waitFor({ state: 'attached' });
+
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+    await page.waitForTimeout(1000);
+
+    const canvasCount = await frame.locator('canvas').count();
+    expect(canvasCount).toBeGreaterThanOrEqual(1);
+
+    await page.close();
+});
+
+test('rapid scene switching does not exhaust WebGL context limit', async () => {
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
+
+    const frame = page.frameLocator('#theFrame');
+    await frame.locator('body').waitFor({ state: 'attached' });
+
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+    await page.waitForTimeout(1000);
+
+    for (let pass = 0; pass < 2; pass++) {
+        for (const sceneName of SCENES) {
+            await postToSandbox(page, {
+                target: 'animation',
+                action: 'set-scene',
+                sceneName,
+                sceneSettings: {},
+            });
+            await page.waitForTimeout(sceneName === sceneNames.Butterchurn ? getSceneBuildDelay(sceneName) : 100);
+        }
+    }
+
+    const contextOk = await frame.locator('canvas').first().evaluate((c: HTMLCanvasElement) => {
+        const gl = c.getContext('webgl') || c.getContext('webgl2') || c.getContext('2d');
+        if (!gl) return false;
+        if ('isContextLost' in gl) return !(gl as WebGLRenderingContext).isContextLost();
+        return true;
+    });
+    expect(contextOk).toBe(true);
+
+    await page.close();
+});
