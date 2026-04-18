@@ -62,6 +62,36 @@ const MAX_STREAM_RETRIES = 5;
 const BASE_RETRY_DELAY_MS = 500;
 let streamRetryCount = 0;
 let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let recoveryState: 'idle' | 'pending' = 'idle';
+
+function scheduleRecovery(): void {
+    if (recoveryState === 'pending') {
+        return;
+    }
+
+    recoveryState = 'pending';
+    streamRetryCount++;
+
+    if (streamRetryCount > MAX_STREAM_RETRIES) {
+        recoveryState = 'idle';
+        console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
+        return;
+    }
+
+    const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
+    console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
+
+    retryTimeoutId = setTimeout(() => {
+        recoveryState = 'idle';
+        retryTimeoutId = null;
+        const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
+        try {
+            chrome.runtime.sendMessage(requestNewStream.toMessage());
+        } catch (_e) {
+            // Receiving end may not exist
+        }
+    }, delay);
+}
 
 chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent | InitiateStreamEvent | SetFpsEvent) => {
     // Only process messages targeted at offscreen
@@ -153,26 +183,11 @@ async function initiateStream(streamId: string) {
         splitter.connect(analyserButterChurnR, 1);
         window.captureIsActive = true;
         streamRetryCount = 0; // Reset on success
+        recoveryState = 'idle';
     } catch (error) {
         // Clear the invalid stream ID
         initiateStreamId = null;
-        streamRetryCount++;
-        if (streamRetryCount <= MAX_STREAM_RETRIES) {
-            const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
-            console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
-            // Request a new stream ID from background script with backoff
-            retryTimeoutId = setTimeout(() => {
-                retryTimeoutId = null;
-                const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
-                try {
-                    chrome.runtime.sendMessage(requestNewStream.toMessage());
-                } catch (_e) {
-                    // Receiving end may not exist
-                }
-            }, delay);
-        } else {
-            console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
-        }
+        scheduleRecovery();
         throw error; // Re-throw so caller knows it failed
     }
 }
@@ -195,25 +210,7 @@ async function startStream() {
                     return;
                 }
             } else {
-                // Request a new stream ID from background script with backoff
-                streamRetryCount++;
-                if (streamRetryCount > MAX_STREAM_RETRIES) {
-                    console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
-                    return;
-                }
-                const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
-                console.warn(
-                    `Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`,
-                );
-                retryTimeoutId = setTimeout(() => {
-                    retryTimeoutId = null;
-                    const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
-                    try {
-                        chrome.runtime.sendMessage(requestNewStream.toMessage());
-                    } catch (_e) {
-                        // Receiving end may not exist
-                    }
-                }, delay);
+                scheduleRecovery();
                 return;
             }
         }
@@ -275,6 +272,8 @@ async function startStream() {
 async function stopStream() {
     window.captureIsActive = false;
     initiateStreamId = null;
+    streamRetryCount = 0;
+    recoveryState = 'idle';
     if (retryTimeoutId !== null) {
         clearTimeout(retryTimeoutId);
         retryTimeoutId = null;
