@@ -174,7 +174,7 @@ test('animation window opens with sandbox iframe and dat.gui', async () => {
     await frame.locator('body').waitFor({ state: 'attached' });
 
     // Trigger settings UI
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Verify dat.gui loaded (it creates elements with class 'dg')
@@ -193,7 +193,7 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
     await frame.locator('body').waitFor({ state: 'attached' });
 
     // Initialize settings UI
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const results: { scene: string; canvasCount: number; hasContent: boolean; crashed?: boolean }[] = [];
@@ -267,7 +267,7 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
             frame = page.frameLocator('#theFrame');
             await frame.locator('body').waitFor({ state: 'attached' });
-            await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+            await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
             await page.waitForTimeout(1000);
         }
     }
@@ -295,7 +295,7 @@ test('scene settings propagate without errors', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Track errors during settings changes
@@ -363,7 +363,7 @@ test('no WebGL errors across all scenes', async () => {
     let frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Collect console errors from the sandbox
@@ -422,7 +422,7 @@ test('no WebGL errors across all scenes', async () => {
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
             frame = page.frameLocator('#theFrame');
             await frame.locator('body').waitFor({ state: 'attached' });
-            await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+            await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
             await page.waitForTimeout(1000);
             attachErrorListeners(page);
         }
@@ -465,7 +465,7 @@ test('scenes visually react to audio input', async () => {
 
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const results: { scene: string; type: string; silencePixels: number; loudPixels: number; reacted: boolean }[] = [];
@@ -627,7 +627,7 @@ test('butterchurn stereo audio path builds and processes without errors', async 
     await frame.locator('body').waitFor({ state: 'attached' });
 
     // Initialize settings UI
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Track errors during the entire test
@@ -806,7 +806,7 @@ test('dynamic FPS matching - sandbox measures and reports frame rate', async () 
 
     // Initialize sandbox — sets sandboxEventMessageHolder.source,
     // which enables the render loop to emit FPS events via postMessage
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(300);
 
     // Set a scene so the render loop has active work
@@ -891,7 +891,7 @@ test('FPS reporting survives scene transitions', async () => {
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
     // Initialize sandbox
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(300);
 
     // Cycle through a mix of 2D and WebGL scenes
@@ -943,7 +943,7 @@ test('FPS emission requires a valid message source', async () => {
     // The render loop guards FPS emission with sandboxEventMessageHolder?.source.
     // This test verifies the guard by: confirming FPS flows normally, nulling out
     // the holder to stop emission, then restoring it to confirm events resume.
-    // (Note: animationWindow auto-sends animationWindowReadyEvent on load, so
+    // (Note: animationWindow auto-sends animation-ready on load, so
     // the holder is set before test code runs — we test by removing it at runtime.)
 
     const page = await context.newPage();
@@ -1014,7 +1014,7 @@ test('FPS emission requires a valid message source', async () => {
         });
     });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     const resumedFps = await resumedFpsPromise;
     expect(resumedFps.length).toBeGreaterThanOrEqual(1);
     expect(resumedFps[0]).toBeGreaterThanOrEqual(30);
@@ -1038,7 +1038,7 @@ test('FPS measurement reflects rendering load', async () => {
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(300);
 
     // --- Phase 1: Lightweight 2D scene (RoundSpectrum) ---
@@ -1145,7 +1145,7 @@ test('switching scenes does not leak canvas elements', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1188,7 +1188,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1312,7 +1312,7 @@ test('non-existent scene name does not crash or change current scene', async () 
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1381,7 +1381,7 @@ test('audio buffered during scene transition reaches the new scene', async () =>
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1452,7 +1452,7 @@ test('settings update during scene build does not crash', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1531,7 +1531,7 @@ test('every registered scene builds canvas within timeout', async () => {
     let frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const failures: { scene: string; reason: string }[] = [];
@@ -1607,7 +1607,7 @@ test('every registered scene builds canvas within timeout', async () => {
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
             frame = page.frameLocator('#theFrame');
             await frame.locator('body').waitFor({ state: 'attached' });
-            await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+            await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
             await page.waitForTimeout(1000);
         }
     }
@@ -1629,7 +1629,7 @@ test('non-animation target messages do not trigger scene changes', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1692,7 +1692,7 @@ test('rapid scene switching does not leak canvases or crash', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1781,7 +1781,7 @@ test('scene selection persists across page reload', async () => {
     await frame.locator('body').waitFor({ state: 'attached' });
 
     // Initialize settings UI
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Save selectedScene through the sandbox proxy (the real code path)
@@ -1810,7 +1810,7 @@ test('scene selection persists across page reload', async () => {
     const frame2 = page2.frameLocator('#theFrame');
     await frame2.locator('body').waitFor({ state: 'attached' });
 
-    // Wait for the auto-init from animationWindow/main.js (sends animationWindowReadyEvent on load)
+    // Wait for the auto-init from animationWindow/main.js (sends animation-ready on load)
     await page2.waitForTimeout(1500);
 
     // Verify localStorage still has ChromaWave after reload
@@ -1837,7 +1837,7 @@ test('custom preset round-trip: save, switch, restore', async () => {
     const frame = page.frameLocator('#theFrame');
     await frame.locator('body').waitFor({ state: 'attached' });
 
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1966,7 +1966,7 @@ test('stale custom preset falls back to default scene', async () => {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
-    // Wait for auto-init (animationWindow/main.js sends animationWindowReadyEvent on load)
+    // Wait for auto-init (animationWindow/main.js sends animation-ready on load)
     await page.waitForTimeout(1500);
 
     // Pump audio frames
@@ -2001,7 +2001,7 @@ test('sandbox settings writes reach localStorage via proxy', async () => {
     await frame.locator('body').waitFor({ state: 'attached' });
 
     // Initialize sandbox so sandboxEventMessageHolder is set
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // From within the sandbox iframe, post a save-settings message to the parent
@@ -2038,7 +2038,7 @@ test('butterchurn preset cycle updates settings state', async () => {
     await frame.locator('body').waitFor({ state: 'attached' });
 
     // Initialize sandbox so sandboxEventMessageHolder is set
-    await postToSandbox(page, { target: 'animationWindowReadyEvent', action: '' });
+    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Set up a message listener on the animation window page BEFORE dispatching

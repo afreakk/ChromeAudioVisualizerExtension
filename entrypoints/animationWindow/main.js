@@ -20,7 +20,7 @@ window.addEventListener('load', function () {
     theFrame = document.getElementById('theFrame');
     // Send ready event with all stored settings so the sandbox can populate its cache
     theFrame?.contentWindow?.postMessage(
-        { target: 'animationWindowReadyEvent', storedSettings: getAllStoredSettings() },
+        { target: 'animation', action: 'animation-ready', storedSettings: getAllStoredSettings() },
         '*',
     );
 });
@@ -47,7 +47,7 @@ window.addEventListener('storage', (e) => {
     if (!e.key?.startsWith(STORAGE_PREFIX)) return;
     const settingsName = e.key.slice(STORAGE_PREFIX.length);
     theFrame?.contentWindow?.postMessage(
-        { action: messageAction.updateSettingsCache, key: settingsName, value: e.newValue },
+        { target: messageTarget.animation, action: messageAction.updateSettingsCache, key: settingsName, value: e.newValue },
         '*',
     );
 });

@@ -5,7 +5,16 @@ import { SceneManager } from '@/src/scene/sceneManager';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
-import { type AudioDataEvent, GenericEvent, messageAction, messageTarget, SetFpsEvent } from '@/src/utils/eventMessage';
+import {
+    type AnimationReadyEvent,
+    type AudioDataEvent,
+    GenericEvent,
+    messageAction,
+    messageTarget,
+    SetFpsEvent,
+    type ShowFpsOverlayEvent,
+    type UpdateSettingsCacheEvent,
+} from '@/src/utils/eventMessage';
 import { loadSettings, populateSettingsCache, updateCacheEntry } from '@/src/utils/settings';
 
 // Extend Window interface for sandbox-specific properties
@@ -36,7 +45,7 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
 
     // Handle settings cache updates from other windows (via storage event)
     if (action === messageAction.updateSettingsCache) {
-        const { key, value } = message.data as unknown as { key: string; value: string | null };
+        const { key, value } = message.data as UpdateSettingsCacheEvent;
         updateCacheEntry(key, value);
         if (key === 'customPresets') {
             settingsUserInterface.onPresetsChanged();
@@ -45,9 +54,9 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
     }
 
     // Handle special case for animation window ready event
-    if ((target as string) === 'animationWindowReadyEvent') {
+    if (action === messageAction.animationReady) {
         // Populate settings cache from stored settings sent by animation window
-        const storedSettings = (message.data as { storedSettings?: Record<string, string> }).storedSettings;
+        const { storedSettings } = message.data as AnimationReadyEvent;
         if (storedSettings) {
             populateSettingsCache(storedSettings);
         }
@@ -102,7 +111,7 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
             break;
 
         case messageAction.showFpsOverlay: {
-            const showFpsMessage = message.data as GenericEvent & { value: boolean };
+            const showFpsMessage = message.data as ShowFpsOverlayEvent;
             showFpsOverlay = showFpsMessage.value;
             break;
         }

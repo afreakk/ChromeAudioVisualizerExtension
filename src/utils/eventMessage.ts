@@ -18,6 +18,7 @@ export enum messageAction {
     showFpsOverlay = 'show-fps-overlay',
     saveSettings = 'save-settings',
     updateSettingsCache = 'update-settings-cache',
+    animationReady = 'animation-ready',
 }
 export enum streamType {
     butterChurn = 'butterChurn',
@@ -129,6 +130,57 @@ export class SetFpsEvent extends GenericEvent {
             target: this.target,
             action: this.action,
             fps: this.fps,
+        };
+    }
+}
+export class UpdateSettingsCacheEvent extends GenericEvent {
+    key: string;
+    value: string | null;
+
+    constructor(target: messageTarget, key: string, value: string | null) {
+        super(target, messageAction.updateSettingsCache);
+        this.key = key;
+        this.value = value;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            key: this.key,
+            value: this.value,
+        };
+    }
+}
+export class ShowFpsOverlayEvent extends GenericEvent {
+    value: boolean;
+
+    constructor(target: messageTarget, value: boolean) {
+        super(target, messageAction.showFpsOverlay);
+        this.value = value;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            value: this.value,
+        };
+    }
+}
+export class AnimationReadyEvent extends GenericEvent {
+    storedSettings?: Record<string, string>;
+
+    constructor(storedSettings?: Record<string, string>) {
+        super(messageTarget.animation, messageAction.animationReady);
+        this.storedSettings = storedSettings;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            storedSettings: this.storedSettings,
         };
     }
 }
