@@ -5,7 +5,7 @@ export default defineBackground(() => {
     let streaming = false;
     let animationWindowId: number | null = null;
     let settingsWindowId: number | null = null;
-    let tabId: number;
+    let tabId: number | null = null;
 
     async function initiateStream(targetTabId: number) {
         const streamId = await chrome.tabCapture.getMediaStreamId({
@@ -121,6 +121,7 @@ export default defineBackground(() => {
 
         if (windowId === animationWindowId) {
             animationWindowId = null;
+            tabId = null;
             if (settingsWindowId) {
                 chrome.windows.remove(settingsWindowId);
             }
