@@ -37,6 +37,16 @@ Tab Audio → background.ts → offscreenWindow (audio processing)
 
 Audio data sent as `NormalAudioDataDto` or `ButterChurnAudioDataDto` with `timeByteArray` (0-255 values).
 
+### Capture source
+
+`captureSource` is a **session-only** setting: the window always opens with Tab capture. The user
+can opt into Microphone via the dropdown; that choice applies for the lifetime of the animation
+window and is mirrored to `chrome.storage.local` so the MV3 service worker can read it during
+restarts, but it is NOT persisted across window opens. Microphone source calls
+`navigator.mediaDevices.getUserMedia({ audio: true })` in the offscreen document — no streamId, no
+picker. Routing app/system output into Chromium's mic input is an OS-mixer concern (e.g.,
+pavucontrol "Monitor of <output>" on Linux). Both sources support silent hot-reload recovery.
+
 ## Scene System
 
 **Location**: `src/scene/scene.ts`

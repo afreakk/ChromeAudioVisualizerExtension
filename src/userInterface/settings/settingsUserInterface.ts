@@ -3,7 +3,13 @@ import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
 import { sceneNames } from '@/src/scene/sceneNames';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
-import { GenericEvent, messageAction, messageTarget } from '@/src/utils/eventMessage';
+import {
+    captureSource,
+    GenericEvent,
+    messageAction,
+    messageTarget,
+    RestartCaptureEvent,
+} from '@/src/utils/eventMessage';
 import {
     customPresetKey,
     customPresetName,
@@ -26,14 +32,71 @@ export class SettingsUserInterface {
     private sceneCleanups: (() => void)[] = [];
     private currentBaseScene: string | null = null;
     private sceneSelectorController: dat.GUIController | null = null;
+    private captureSourceController: dat.GUIController | null = null;
     private currentSceneKey: string = '';
     private currentSettings: ISceneSetting = {};
+    private pendingRestartNonce: string | null = null;
+    private runtimeAckListener: ((message: unknown) => void) | null = null;
+    private windowAckListener: ((event: MessageEvent) => void) | null = null;
 
     constructor(isExternalUI: boolean) {
         this.isExternalUI = isExternalUI;
         this.sceneNames = [];
         for (const scene in sceneNames) {
             this.sceneNames.push(scene);
+        }
+        this.registerRestartCaptureAckListener();
+    }
+
+    private setCaptureSourceDisabled(disabled: boolean): void {
+        const select = this.captureSourceController?.domElement.querySelector('select');
+        if (select instanceof HTMLSelectElement) {
+            select.disabled = disabled;
+        }
+    }
+
+    private sendRestartCapture(): void {
+        const nonce = crypto.randomUUID();
+        this.pendingRestartNonce = nonce;
+        const event = new RestartCaptureEvent(nonce);
+        if (this.isExternalUI) {
+            chrome.runtime.sendMessage(event.toMessage());
+        } else {
+            window.sandboxEventMessageHolder?.source?.postMessage(event.toMessage(), {
+                targetOrigin: window.sandboxEventMessageHolder.origin,
+            });
+        }
+    }
+
+    private handleRestartCaptureAck(nonce: unknown, success: unknown): void {
+        if (typeof nonce !== 'string' || nonce !== this.pendingRestartNonce) {
+            return;
+        }
+        this.pendingRestartNonce = null;
+        this.setCaptureSourceDisabled(false);
+        if (success === false) {
+            console.warn('Capture source restart failed; dropdown re-enabled');
+        }
+    }
+
+    private registerRestartCaptureAckListener(): void {
+        if (this.isExternalUI) {
+            this.runtimeAckListener = (message: unknown) => {
+                const m = message as { action?: string; nonce?: unknown; success?: unknown } | null;
+                if (m?.action === messageAction.restartCaptureAck) {
+                    this.handleRestartCaptureAck(m.nonce, m.success);
+                }
+            };
+            chrome.runtime.onMessage.addListener(this.runtimeAckListener);
+        } else {
+            this.windowAckListener = (event: MessageEvent) => {
+                const data = event.data as { action?: string; nonce?: unknown; success?: unknown } | null;
+                if (data?.action !== messageAction.restartCaptureAck) return;
+                const trustedOrigin = window.sandboxEventMessageHolder?.origin;
+                if (!trustedOrigin || event.origin !== trustedOrigin) return;
+                this.handleRestartCaptureAck(data.nonce, data.success);
+            };
+            window.addEventListener('message', this.windowAckListener);
         }
     }
     public buildScene() {
@@ -84,6 +147,30 @@ export class SettingsUserInterface {
                 } else {
                     chrome.runtime.sendMessage({ ...showFpsEventMessage.toMessage(), value: enabled });
                 }
+            });
+
+        const storedCaptureSource = loadSettings<string>('captureSource') ?? captureSource.tab;
+        const captureSourceState = {
+            captureSource:
+                storedCaptureSource === captureSource.microphone ? captureSource.microphone : captureSource.tab,
+        };
+        this.captureSourceController = this.generalSettingsFolder
+            .add(captureSourceState, 'captureSource', {
+                'Current tab (default)': captureSource.tab,
+                'Microphone / system audio': captureSource.microphone,
+            })
+            .name('Capture source')
+            .onChange((value: unknown) => {
+                const v = value as string;
+                // Session-only: don't persist. Mirror to chrome.storage.local so the SW sees it
+                // during this session; the choice resets to Tab on next window open.
+                if (this.isExternalUI) {
+                    chrome.storage.local.set({ captureSource: v }).catch(() => {});
+                } else {
+                    window.parent.postMessage({ action: 'session-capture-source', value: v }, '*');
+                }
+                this.setCaptureSourceDisabled(true);
+                this.sendRestartCapture();
             });
         this.generalSettingsFolder.open();
 
@@ -334,5 +421,8 @@ export class SettingsUserInterface {
             this.gui.destroy();
             this.gui = null;
         }
+
+        this.captureSourceController = null;
+        this.pendingRestartNonce = null;
     }
 }

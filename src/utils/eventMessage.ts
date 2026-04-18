@@ -19,10 +19,19 @@ export enum messageAction {
     saveSettings = 'save-settings',
     updateSettingsCache = 'update-settings-cache',
     animationReady = 'animation-ready',
+    restartCapture = 'restart-capture',
+    restartCaptureAck = 'restart-capture-ack',
+    primeMicrophone = 'prime-microphone',
+    primeMicrophoneFailed = 'prime-microphone-failed',
+    micPrimeSucceeded = 'mic-prime-succeeded',
 }
 export enum streamType {
     butterChurn = 'butterChurn',
     normal = 'singleChannel',
+}
+export enum captureSource {
+    tab = 'tab',
+    microphone = 'microphone',
 }
 export interface IAudioDataDto {
     /**
@@ -88,18 +97,29 @@ export class AudioDataEvent extends GenericEvent {
 }
 export class InitiateStreamEvent extends GenericEvent {
     streamId: string;
+    source?: captureSource;
 
-    constructor(target: messageTarget, action: messageAction, streamId: string) {
+    constructor(target: messageTarget, action: messageAction, streamId: string, source?: captureSource) {
         super(target, action);
         this.streamId = streamId;
+        this.source = source;
     }
 
     override toMessage() {
-        return {
+        const message: {
+            target: messageTarget;
+            action: messageAction;
+            streamId: string;
+            source?: captureSource;
+        } = {
             target: this.target,
             action: this.action,
             streamId: this.streamId,
         };
+        if (this.source !== undefined) {
+            message.source = this.source;
+        }
+        return message;
     }
 }
 export class StartStreamEvent extends GenericEvent {
@@ -165,6 +185,41 @@ export class ShowFpsOverlayEvent extends GenericEvent {
             target: this.target,
             action: this.action,
             value: this.value,
+        };
+    }
+}
+export class RestartCaptureEvent extends GenericEvent {
+    nonce: string;
+
+    constructor(nonce: string) {
+        super(messageTarget.background, messageAction.restartCapture);
+        this.nonce = nonce;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            nonce: this.nonce,
+        };
+    }
+}
+export class RestartCaptureAckEvent extends GenericEvent {
+    nonce: string;
+    success: boolean;
+
+    constructor(nonce: string, success: boolean) {
+        super(messageTarget.settings, messageAction.restartCaptureAck);
+        this.nonce = nonce;
+        this.success = success;
+    }
+
+    override toMessage() {
+        return {
+            target: this.target,
+            action: this.action,
+            nonce: this.nonce,
+            success: this.success,
         };
     }
 }

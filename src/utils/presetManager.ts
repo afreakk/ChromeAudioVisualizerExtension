@@ -26,12 +26,7 @@ export function loadAllPresets(): PresetMap {
     let dropped = 0;
 
     for (const [name, preset] of Object.entries(raw)) {
-        if (
-            !preset ||
-            typeof preset !== 'object' ||
-            typeof preset.baseScene !== 'string' ||
-            !preset.settings
-        ) {
+        if (!preset || typeof preset !== 'object' || typeof preset.baseScene !== 'string' || !preset.settings) {
             dropped++;
             continue;
         }

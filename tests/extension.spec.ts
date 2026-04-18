@@ -2137,13 +2137,231 @@ test('rapid scene switching does not exhaust WebGL context limit', async () => {
         }
     }
 
-    const contextOk = await frame.locator('canvas').first().evaluate((c: HTMLCanvasElement) => {
-        const gl = c.getContext('webgl') || c.getContext('webgl2') || c.getContext('2d');
-        if (!gl) return false;
-        if ('isContextLost' in gl) return !(gl as WebGLRenderingContext).isContextLost();
-        return true;
-    });
+    const contextOk = await frame
+        .locator('canvas')
+        .first()
+        .evaluate((c: HTMLCanvasElement) => {
+            const gl = c.getContext('webgl') || c.getContext('webgl2') || c.getContext('2d');
+            if (!gl) return false;
+            if ('isContextLost' in gl) return !(gl as WebGLRenderingContext).isContextLost();
+            return true;
+        });
     expect(contextOk).toBe(true);
 
     await page.close();
+});
+
+// Capture-source dropdown coverage — fake mic via Chromium flags (no real audio hardware)
+test.describe('capture source live switching', () => {
+    let captureContext: BrowserContext;
+    let captureExtensionId: string;
+
+    test.beforeAll(async () => {
+        captureContext = await chromium.launchPersistentContext('', {
+            headless: false,
+            args: [
+                `--disable-extensions-except=${EXTENSION_PATH}`,
+                `--load-extension=${EXTENSION_PATH}`,
+                '--no-first-run',
+                '--disable-default-apps',
+                '--use-fake-device-for-media-stream',
+                '--use-fake-ui-for-media-stream',
+                '--autoplay-policy=no-user-gesture-required',
+            ],
+        });
+        let sw = captureContext.serviceWorkers()[0];
+        if (!sw) sw = await captureContext.waitForEvent('serviceworker');
+        captureExtensionId = sw.url().split('/')[2];
+    });
+
+    test.afterAll(async () => {
+        await captureContext?.close();
+    });
+
+    test.beforeEach(async () => {
+        let sw = captureContext.serviceWorkers()[0];
+        if (!sw) sw = await captureContext.waitForEvent('serviceworker');
+        await sw.evaluate(async () => {
+            await chrome.storage.local.remove('captureSource');
+        });
+    });
+
+    test('dropdown change from Tab to Mic disables select, round-trips an ack, and re-enables', async () => {
+        const page = await captureContext.newPage();
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
+        const frame = page.frameLocator('#theFrame');
+        await frame.locator('body').waitFor({ state: 'attached' });
+        // Give the sandbox time to build the settings UI (the dat.gui dropdown)
+        await page.waitForTimeout(1000);
+
+        // Observe acks that arrive through the chrome.runtime relay
+        await page.evaluate(() => {
+            (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks = [];
+            chrome.runtime.onMessage.addListener((m: { action?: string; nonce?: string; success?: boolean }) => {
+                if (m?.action === 'restart-capture-ack') {
+                    (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks.push({
+                        nonce: m.nonce ?? '',
+                        success: m.success ?? false,
+                    });
+                }
+            });
+        });
+
+        // Flip the dropdown from Tab to Microphone
+        const flip = await frame.locator('body').evaluate(() => {
+            const rows = Array.from(document.querySelectorAll('.cr'));
+            const row = rows.find((r) => r.textContent?.includes('Capture source'));
+            const select = (row?.querySelector('select') as HTMLSelectElement | null) ?? null;
+            if (!select) return { ok: false, disabledAfter: false };
+            select.value = 'microphone';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            return { ok: true, disabledAfter: select.disabled };
+        });
+        expect(flip.ok).toBe(true);
+        // onChange handler synchronously disables the select before dispatching restart
+        expect(flip.disabledAfter).toBe(true);
+
+        // Ack must arrive with a non-empty nonce (correlation id)
+        await page.waitForFunction(() => (window as unknown as { __acks: unknown[] }).__acks.length > 0, null, {
+            timeout: 5000,
+        });
+        const acks = await page.evaluate(
+            () => (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks,
+        );
+        expect(acks.length).toBe(1);
+        expect(typeof acks[0].nonce).toBe('string');
+        expect(acks[0].nonce.length).toBeGreaterThan(0);
+
+        // Dropdown re-enables once the ack is handled
+        await expect
+            .poll(
+                async () =>
+                    frame.locator('body').evaluate(() => {
+                        const rows = Array.from(document.querySelectorAll('.cr'));
+                        const row = rows.find((r) => r.textContent?.includes('Capture source'));
+                        return (row?.querySelector('select') as HTMLSelectElement | null)?.disabled ?? true;
+                    }),
+                { timeout: 3000 },
+            )
+            .toBe(false);
+
+        // Session-only: the flip mirrors to chrome.storage.local (SW read path) but NOT to localStorage.
+        const ls = await page.evaluate(() => localStorage.getItem('audio-visualizer-settings-captureSource'));
+        expect(ls).toBeNull();
+        let sw = captureContext.serviceWorkers()[0];
+        if (!sw) sw = await captureContext.waitForEvent('serviceworker');
+        const swStorage = await sw.evaluate(async () => chrome.storage.local.get('captureSource'));
+        expect(swStorage.captureSource).toBe('microphone');
+
+        await page.close();
+    });
+
+    test('concurrent restart-capture rejects the second request with a nonce-matched ack', async () => {
+        const page = await captureContext.newPage();
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
+        const frame = page.frameLocator('#theFrame');
+        await frame.locator('body').waitFor({ state: 'attached' });
+        await page.waitForTimeout(800);
+
+        // Fire two restartCapture messages back-to-back via the runtime bus.
+        // Background's in-flight guard should immediately reject the second one.
+        const acks = await page.evaluate(async () => {
+            const collected: Array<{ nonce: string; success: boolean }> = [];
+            chrome.runtime.onMessage.addListener((m: { action?: string; nonce?: string; success?: boolean }) => {
+                if (m?.action === 'restart-capture-ack') {
+                    collected.push({ nonce: m.nonce ?? '', success: m.success ?? false });
+                }
+            });
+            chrome.runtime.sendMessage({ target: 'background', action: 'restart-capture', nonce: 'nonce-A' });
+            chrome.runtime.sendMessage({ target: 'background', action: 'restart-capture', nonce: 'nonce-B' });
+            await new Promise((r) => setTimeout(r, 3000));
+            return collected;
+        });
+
+        const noncesAcked = new Set(acks.map((a) => a.nonce));
+        expect(noncesAcked.has('nonce-A')).toBe(true);
+        expect(noncesAcked.has('nonce-B')).toBe(true);
+
+        // The guard explicitly rejects concurrent requests — nonce-B (arrives while A is in flight) must be success=false
+        const ackB = acks.find((a) => a.nonce === 'nonce-B');
+        expect(ackB?.success).toBe(false);
+
+        await page.close();
+    });
+
+    test('microphone permission failure emits failure ack and re-enables the dropdown', async () => {
+        const page = await captureContext.newPage();
+        // Force the animation window's getUserMedia to reject — simulates user clicking "Block"
+        await page.addInitScript(() => {
+            const origGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+            (navigator.mediaDevices as { getUserMedia: typeof navigator.mediaDevices.getUserMedia }).getUserMedia = (
+                constraints: MediaStreamConstraints,
+            ) => {
+                if (constraints?.audio === true) {
+                    return Promise.reject(new DOMException('Permission denied', 'NotAllowedError'));
+                }
+                return origGetUserMedia(constraints);
+            };
+        });
+        await page.setViewportSize({ width: 1600, height: 900 });
+
+        const consoleErrors: string[] = [];
+        page.on('console', (m) => {
+            if (m.type() === 'error') consoleErrors.push(m.text());
+        });
+
+        await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
+        const frame = page.frameLocator('#theFrame');
+        await frame.locator('body').waitFor({ state: 'attached' });
+        await page.waitForTimeout(1000);
+
+        await page.evaluate(() => {
+            (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks = [];
+            chrome.runtime.onMessage.addListener((m: { action?: string; nonce?: string; success?: boolean }) => {
+                if (m?.action === 'restart-capture-ack') {
+                    (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks.push({
+                        nonce: m.nonce ?? '',
+                        success: m.success ?? false,
+                    });
+                }
+            });
+        });
+
+        await frame.locator('body').evaluate(() => {
+            const rows = Array.from(document.querySelectorAll('.cr'));
+            const row = rows.find((r) => r.textContent?.includes('Capture source'));
+            const select = (row?.querySelector('select') as HTMLSelectElement | null) ?? null;
+            if (!select) throw new Error('capture source select not found');
+            select.value = 'microphone';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        await page.waitForFunction(() => (window as unknown as { __acks: unknown[] }).__acks.length > 0, null, {
+            timeout: 5000,
+        });
+        const acks = await page.evaluate(
+            () => (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks,
+        );
+        expect(acks[0].success).toBe(false);
+
+        // Dropdown must re-enable after the failure ack
+        await expect
+            .poll(
+                async () =>
+                    frame.locator('body').evaluate(() => {
+                        const rows = Array.from(document.querySelectorAll('.cr'));
+                        const row = rows.find((r) => r.textContent?.includes('Capture source'));
+                        return (row?.querySelector('select') as HTMLSelectElement | null)?.disabled ?? true;
+                    }),
+                { timeout: 3000 },
+            )
+            .toBe(false);
+
+        // The mic-prime failure path logs a permission warning — proves we hit the denial branch, not the animationWindowId-null branch
+        expect(consoleErrors.some((e) => e.toLowerCase().includes('microphone permission denied'))).toBe(true);
+
+        await page.close();
+    });
 });

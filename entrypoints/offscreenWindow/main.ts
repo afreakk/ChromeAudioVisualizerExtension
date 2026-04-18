@@ -1,6 +1,7 @@
 import {
     AudioDataEvent,
     ButterChurnAudioDataDto,
+    captureSource,
     GenericEvent,
     type InitiateStreamEvent,
     messageAction,
@@ -51,6 +52,7 @@ let analyserButterChurnR: AnalyserNode | null = null;
 // Stream ID - will be set when InitiateStreamEvent is received
 // Note: Stream IDs become invalid after hot-reload, so we request a new one from background when needed
 let initiateStreamId: string | null = null;
+let lastCaptureSource: captureSource = captureSource.tab;
 
 // Dynamic FPS matching - capture rate adapts to render rate
 let captureInterval = 17; // Default 60fps (1000/60 ≈ 17ms)
@@ -118,7 +120,8 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
         case messageAction.initiateStream: {
             const initiateStreamMessage = message as InitiateStreamEvent;
             initiateStreamId = initiateStreamMessage.streamId;
-            initiateStream(initiateStreamId).then(() => {
+            lastCaptureSource = initiateStreamMessage.source ?? captureSource.tab;
+            initiateStream(initiateStreamId, lastCaptureSource).then(() => {
                 // After successfully initiating stream, start the capture loop if we have a stream type
                 if (currentStreamType !== null) {
                     startStream();
@@ -141,16 +144,20 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
         }
     }
 });
-async function initiateStream(streamId: string) {
+async function initiateStream(streamId: string, streamSource: captureSource) {
     try {
-        stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                mandatory: {
-                    chromeMediaSource: 'tab',
-                    chromeMediaSourceId: streamId,
-                },
-            } as MediaTrackConstraints,
-        });
+        if (streamSource === captureSource.microphone) {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } else {
+            stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    mandatory: {
+                        chromeMediaSource: 'tab',
+                        chromeMediaSourceId: streamId,
+                    },
+                } as MediaTrackConstraints,
+            });
+        }
         audioContext = new AudioContext();
 
         const source = audioContext.createMediaStreamSource(stream);
@@ -158,8 +165,11 @@ async function initiateStream(streamId: string) {
         analyserNormal = audioContext.createAnalyser();
         analyserNormal.fftSize = numSamplesNormal;
         source.connect(analyserNormal);
-        // Connect the normal analyser to the destination
-        analyserNormal.connect(audioContext.destination);
+        // Tab capture mutes the original tab audio, so we route it back to the speakers.
+        // Microphone input isn't muted by the OS — routing it would cause feedback.
+        if (streamSource !== captureSource.microphone) {
+            analyserNormal.connect(audioContext.destination);
+        }
 
         // Create the butterchurn analysers
         analyserButterChurn = audioContext.createAnalyser();
@@ -201,12 +211,15 @@ async function startStream() {
 
     const updateAudioDataEvent = async () => {
         if (!window.captureIsActive) {
-            if (initiateStreamId !== null) {
+            const savedStreamId = initiateStreamId;
+            const savedSource = lastCaptureSource;
+            const canRetryLocally = savedSource === captureSource.microphone || savedStreamId !== null;
+            if (canRetryLocally) {
                 try {
                     await stopStream();
-                    await initiateStream(initiateStreamId);
+                    await initiateStream(savedStreamId ?? '', savedSource);
                 } catch {
-                    // The error handler in initiateStream will request a new ID
+                    // initiateStream's error handler schedules recovery
                     return;
                 }
             } else {

@@ -67,6 +67,7 @@ declare module 'dat.gui' {
         min(min: number): GUIController;
         max(max: number): GUIController;
         step(step: number): GUIController;
+        domElement: HTMLElement;
     }
 }
 
