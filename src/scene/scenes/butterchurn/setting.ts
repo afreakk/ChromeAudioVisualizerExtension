@@ -3,7 +3,8 @@ import type { ISceneSetting } from '@/src/scene/sceneSetting';
 
 const presets = butterchurnPresets.getPresets();
 export const getRandomPreset = () => {
-    return Object.keys(presets)[Math.round(Math.random() * Object.keys(presets).length) - 1];
+    const keys = Object.keys(presets);
+    return keys[Math.floor(Math.random() * keys.length)];
 };
 
 export class ButterchurnSetting implements ISceneSetting {
