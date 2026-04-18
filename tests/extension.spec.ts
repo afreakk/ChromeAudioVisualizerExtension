@@ -18,11 +18,35 @@ function withTimeout<T>(fn: () => Promise<T>, ms: number): Promise<T> {
     ]);
 }
 
-// All scenes except Butterchurn (requires stereo audio + external lib setup)
-const SCENES = Object.values(sceneNames).filter((name) => name !== sceneNames.Butterchurn);
+const SCENES = Object.values(sceneNames);
+// Butterchurn has dedicated stereo-path coverage; skip it only in the generic
+// WebGL error sweep because its internal context creation can be flaky under SwiftShader.
+const WEBGL_SWEEP_SCENES = SCENES.filter((name) => name !== sceneNames.Butterchurn);
+
+type TestAudioData = {
+    timeByteArray: number[];
+    timeByteArrayLeft: number[];
+    timeByteArrayRight: number[];
+    timestamp?: number;
+};
+
+function createStereoAudioData(timeByteArray: number[], timestamp?: number): TestAudioData {
+    const mono = [...timeByteArray];
+    const audioData: TestAudioData = {
+        timeByteArray: mono,
+        timeByteArrayLeft: [...mono],
+        timeByteArrayRight: [...mono],
+    };
+
+    if (timestamp !== undefined) {
+        audioData.timestamp = timestamp;
+    }
+
+    return audioData;
+}
 
 /** Generate synthetic audio data (sine wave, 256 bins, values 0-255) */
-function generateAudioData(frame: number): number[] {
+function generateAudioData(frame: number): Omit<TestAudioData, 'timestamp'> {
     const data: number[] = [];
     for (let i = 0; i < 256; i++) {
         const t = frame * 0.05;
@@ -33,7 +57,11 @@ function generateAudioData(frame: number): number[] {
             20 * Math.sin((i / 256) * Math.PI * 16 + t * 0.7);
         data.push(Math.max(0, Math.min(255, Math.round(val))));
     }
-    return data;
+    return createStereoAudioData(data);
+}
+
+function getSceneBuildDelay(sceneName: string): number {
+    return sceneName === sceneNames.Butterchurn ? 1000 : 500;
 }
 
 /** Post a message to the sandbox iframe */
@@ -51,7 +79,7 @@ async function pumpAudioFrames(page: any, numFrames: number, startFrame = 0) {
             target: 'animation',
             action: 'update-audio-data',
             audioData: {
-                timeByteArray: generateAudioData(f),
+                ...generateAudioData(f),
                 timestamp: Date.now(),
             },
         });
@@ -66,7 +94,7 @@ async function pumpSilence(page: any, numFrames: number) {
         await postToSandbox(page, {
             target: 'animation',
             action: 'update-audio-data',
-            audioData: { timeByteArray: silence, timestamp: Date.now() },
+            audioData: createStereoAudioData(silence, Date.now()),
         });
         await page.waitForTimeout(16);
     }
@@ -82,7 +110,7 @@ async function pumpLoud(page: any, numFrames: number) {
         await postToSandbox(page, {
             target: 'animation',
             action: 'update-audio-data',
-            audioData: { timeByteArray: loud, timestamp: Date.now() },
+            audioData: createStereoAudioData(loud, Date.now()),
         });
         await page.waitForTimeout(16);
     }
@@ -208,7 +236,7 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
                     sceneName,
                     sceneSettings: {},
                 });
-                await page.waitForTimeout(500); // scene build time
+                await page.waitForTimeout(getSceneBuildDelay(sceneName)); // scene build time
 
                 // Pump 20 frames of audio to verify scene handles audio without crashing
                 await pumpAudioFrames(page, 20);
@@ -380,7 +408,7 @@ test('no WebGL errors across all scenes', async () => {
     }
     attachErrorListeners(page);
 
-    for (const sceneName of SCENES) {
+    for (const sceneName of WEBGL_SWEEP_SCENES) {
         try {
             await withTimeout(async () => {
                 await postToSandbox(page, {
@@ -389,7 +417,7 @@ test('no WebGL errors across all scenes', async () => {
                     sceneName,
                     sceneSettings: {},
                 });
-                await page.waitForTimeout(200);
+                await page.waitForTimeout(getSceneBuildDelay(sceneName));
                 await pumpAudioFrames(page, 5);
 
                 // Check for WebGL errors inside the sandbox
@@ -554,10 +582,7 @@ test('audio data flows through chrome.runtime relay to sandbox', async () => {
         await sendViaRuntime({
             target: 'animation',
             action: 'update-audio-data',
-            audioData: {
-                timeByteArray: new Array(256).fill(0),
-                timestamp: Date.now(),
-            },
+            audioData: createStereoAudioData(new Array(256).fill(0), Date.now()),
         });
         await page.waitForTimeout(16);
     }
@@ -572,10 +597,7 @@ test('audio data flows through chrome.runtime relay to sandbox', async () => {
         await sendViaRuntime({
             target: 'animation',
             action: 'update-audio-data',
-            audioData: {
-                timeByteArray: loud,
-                timestamp: Date.now(),
-            },
+            audioData: createStereoAudioData(loud, Date.now()),
         });
         await page.waitForTimeout(16);
     }
@@ -1214,7 +1236,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await postToSandbox(page, {
         target: 'animation',
         action: 'update-audio-data',
-        audioData: { timeByteArray: [], timestamp: Date.now() },
+        audioData: createStereoAudioData([], Date.now()),
     });
     await page.waitForTimeout(50);
 
@@ -1222,7 +1244,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await postToSandbox(page, {
         target: 'animation',
         action: 'update-audio-data',
-        audioData: { timeByteArray: [128, 200, 50], timestamp: Date.now() },
+        audioData: createStereoAudioData([128, 200, 50], Date.now()),
     });
     await page.waitForTimeout(50);
 
@@ -1234,7 +1256,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await postToSandbox(page, {
         target: 'animation',
         action: 'update-audio-data',
-        audioData: { timeByteArray: longArray, timestamp: Date.now() },
+        audioData: createStereoAudioData(longArray, Date.now()),
     });
     await page.waitForTimeout(50);
 
@@ -1242,10 +1264,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await postToSandbox(page, {
         target: 'animation',
         action: 'update-audio-data',
-        audioData: {
-            timeByteArray: [-10, 0, 128, 255, 300, 999, -100, 1.5, 254.9, NaN],
-            timestamp: Date.now(),
-        },
+        audioData: createStereoAudioData([-10, 0, 128, 255, 300, 999, -100, 1.5, 254.9, NaN], Date.now()),
     });
     await page.waitForTimeout(50);
 
@@ -1253,7 +1272,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await postToSandbox(page, {
         target: 'animation',
         action: 'update-audio-data',
-        audioData: { timeByteArray: generateAudioData(0) },
+        audioData: generateAudioData(0),
     });
     await page.waitForTimeout(50);
 
@@ -1415,7 +1434,7 @@ test('audio buffered during scene transition reaches the new scene', async () =>
         await postToSandbox(page, {
             target: 'animation',
             action: 'update-audio-data',
-            audioData: { timeByteArray: loud, timestamp: Date.now() },
+            audioData: createStereoAudioData(loud, Date.now()),
         });
         // No wait — fire as fast as possible to overlap with build
     }
@@ -1545,7 +1564,7 @@ test('every registered scene builds canvas within timeout', async () => {
                     sceneName,
                     sceneSettings: {},
                 });
-                await page.waitForTimeout(500);
+                await page.waitForTimeout(getSceneBuildDelay(sceneName));
 
                 // Canvas must exist
                 const canvasCount = await frame.locator('canvas').count();
@@ -1654,7 +1673,7 @@ test('non-animation target messages do not trigger scene changes', async () => {
         { target: 'settings', action: 'set-scene', sceneName: 'SynthBars', sceneSettings: {} },
         { target: 'offscreen', action: 'set-scene', sceneName: 'ChromaWave', sceneSettings: {} },
         { target: 'background', action: 'set-scene', sceneName: 'ParticleCircle', sceneSettings: {} },
-        { target: 'settings', action: 'update-audio-data', audioData: { timeByteArray: new Array(256).fill(255) } },
+        { target: 'settings', action: 'update-audio-data', audioData: createStereoAudioData(new Array(256).fill(255)) },
         { target: 'offscreen', action: 'set-scene-settings', sceneSettings: { audioSensitivity: 99 } },
         { target: '', action: 'set-scene', sceneName: 'SynthBars', sceneSettings: {} },
     ];
