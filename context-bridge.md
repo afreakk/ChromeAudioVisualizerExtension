@@ -12,6 +12,7 @@ Accumulated learnings across task runs. Read this before starting work.
 - Consolidated offscreen stream recovery into single scheduleRecovery() gate with recoveryState flag; both initiateStream catch and updateAudioDataEvent no-stream branch route through it. Files: entrypoints/offscreenWindow/main.ts.
 - Filled/removed empty error-handling blocks: background.ts logs tab-miss warn and visualization startup error; tests/extension.spec.ts replaces empty blocks with either logs or deletions. Files: entrypoints/background.ts, tests/extension.spec.ts.
 - Made background.ts `tabId` nullable (`number | null = null`) and reset it alongside `animationWindowId` on window close. Files: entrypoints/background.ts.
+- Butterchurn scene: switched NodeJS.Timeout to ReturnType<typeof setInterval>, added explicit null guards around clearInterval (browser type requires non-null), removed dead timeByteArrayLeft narrowing. Files: src/scene/scenes/butterchurn/butterchurn.ts.
 
 ## Discoveries
 - When initiateStream() sets state internally, partial failure after it means cleanup in catch should also undo the stream for future hardening
@@ -19,5 +20,6 @@ Accumulated learnings across task runs. Read this before starting work.
 - Consolidating switch/if-else into a registry naturally fixes inconsistencies because all entries flow through the same code path
 - Chrome extension onMessage listeners must return true synchronously (not via async) to keep message port open for async operations
 - Pre-commit hook runs full build + all Playwright tests (~3.4 min); expect long commit times
+- Browser `ReturnType<typeof setInterval>` is stricter than `NodeJS.Timeout`: `clearInterval(null)` is rejected, so null-guard the call
 
 ## Conventions

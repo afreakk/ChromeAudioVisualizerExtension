@@ -12,7 +12,7 @@ export class Butterchurn implements IScene {
     private visualizer: any = null;
     private lastTime: number = 0;
     private lastCycleSeconds: number = 0;
-    private cyclePresetInterval: NodeJS.Timeout | null = null;
+    private cyclePresetInterval: ReturnType<typeof setInterval> | null = null;
     private audioBuffer: Uint8Array = new Uint8Array(1024);
     private audioBufferL: Uint8Array = new Uint8Array(1024);
     private audioBufferR: Uint8Array = new Uint8Array(1024);
@@ -45,9 +45,13 @@ export class Butterchurn implements IScene {
         if (!preset) return;
         this.visualizer.loadPreset(preset, settings.blendLength);
         if (!settings.cyclePresets) {
-            clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
+            if (this.cyclePresetInterval !== null) {
+                clearInterval(this.cyclePresetInterval);
+            }
         } else if (settings.cycleSeconds !== this.lastCycleSeconds || this.cyclePresetInterval === null) {
-            clearInterval(this.cyclePresetInterval as NodeJS.Timeout);
+            if (this.cyclePresetInterval !== null) {
+                clearInterval(this.cyclePresetInterval);
+            }
             this.lastCycleSeconds = settings.cycleSeconds;
             this.cyclePresetInterval = setInterval(() => {
                 settings.preset = getRandomPreset();
@@ -57,9 +61,7 @@ export class Butterchurn implements IScene {
         }
     }
     updateAudioData(data: ButterChurnAudioDataDto): void {
-        if (data.timeByteArrayLeft !== undefined) {
-            this.audioData = data;
-        }
+        this.audioData = data;
     }
     render(): void {
         if (this.canvas === null) {
