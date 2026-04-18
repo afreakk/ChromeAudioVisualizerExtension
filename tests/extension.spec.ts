@@ -275,11 +275,10 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
     const crashed = results.filter((r) => r.crashed);
     const blank = results.filter((r) => !r.hasContent && !r.crashed);
     if (crashed.length > 0) {
+        console.log(`Crashed scenes: ${crashed.map((r) => r.scene).join(', ')}`);
     }
     if (blank.length > 0) {
-    }
-    for (const r of results) {
-        const _status = r.crashed ? '!' : r.hasContent ? '✓' : '✗';
+        console.log(`Blank scenes: ${blank.map((r) => r.scene).join(', ')}`);
     }
 
     // At least some scenes should have rendered content
@@ -429,8 +428,10 @@ test('no WebGL errors across all scenes', async () => {
         }
     }
     if (errors.length > 0) {
+        console.log(`WebGL-related test errors: ${errors.join(' | ')}`);
     }
     if (crashed.length > 0) {
+        console.log(`Scenes that crashed during WebGL sweep: ${crashed.join(', ')}`);
     }
     // WebGL compilation/runtime errors indicate broken scenes
     const criticalErrors = errors.filter((e) => e.includes('shader') || e.includes('WebGL') || e.includes('GL_'));
@@ -498,26 +499,18 @@ test('scenes visually react to audio input', async () => {
             reacted,
         });
     }
-    const _reacted2d = results.filter((r) => r.reacted && r.type === '2d');
-    const reactedGl = results.filter((r) => r.reacted && r.type === 'webgl');
     const skippedGl = results.filter((r) => !r.reacted && r.type === 'webgl');
     const failed2d = results.filter((r) => !r.reacted && r.type === '2d');
 
-    for (const _r of results) {
-    }
-
     if (skippedGl.length > 0) {
+        console.log(`WebGL scenes without visible audio reaction: ${skippedGl.map((r) => r.scene).join(', ')}`);
     }
     if (failed2d.length > 0) {
+        console.log(`2D scenes without visible audio reaction: ${failed2d.map((r) => r.scene).join(', ')}`);
     }
 
     // All 2D Canvas scenes must show audio reactivity
     expect(failed2d).toHaveLength(0);
-
-    // WebGL scenes may fail on SwiftShader — log but don't hard-fail
-    if (reactedGl.length > 0) {
-    }
-
     await page.close();
 });
 

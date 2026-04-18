@@ -10,6 +10,7 @@ Accumulated learnings across task runs. Read this before starting work.
 - Shader/program cleanup on partial compile failure in openGl.ts: deletes shaders/program if any step fails. Files: openGl.ts.
 - Fixed getRandomPreset() off-by-one: replaced `Math.round(...) - 1` with `Math.floor(Math.random() * keys.length)`. Files: src/scene/scenes/butterchurn/setting.ts.
 - Consolidated offscreen stream recovery into single scheduleRecovery() gate with recoveryState flag; both initiateStream catch and updateAudioDataEvent no-stream branch route through it. Files: entrypoints/offscreenWindow/main.ts.
+- Filled/removed empty error-handling blocks: background.ts logs tab-miss warn and visualization startup error; tests/extension.spec.ts replaces empty blocks with either logs or deletions. Files: entrypoints/background.ts, tests/extension.spec.ts.
 
 ## Discoveries
 - When initiateStream() sets state internally, partial failure after it means cleanup in catch should also undo the stream for future hardening

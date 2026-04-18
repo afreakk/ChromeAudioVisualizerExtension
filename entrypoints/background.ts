@@ -27,6 +27,8 @@ export default defineBackground(() => {
         if (audibleTab?.id) {
             await initiateStream(audibleTab.id);
         } else {
+            // biome-ignore lint/suspicious/noConsole: surface missing audible tab during hot-reload recovery
+            console.warn('reinitiateStream: no audible tab found');
         }
     }
 
@@ -65,7 +67,9 @@ export default defineBackground(() => {
                 throw new Error('Failed to create animation window');
             }
             animationWindowId = win.id as number;
-        } catch (_error) {
+        } catch (error) {
+            // biome-ignore lint/suspicious/noConsole: startup failures should be visible in extension logs
+            console.error('Failed to start visualization:', error);
             streaming = false;
         }
     });
