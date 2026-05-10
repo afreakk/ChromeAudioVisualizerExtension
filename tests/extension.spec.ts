@@ -2183,26 +2183,65 @@ test.describe('capture source live switching', () => {
         // starts clean because nothing persists the selection.
     });
 
-    test('dropdown change from Tab to Mic disables select, round-trips an ack, and re-enables', async () => {
-        const page = await captureContext.newPage();
-        await page.setViewportSize({ width: 1600, height: 900 });
-        await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
-        const frame = page.frameLocator('#theFrame');
-        await frame.locator('body').waitFor({ state: 'attached' });
-        // Give the sandbox time to build the settings UI (the dat.gui dropdown)
-        await page.waitForTimeout(1000);
+    test('Tab→Mic switch through extension action: success ack and mic audio frames flow', async () => {
+        // Open a regular page so chrome.tabs.query has something to seed the action click with.
+        const seedPage = await captureContext.newPage();
+        await seedPage.goto('about:blank');
 
-        // Observe acks that arrive through the chrome.runtime relay
-        await page.evaluate(() => {
-            (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks = [];
-            chrome.runtime.onMessage.addListener((m: { action?: string; nonce?: string; success?: boolean }) => {
-                if (m?.action === 'restart-capture-ack') {
-                    (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks.push({
-                        nonce: m.nonce ?? '',
-                        success: m.success ?? false,
-                    });
-                }
-            });
+        const sw = captureContext.serviceWorkers()[0];
+        expect(sw).toBeDefined();
+
+        // Background creates the animation popup inside chrome.action.onClicked; wait for it to spawn.
+        const animationPagePromise = captureContext.waitForEvent('page', {
+            predicate: (p) => p.url().includes('/animationWindow.html'),
+            timeout: 10_000,
+        });
+
+        // Dispatch the extension action from the service worker so background runs its onClicked
+        // path and seeds animationWindowId + tabId — the production state the mic success path
+        // needs. Going to animationWindow.html directly leaves both null and forces the failure
+        // branch in micPrimeSucceeded, which gives false confidence (see prior test gap).
+        await sw.evaluate(async () => {
+            const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            if (!tab) throw new Error('No active tab to seed action click');
+            const clicked = chrome.action.onClicked as unknown as {
+                dispatch?: (t: chrome.tabs.Tab) => unknown;
+            };
+            if (typeof clicked.dispatch !== 'function') {
+                throw new Error('chrome.action.onClicked.dispatch is unavailable in this Chromium build');
+            }
+            clicked.dispatch(tab);
+        });
+
+        const animationPage = await animationPagePromise;
+        await animationPage.setViewportSize({ width: 1600, height: 900 });
+
+        const frame = animationPage.frameLocator('#theFrame');
+        await frame.locator('body').waitFor({ state: 'attached' });
+        // Settings UI build + initial scene (sends startStream, primes offscreen currentStreamType)
+        await animationPage.waitForTimeout(1500);
+
+        // Observe acks AND audio-frame messages that arrive through the chrome.runtime relay
+        await animationPage.evaluate(() => {
+            const w = window as unknown as {
+                __acks: Array<{ nonce: string; success: boolean; activeSource?: string }>;
+                __audioFrameCount: number;
+            };
+            w.__acks = [];
+            w.__audioFrameCount = 0;
+            chrome.runtime.onMessage.addListener(
+                (m: { action?: string; nonce?: string; success?: boolean; activeSource?: string }) => {
+                    if (m?.action === 'restart-capture-ack') {
+                        w.__acks.push({
+                            nonce: m.nonce ?? '',
+                            success: m.success ?? false,
+                            activeSource: m.activeSource,
+                        });
+                    } else if (m?.action === 'update-audio-data') {
+                        w.__audioFrameCount++;
+                    }
+                },
+            );
         });
 
         // Flip the dropdown from Tab to Microphone
@@ -2219,16 +2258,25 @@ test.describe('capture source live switching', () => {
         // onChange handler synchronously disables the select before dispatching restart
         expect(flip.disabledAfter).toBe(true);
 
-        // Ack must arrive with a non-empty nonce (correlation id)
-        await page.waitForFunction(() => (window as unknown as { __acks: unknown[] }).__acks.length > 0, null, {
-            timeout: 5000,
-        });
-        const acks = await page.evaluate(
-            () => (window as unknown as { __acks: Array<{ nonce: string; success: boolean }> }).__acks,
+        // Ack must arrive and indicate success — this is the production path the prior test missed.
+        await animationPage.waitForFunction(
+            () => (window as unknown as { __acks: unknown[] }).__acks.length > 0,
+            null,
+            { timeout: 5000 },
+        );
+        const acks = await animationPage.evaluate(
+            () =>
+                (
+                    window as unknown as {
+                        __acks: Array<{ nonce: string; success: boolean; activeSource?: string }>;
+                    }
+                ).__acks,
         );
         expect(acks.length).toBe(1);
         expect(typeof acks[0].nonce).toBe('string');
         expect(acks[0].nonce.length).toBeGreaterThan(0);
+        expect(acks[0].success).toBe(true);
+        expect(acks[0].activeSource).toBe('microphone');
 
         // Dropdown re-enables once the ack is handled
         await expect
@@ -2243,9 +2291,20 @@ test.describe('capture source live switching', () => {
             )
             .toBe(false);
 
-        // Ack carries the authoritative activeSource; UI mirrors it.
+        // Audio frames must continue flowing on the mic stream after the switch. The fake mic
+        // (--use-fake-device-for-media-stream) drives getUserMedia in the offscreen document,
+        // and offscreen's capture loop emits update-audio-data on the runtime bus.
+        const beforeCount = await animationPage.evaluate(
+            () => (window as unknown as { __audioFrameCount: number }).__audioFrameCount,
+        );
+        await animationPage.waitForTimeout(1500);
+        const afterCount = await animationPage.evaluate(
+            () => (window as unknown as { __audioFrameCount: number }).__audioFrameCount,
+        );
+        expect(afterCount - beforeCount).toBeGreaterThanOrEqual(10);
 
-        await page.close();
+        await animationPage.close();
+        await seedPage.close();
     });
 
     test('concurrent restart-capture rejects the second request with a nonce-matched ack', async () => {

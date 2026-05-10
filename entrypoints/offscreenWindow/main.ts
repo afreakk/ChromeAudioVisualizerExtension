@@ -300,18 +300,23 @@ async function stopStream() {
         clearTimeout(captureTimeoutId);
         captureTimeoutId = null;
     }
-    if (stream) {
-        for (const track of stream.getTracks()) {
-            track.stop();
-        }
-        stream = null;
-    }
-    if (audioContext) {
-        await audioContext.close();
-        audioContext = null;
-    }
+    // Null globals synchronously, then await close() on a local ref. If a new
+    // initiateStream runs while close() is pending, it must not see its fresh
+    // globals overwritten when we resume.
+    const oldStream = stream;
+    const oldContext = audioContext;
+    stream = null;
+    audioContext = null;
     analyserNormal = null;
     analyserButterChurn = null;
     analyserButterChurnL = null;
     analyserButterChurnR = null;
+    if (oldStream) {
+        for (const track of oldStream.getTracks()) {
+            track.stop();
+        }
+    }
+    if (oldContext) {
+        await oldContext.close();
+    }
 }
