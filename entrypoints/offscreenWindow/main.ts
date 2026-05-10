@@ -3,7 +3,7 @@ import {
     ButterChurnAudioDataDto,
     captureSource,
     GenericEvent,
-    type InitiateStreamEvent,
+    InitiateStreamEvent,
     messageAction,
     messageTarget,
     NormalAudioDataDto,
@@ -86,7 +86,12 @@ function scheduleRecovery(): void {
     retryTimeoutId = setTimeout(() => {
         recoveryState = 'idle';
         retryTimeoutId = null;
-        const requestNewStream = new GenericEvent(messageTarget.background, messageAction.initiateStream);
+        const requestNewStream = new InitiateStreamEvent(
+            messageTarget.background,
+            messageAction.initiateStream,
+            '',
+            lastCaptureSource,
+        );
         try {
             chrome.runtime.sendMessage(requestNewStream.toMessage());
         } catch (_e) {

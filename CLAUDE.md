@@ -39,13 +39,21 @@ Audio data sent as `NormalAudioDataDto` or `ButterChurnAudioDataDto` with `timeB
 
 ### Capture source
 
-`captureSource` is a **session-only** setting: the window always opens with Tab capture. The user
-can opt into Microphone via the dropdown; that choice applies for the lifetime of the animation
-window and is mirrored to `chrome.storage.local` so the MV3 service worker can read it during
-restarts, but it is NOT persisted across window opens. Microphone source calls
-`navigator.mediaDevices.getUserMedia({ audio: true })` in the offscreen document — no streamId, no
-picker. Routing app/system output into Chromium's mic input is an OS-mixer concern (e.g.,
-pavucontrol "Monitor of <output>" on Linux). Both sources support silent hot-reload recovery.
+`captureSource` is a **session-only** setting with background as the single source of truth — it
+is NOT stored in `localStorage` or `chrome.storage`. The window always opens with Tab capture
+because `chrome.action.onClicked` resets `activeCaptureSource = captureSource.tab`. The user can
+opt into Microphone via the dropdown; that choice applies for the lifetime of the animation window
+and round-trips through the service worker: each dropdown change sends a `restart-capture` message,
+and the responding `restart-capture-ack` carries the authoritative `activeSource` for the UI to
+mirror (success or failure — the mic-denial path auto-restores Tab in background, which the UI
+picks up via the ack). Fresh UI instances receive their initial dropdown value threaded through
+existing setup messages: the sandbox first-build defaults to Tab; sandbox rebuilds after external
+window close receive `source` on the `close-settings-window` message; the external popup reads
+`?source=<value>` from its URL. Microphone source calls `navigator.mediaDevices.getUserMedia({ audio: true })`
+in the offscreen document — no streamId, no picker. Routing app/system output into Chromium's mic
+input is an OS-mixer concern (e.g., pavucontrol "Monitor of <output>" on Linux). Both sources
+support silent hot-reload recovery (the offscreen document echoes the current source back via
+`initiate-stream`).
 
 ## Scene System
 

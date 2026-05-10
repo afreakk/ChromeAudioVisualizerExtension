@@ -9,19 +9,24 @@ import {
     type RestartCaptureEvent,
 } from '@/src/utils/eventMessage';
 
+function toCaptureSource(value: unknown): captureSource {
+    return value === captureSource.microphone ? captureSource.microphone : captureSource.tab;
+}
+
 export default defineBackground(() => {
     let streaming = false;
     let animationWindowId: number | null = null;
     let settingsWindowId: number | null = null;
     let tabId: number | null = null;
     let activeCaptureSource: captureSource = captureSource.tab;
+    let priorCaptureSource: captureSource = captureSource.tab;
     let restartInFlight = false;
     let pendingRestartNonce: string | null = null;
     let awaitingMicPrime = false;
 
     function sendRestartAck(success: boolean): void {
         if (pendingRestartNonce === null) return;
-        const ack = new RestartCaptureAckEvent(pendingRestartNonce, success);
+        const ack = new RestartCaptureAckEvent(pendingRestartNonce, success, activeCaptureSource);
         try {
             chrome.runtime.sendMessage(ack.toMessage());
         } catch (_e) {
@@ -30,11 +35,6 @@ export default defineBackground(() => {
         pendingRestartNonce = null;
         restartInFlight = false;
         awaitingMicPrime = false;
-    }
-
-    async function resolveCaptureSource(): Promise<captureSource> {
-        const { captureSource: stored } = await chrome.storage.local.get('captureSource');
-        return stored === captureSource.microphone ? captureSource.microphone : captureSource.tab;
     }
 
     async function initiateTabStream(targetTabId: number) {
@@ -63,10 +63,10 @@ export default defineBackground(() => {
         streaming = true;
     }
 
-    // Re-initiate stream after hot-reload
-    async function reinitiateStream() {
-        activeCaptureSource = await resolveCaptureSource();
-        if (activeCaptureSource === captureSource.microphone) {
+    // Re-initiate stream after hot-reload, using the source the offscreen document reports.
+    async function reinitiateStream(source: captureSource) {
+        activeCaptureSource = source;
+        if (source === captureSource.microphone) {
             initiateMicrophoneStream();
             return;
         }
@@ -90,7 +90,9 @@ export default defineBackground(() => {
             return;
         }
         tabId = tab.id as number;
-        activeCaptureSource = await resolveCaptureSource();
+        // captureSource is session-only and always starts on Tab. The sandbox dropdown
+        // drives later switches via restart-capture messages that carry the new source.
+        activeCaptureSource = captureSource.tab;
 
         try {
             const existingContexts = await chrome.runtime.getContexts({});
@@ -114,13 +116,7 @@ export default defineBackground(() => {
             }
             animationWindowId = win.id as number;
 
-            if (activeCaptureSource === captureSource.microphone) {
-                // Animation window primes mic permission (offscreen can't show a prompt)
-                // and then sends an initiate-stream message, handled below.
-                streaming = true;
-            } else {
-                await initiateTabStream(tabId);
-            }
+            await initiateTabStream(tabId);
         } catch (error) {
             // biome-ignore lint/suspicious/noConsole: startup failures should be visible in extension logs
             console.error('Failed to start visualization:', error);
@@ -141,9 +137,10 @@ export default defineBackground(() => {
                 // are owned by the mic-prime-succeeded path.
                 return;
             }
+            const recoverySource = toCaptureSource((message as InitiateStreamEvent).source);
             (async () => {
                 try {
-                    await reinitiateStream();
+                    await reinitiateStream(recoverySource);
                 } catch (_error) {
                     // Recovery will reschedule via offscreen retry logic.
                 }
@@ -168,9 +165,26 @@ export default defineBackground(() => {
 
         if (message.action === messageAction.primeMicrophoneFailed) {
             streaming = false;
-            if (restartInFlight) {
-                sendRestartAck(false);
+            activeCaptureSource = captureSource.tab;
+            if (tabId === null) {
+                if (restartInFlight) {
+                    sendRestartAck(false);
+                }
+                return;
             }
+            const targetTabId = tabId;
+            (async () => {
+                try {
+                    await initiateTabStream(targetTabId);
+                } catch (error) {
+                    // biome-ignore lint/suspicious/noConsole: tab-restore failure should be visible
+                    console.error('Failed to restore tab capture after mic denial:', error);
+                } finally {
+                    if (restartInFlight) {
+                        sendRestartAck(false);
+                    }
+                }
+            })();
             return;
         }
 
@@ -180,7 +194,7 @@ export default defineBackground(() => {
             if (restartInFlight) {
                 // Already processing a restart; reject this one so the UI re-enables.
                 try {
-                    const rejectAck = new RestartCaptureAckEvent(nonce, false);
+                    const rejectAck = new RestartCaptureAckEvent(nonce, false, activeCaptureSource);
                     chrome.runtime.sendMessage(rejectAck.toMessage());
                 } catch (_e) {
                     // Receiving end may not exist
@@ -189,10 +203,11 @@ export default defineBackground(() => {
             }
             restartInFlight = true;
             pendingRestartNonce = nonce;
+            priorCaptureSource = activeCaptureSource;
             (async () => {
                 try {
                     stopStream();
-                    activeCaptureSource = await resolveCaptureSource();
+                    activeCaptureSource = toCaptureSource(restartMessage.source);
                     if (activeCaptureSource === captureSource.microphone) {
                         // Reserve streaming and ask animation window to prime mic permission.
                         // Ack will fire from the initiate-stream handler (success) or the
@@ -206,20 +221,12 @@ export default defineBackground(() => {
                             sendRestartAck(false);
                         }
                     } else {
-                        let targetTabId = tabId;
-                        if (targetTabId === null) {
-                            const [audibleTab] = await chrome.tabs.query({ audible: true });
-                            targetTabId = audibleTab?.id ?? null;
-                        }
-                        if (targetTabId !== null) {
-                            tabId = targetTabId;
-                            await initiateTabStream(targetTabId);
-                            sendRestartAck(true);
-                        } else {
-                            // biome-ignore lint/suspicious/noConsole: surface missing audible tab during restart
-                            console.warn('restartCapture: no audible tab found');
+                        if (tabId === null) {
                             sendRestartAck(false);
+                            return;
                         }
+                        await initiateTabStream(tabId);
+                        sendRestartAck(true);
                     }
                 } catch (error) {
                     // biome-ignore lint/suspicious/noConsole: restart failures should be visible
@@ -232,8 +239,9 @@ export default defineBackground(() => {
 
         if (message.action === messageAction.openSettingsWindow) {
             (async () => {
+                const urlSource = restartInFlight ? priorCaptureSource : activeCaptureSource;
                 const win = await chrome.windows.create({
-                    url: chrome.runtime.getURL('settingsWindow.html'),
+                    url: `${chrome.runtime.getURL('settingsWindow.html')}?source=${encodeURIComponent(urlSource)}`,
                     type: 'popup',
                     width: 400,
                     height: 600,
@@ -256,9 +264,11 @@ export default defineBackground(() => {
     chrome.windows.onRemoved.addListener((windowId) => {
         if (windowId === settingsWindowId) {
             settingsWindowId = null;
+            const sourceForSandbox = restartInFlight ? priorCaptureSource : activeCaptureSource;
             const closeSettingsWindow = new SettingsWindowEvent(
                 messageTarget.animation,
                 messageAction.closeSettingsWindow,
+                sourceForSandbox,
             );
             chrome.runtime.sendMessage(closeSettingsWindow.toMessage());
         }

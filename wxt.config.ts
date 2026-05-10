@@ -6,7 +6,7 @@ export default defineConfig({
         chromiumArgs: ['--remote-debugging-port=9333'],
     },
     manifest: {
-        permissions: ['tabCapture', 'offscreen', 'storage'],
+        permissions: ['tabCapture', 'offscreen'],
         action: {
             default_icon: 'icon/icon256.png',
         },

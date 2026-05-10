@@ -36,11 +36,13 @@ export class SettingsUserInterface {
     private currentSceneKey: string = '';
     private currentSettings: ISceneSetting = {};
     private pendingRestartNonce: string | null = null;
+    private initialCaptureSource: captureSource = captureSource.tab;
     private runtimeAckListener: ((message: unknown) => void) | null = null;
     private windowAckListener: ((event: MessageEvent) => void) | null = null;
 
-    constructor(isExternalUI: boolean) {
+    constructor(isExternalUI: boolean, initialCaptureSource: captureSource = captureSource.tab) {
         this.isExternalUI = isExternalUI;
+        this.initialCaptureSource = initialCaptureSource;
         this.sceneNames = [];
         for (const scene in sceneNames) {
             this.sceneNames.push(scene);
@@ -55,10 +57,10 @@ export class SettingsUserInterface {
         }
     }
 
-    private sendRestartCapture(): void {
+    private sendRestartCapture(source: captureSource): void {
         const nonce = crypto.randomUUID();
         this.pendingRestartNonce = nonce;
-        const event = new RestartCaptureEvent(nonce);
+        const event = new RestartCaptureEvent(nonce, source);
         if (this.isExternalUI) {
             chrome.runtime.sendMessage(event.toMessage());
         } else {
@@ -68,33 +70,58 @@ export class SettingsUserInterface {
         }
     }
 
-    private handleRestartCaptureAck(nonce: unknown, success: unknown): void {
+    private handleRestartCaptureAck(nonce: unknown, success: unknown, activeSource: unknown): void {
         if (typeof nonce !== 'string' || nonce !== this.pendingRestartNonce) {
             return;
         }
         this.pendingRestartNonce = null;
         this.setCaptureSourceDisabled(false);
+
+        const next: captureSource =
+            activeSource === captureSource.microphone ? captureSource.microphone : captureSource.tab;
+        // Mirror background state without firing onChange (which would start a new restart).
+        // Skip dat.gui's updateDisplay because OptionController bails when the <select> is the
+        // active element (dat.gui issue #552); set DOM directly and keep state in sync.
+        if (this.captureSourceController) {
+            const stateObj = this.captureSourceController.object as { captureSource: captureSource };
+            if (stateObj.captureSource !== next) {
+                stateObj.captureSource = next;
+                const select = this.captureSourceController.domElement.querySelector('select');
+                if (select) (select as HTMLSelectElement).value = next;
+            }
+        }
+
         if (success === false) {
-            console.warn('Capture source restart failed; dropdown re-enabled');
+            console.warn('Capture source restart failed; dropdown mirrors background state');
         }
     }
 
     private registerRestartCaptureAckListener(): void {
         if (this.isExternalUI) {
             this.runtimeAckListener = (message: unknown) => {
-                const m = message as { action?: string; nonce?: unknown; success?: unknown } | null;
+                const m = message as {
+                    action?: string;
+                    nonce?: unknown;
+                    success?: unknown;
+                    activeSource?: unknown;
+                } | null;
                 if (m?.action === messageAction.restartCaptureAck) {
-                    this.handleRestartCaptureAck(m.nonce, m.success);
+                    this.handleRestartCaptureAck(m.nonce, m.success, m.activeSource);
                 }
             };
             chrome.runtime.onMessage.addListener(this.runtimeAckListener);
         } else {
             this.windowAckListener = (event: MessageEvent) => {
-                const data = event.data as { action?: string; nonce?: unknown; success?: unknown } | null;
+                const data = event.data as {
+                    action?: string;
+                    nonce?: unknown;
+                    success?: unknown;
+                    activeSource?: unknown;
+                } | null;
                 if (data?.action !== messageAction.restartCaptureAck) return;
                 const trustedOrigin = window.sandboxEventMessageHolder?.origin;
                 if (!trustedOrigin || event.origin !== trustedOrigin) return;
-                this.handleRestartCaptureAck(data.nonce, data.success);
+                this.handleRestartCaptureAck(data.nonce, data.success, data.activeSource);
             };
             window.addEventListener('message', this.windowAckListener);
         }
@@ -149,10 +176,11 @@ export class SettingsUserInterface {
                 }
             });
 
-        const storedCaptureSource = loadSettings<string>('captureSource') ?? captureSource.tab;
+        // captureSource is session-only. Initial value is threaded in from the caller — the
+        // background is the single source of truth. Live changes round-trip through the ack,
+        // which carries the authoritative activeSource for the dropdown to mirror.
         const captureSourceState = {
-            captureSource:
-                storedCaptureSource === captureSource.microphone ? captureSource.microphone : captureSource.tab,
+            captureSource: this.initialCaptureSource,
         };
         this.captureSourceController = this.generalSettingsFolder
             .add(captureSourceState, 'captureSource', {
@@ -161,16 +189,9 @@ export class SettingsUserInterface {
             })
             .name('Capture source')
             .onChange((value: unknown) => {
-                const v = value as string;
-                // Session-only: don't persist. Mirror to chrome.storage.local so the SW sees it
-                // during this session; the choice resets to Tab on next window open.
-                if (this.isExternalUI) {
-                    chrome.storage.local.set({ captureSource: v }).catch(() => {});
-                } else {
-                    window.parent.postMessage({ action: 'session-capture-source', value: v }, '*');
-                }
+                const source = value === captureSource.microphone ? captureSource.microphone : captureSource.tab;
                 this.setCaptureSourceDisabled(true);
-                this.sendRestartCapture();
+                this.sendRestartCapture(source);
             });
         this.generalSettingsFolder.open();
 
@@ -420,6 +441,15 @@ export class SettingsUserInterface {
         if (this.gui !== null) {
             this.gui.destroy();
             this.gui = null;
+        }
+
+        if (this.runtimeAckListener) {
+            chrome.runtime.onMessage.removeListener(this.runtimeAckListener);
+            this.runtimeAckListener = null;
+        }
+        if (this.windowAckListener) {
+            window.removeEventListener('message', this.windowAckListener);
+            this.windowAckListener = null;
         }
 
         this.captureSourceController = null;

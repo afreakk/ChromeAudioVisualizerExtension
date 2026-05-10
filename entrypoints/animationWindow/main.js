@@ -1,4 +1,4 @@
-import { captureSource, messageAction, messageTarget } from '@/src/utils/eventMessage';
+import { messageAction, messageTarget } from '@/src/utils/eventMessage';
 import { STORAGE_PREFIX } from '@/src/utils/settings';
 
 let theFrame = null;
@@ -48,27 +48,8 @@ function getAllStoredSettings() {
     return entries;
 }
 
-/** captureSource must be readable from the MV3 service worker, which has no localStorage. Mirror it to chrome.storage. */
-function syncCaptureSourceToChromeStorage(rawValue) {
-    if (rawValue === null || rawValue === undefined) {
-        chrome.storage.local.remove('captureSource').catch(() => {});
-        return;
-    }
-    try {
-        const parsed = JSON.parse(rawValue);
-        chrome.storage.local.set({ captureSource: parsed }).catch(() => {});
-    } catch {
-        // Ignore malformed values — stale entry will be corrected on next write.
-    }
-}
-
 window.addEventListener('load', function () {
     theFrame = document.getElementById('theFrame');
-    // captureSource is session-only: always start in tab and clear any stale persisted value
-    // BEFORE snapshotting localStorage for the sandbox cache, so a value left over from a prior
-    // (persistent) version doesn't leak into the dropdown.
-    localStorage.removeItem(STORAGE_PREFIX + 'captureSource');
-    chrome.storage.local.set({ captureSource: captureSource.tab }).catch(() => {});
     theFrame?.contentWindow?.postMessage(
         { target: 'animation', action: 'animation-ready', storedSettings: getAllStoredSettings() },
         '*',
@@ -111,22 +92,8 @@ window.addEventListener('message', function (e) {
         return;
     }
 
-    // Session-only capture-source update from the sandbox dropdown. Mirrors to chrome.storage.local
-    // for the MV3 service worker without persisting to localStorage.
-    if (e.data.action === 'session-capture-source') {
-        syncCaptureSourceToChromeStorage(JSON.stringify(e.data.value));
-        return;
-    }
-
     // Handle settings save requests from the sandbox
     if (e.data.action === messageAction.saveSettings) {
-        // captureSource is session-only — never persist it. Belt-and-suspenders guard; the sandbox
-        // now uses `session-capture-source` instead, but a stale caller would otherwise overwrite
-        // the localStorage reset performed on load.
-        if (e.data.key === 'captureSource') {
-            syncCaptureSourceToChromeStorage(e.data.value);
-            return;
-        }
         localStorage.setItem(STORAGE_PREFIX + e.data.key, e.data.value);
         return;
     }

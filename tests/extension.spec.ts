@@ -2179,11 +2179,8 @@ test.describe('capture source live switching', () => {
     });
 
     test.beforeEach(async () => {
-        let sw = captureContext.serviceWorkers()[0];
-        if (!sw) sw = await captureContext.waitForEvent('serviceworker');
-        await sw.evaluate(async () => {
-            await chrome.storage.local.remove('captureSource');
-        });
+        // captureSource is session-only and no longer touches chrome.storage — each new page
+        // starts clean because nothing persists the selection.
     });
 
     test('dropdown change from Tab to Mic disables select, round-trips an ack, and re-enables', async () => {
@@ -2246,13 +2243,7 @@ test.describe('capture source live switching', () => {
             )
             .toBe(false);
 
-        // Session-only: the flip mirrors to chrome.storage.local (SW read path) but NOT to localStorage.
-        const ls = await page.evaluate(() => localStorage.getItem('audio-visualizer-settings-captureSource'));
-        expect(ls).toBeNull();
-        let sw = captureContext.serviceWorkers()[0];
-        if (!sw) sw = await captureContext.waitForEvent('serviceworker');
-        const swStorage = await sw.evaluate(async () => chrome.storage.local.get('captureSource'));
-        expect(swStorage.captureSource).toBe('microphone');
+        // Ack carries the authoritative activeSource; UI mirrors it.
 
         await page.close();
     });
@@ -2274,8 +2265,18 @@ test.describe('capture source live switching', () => {
                     collected.push({ nonce: m.nonce ?? '', success: m.success ?? false });
                 }
             });
-            chrome.runtime.sendMessage({ target: 'background', action: 'restart-capture', nonce: 'nonce-A' });
-            chrome.runtime.sendMessage({ target: 'background', action: 'restart-capture', nonce: 'nonce-B' });
+            chrome.runtime.sendMessage({
+                target: 'background',
+                action: 'restart-capture',
+                nonce: 'nonce-A',
+                source: 'tab',
+            });
+            chrome.runtime.sendMessage({
+                target: 'background',
+                action: 'restart-capture',
+                nonce: 'nonce-B',
+                source: 'tab',
+            });
             await new Promise((r) => setTimeout(r, 3000));
             return collected;
         });
@@ -2361,6 +2362,13 @@ test.describe('capture source live switching', () => {
 
         // The mic-prime failure path logs a permission warning — proves we hit the denial branch, not the animationWindowId-null branch
         expect(consoleErrors.some((e) => e.toLowerCase().includes('microphone permission denied'))).toBe(true);
+
+        const droppedBackToTab = await frame.locator('body').evaluate(() => {
+            const rows = Array.from(document.querySelectorAll('.cr'));
+            const row = rows.find((r) => r.textContent?.includes('Capture source'));
+            return (row?.querySelector('select') as HTMLSelectElement | null)?.value ?? '';
+        });
+        expect(droppedBackToTab).toBe('tab');
 
         await page.close();
     });

@@ -190,10 +190,12 @@ export class ShowFpsOverlayEvent extends GenericEvent {
 }
 export class RestartCaptureEvent extends GenericEvent {
     nonce: string;
+    source: captureSource;
 
-    constructor(nonce: string) {
+    constructor(nonce: string, source: captureSource) {
         super(messageTarget.background, messageAction.restartCapture);
         this.nonce = nonce;
+        this.source = source;
     }
 
     override toMessage() {
@@ -201,17 +203,20 @@ export class RestartCaptureEvent extends GenericEvent {
             target: this.target,
             action: this.action,
             nonce: this.nonce,
+            source: this.source,
         };
     }
 }
 export class RestartCaptureAckEvent extends GenericEvent {
     nonce: string;
     success: boolean;
+    activeSource: captureSource;
 
-    constructor(nonce: string, success: boolean) {
+    constructor(nonce: string, success: boolean, activeSource: captureSource) {
         super(messageTarget.settings, messageAction.restartCaptureAck);
         this.nonce = nonce;
         this.success = success;
+        this.activeSource = activeSource;
     }
 
     override toMessage() {
@@ -220,6 +225,7 @@ export class RestartCaptureAckEvent extends GenericEvent {
             action: this.action,
             nonce: this.nonce,
             success: this.success,
+            activeSource: this.activeSource,
         };
     }
 }

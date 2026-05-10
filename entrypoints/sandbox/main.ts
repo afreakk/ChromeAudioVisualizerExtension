@@ -8,6 +8,7 @@ import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUser
 import {
     type AnimationReadyEvent,
     type AudioDataEvent,
+    captureSource,
     GenericEvent,
     messageAction,
     messageTarget,
@@ -34,7 +35,7 @@ const sceneManager = new SceneManager();
 window.sandboxEventMessageHolder = null;
 
 // Initialize settings UI
-const settingsUserInterface = new SettingsUserInterface(false);
+let settingsUserInterface = new SettingsUserInterface(false);
 
 // Consolidated message listener - handles all postMessage events
 window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
@@ -106,9 +107,14 @@ window.addEventListener('message', (message: MessageEvent<GenericEvent>) => {
             settingsUserInterface.destroy();
             break;
 
-        case messageAction.closeSettingsWindow:
+        case messageAction.closeSettingsWindow: {
+            const closeMessage = message.data as { source?: unknown };
+            const initialSource =
+                closeMessage.source === captureSource.microphone ? captureSource.microphone : captureSource.tab;
+            settingsUserInterface = new SettingsUserInterface(false, initialSource);
             settingsUserInterface.buildScene();
             break;
+        }
 
         case messageAction.showFpsOverlay: {
             const showFpsMessage = message.data as ShowFpsOverlayEvent;
