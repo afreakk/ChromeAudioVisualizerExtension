@@ -18,11 +18,11 @@
         "postinstall": "wxt prepare"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.4.2",
+        "@biomejs/biome": "^2.4.5",
         "@playwright/test": "1.57.0",
-        "@types/chrome": "^0.1.33",
+        "@types/chrome": "^0.1.37",
         "typescript": "^5.9.3",
-        "wxt": "^0.20.13"
+        "wxt": "^0.20.18"
     },
     "dependencies": {
         "butterchurn": "^2.6.7",
