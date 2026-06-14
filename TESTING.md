@@ -33,19 +33,29 @@ Tests use Playwright's persistent browser context to load the extension into Chr
 
 ### How Scenes Are Tested
 
-The test bypasses `chrome.tabCapture` (which requires a real user gesture and tab audio) by injecting synthetic audio data directly into the sandbox iframe via `postMessage`. This mirrors the real message flow:
+Scenes render directly in the animation window — the sandboxed iframe was removed once
+butterchurn moved to a WASM build (`'wasm-unsafe-eval'`). Tests bypass `chrome.tabCapture`
+(which needs a real user gesture and tab audio) by broadcasting synthetic audio from the
+service worker over `chrome.runtime`, exactly the path the offscreen document and external
+settings window use:
 
 ```
-Test (postMessage) → sandbox iframe → SceneManager → scene.updateAudioData() → scene.render()
+Test → serviceWorker chrome.runtime.sendMessage → animation window chrome.runtime.onMessage
+     → SceneManager → scene.updateAudioData() → scene.render()
 ```
 
-Synthetic audio is a mix of sine waves at different frequencies, producing 256 bins of values 0-255 — the same format as `NormalAudioDataDto`.
+The `postToSandbox()` helper drives this (the name is historical — it now broadcasts from the
+SW, not to an iframe). Synthetic audio is a mix of sine waves at different frequencies,
+producing 256 bins of values 0-255 — the same format as `NormalAudioDataDto`.
 
 ### What Cannot Be Tested This Way
 
 - **Real audio capture**: `chrome.tabCapture.getMediaStreamId()` requires a user gesture
-- **WebGL visual output**: The Nix-provided Chromium uses software rendering (SwiftShader), so WebGL canvas content does not appear in screenshots. On a machine with a real GPU, page screenshots would show the actual visualizations
-- **Butterchurn scene**: Requires stereo audio data (`ButterChurnAudioDataDto`) and the butterchurn library's internal preset loading
+- **WebGL visual output**: The Nix-provided Chromium uses software rendering (SwiftShader), so
+  WebGL canvas content does not reliably appear in screenshots / `readPixels` (the back buffer
+  isn't preserved). On a machine with a real GPU, page screenshots show the actual visualizations.
+  butterchurn 3.x blits its WebGL output to a **2D** canvas, so butterchurn pixels ARE readable
+  via `getImageData` even under SwiftShader — which the butterchurn tests rely on.
 
 ## Test Suite
 
@@ -62,8 +72,13 @@ Synthetic audio is a mix of sine waves at different frequencies, producing 256 b
 **1. Extension loads and service worker is active**
 Verifies the extension installs in Chromium, the MV3 service worker registers, and the extension ID is a valid 32-character string.
 
-**2. Animation window opens with sandbox iframe and dat.gui**
-Opens `animationWindow.html`, verifies the `#theFrame` sandbox iframe loads, sends the `animationWindowReadyEvent` message, and confirms dat.gui settings UI elements (`.dg` class) are present.
+**2. Animation window renders scenes directly (no sandbox iframe) with dat.gui**
+Opens `animationWindow.html` and confirms there is no `#theFrame`/iframe, the embedded dat.gui
+(`.dg`) is built directly on the page, and the default scene's `<canvas>` is present.
+
+A butterchurn all-presets test also loads every bundled preset under the extension-page CSP,
+asserting none throws an `EvalError`/CSP/WASM-compile error and each renders non-black (catches
+silent per-preset failures).
 
 **3. Cycle through all scenes with synthetic audio and capture**
 Iterates all 20 non-Butterchurn scenes. For each scene:
@@ -108,7 +123,7 @@ The scene cycle test identifies which rendering backend each scene uses:
 |---------|--------|
 | **WebGL** | SunFlower, FrostFire, SynthBars, DancingHorizon, DancingCubes3DSinus, Dancing3DCubes, PsychedelicCube, CircleBurst, ChromaWave, CosmicAurora |
 | **2D Canvas** | WormScene, RoundSpectrum, SeventiesScene, ParticleCircle, AudioTerrain, PaintSplash, HexagonPulse, OrbitalRing, NeuralWeb, FloatingCubes |
-| **Butterchurn** | Butterchurn (not tested — requires stereo audio) |
+| **Butterchurn** | Butterchurn — output is a **2D** canvas in 3.x; covered by the stereo-path and all-presets tests |
 
 ## Adding Tests for a New Scene
 

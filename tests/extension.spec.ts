@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type BrowserContext, chromium, expect, test } from '@playwright/test';
+import { type BrowserContext, chromium, expect, test, type Worker } from '@playwright/test';
 import { sceneNames } from '@/src/scene/sceneNames';
 import { RoundSpectrumSetting } from '@/src/scene/scenes/roundSpectrum/setting';
 
@@ -9,6 +9,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EXTENSION_PATH = path.resolve(__dirname, '../.output/chrome-mv3');
 const SCREENSHOTS_DIR = path.resolve(__dirname, 'screenshots');
 const PER_SCENE_TIMEOUT = 15_000; // 15s max per scene before skipping
+
+// butterchurn-presets ships a UMD bundle that references the browser `self` global;
+// define it so the package imports cleanly in the Node test runner.
+(globalThis as unknown as { self?: unknown }).self = globalThis;
+
+/** Load every bundled butterchurn preset name (used by the all-presets render test). */
+async function loadButterchurnPresetNames(): Promise<string[]> {
+    const ns = (await import('butterchurn-presets')) as unknown as { default: Record<string, unknown> };
+    const outer = ns.default;
+    // Node CJS interop double-wraps the default; the real map may be nested under .default.
+    const inner = (outer as { default?: Record<string, unknown> }).default;
+    const map = inner && typeof inner === 'object' ? inner : outer;
+    return Object.keys(map);
+}
 
 /** Run an async function with a timeout. Rejects with 'timeout' if exceeded. */
 function withTimeout<T>(fn: () => Promise<T>, ms: number): Promise<T> {
@@ -64,15 +78,20 @@ function getSceneBuildDelay(sceneName: string): number {
     return sceneName === sceneNames.Butterchurn ? 1000 : 500;
 }
 
-/** Post a message to the sandbox iframe */
-async function postToSandbox(page: any, message: object) {
-    await page.evaluate((msg: object) => {
-        const iframe = document.getElementById('theFrame') as HTMLIFrameElement;
-        iframe.contentWindow?.postMessage(msg, '*');
+/**
+ * Drive the animation window the way the real app does: broadcast a chrome.runtime
+ * message from the service worker. The merged animation window's
+ * chrome.runtime.onMessage (filtered to target 'animation') receives it — the exact
+ * path offscreen audio and the external settings window use now that the sandbox
+ * iframe is gone. (The `_page` arg is kept so existing call sites are untouched.)
+ */
+async function postToSandbox(_page: any, message: object) {
+    await serviceWorker.evaluate((msg: object) => {
+        chrome.runtime.sendMessage(msg).catch(() => {});
     }, message);
 }
 
-/** Pump N frames of synthetic audio into the sandbox */
+/** Pump N frames of synthetic audio into the animation window */
 async function pumpAudioFrames(page: any, numFrames: number, startFrame = 0) {
     for (let f = startFrame; f < startFrame + numFrames; f++) {
         await postToSandbox(page, {
@@ -125,34 +144,32 @@ async function countNonBlackPixels(frame: any): Promise<{ count: number; type: s
             canvases.find((c) => c.style.position === 'fixed' && c.width > 100 && c.height > 100) || canvases[0];
         if (!canvas) return { count: -1, type: 'none' };
 
-        // Step size: sample ~40000 pixels spread across the canvas
-        const stepX = Math.max(1, Math.floor(canvas.width / 200));
-        const stepY = Math.max(1, Math.floor(canvas.height / 200));
-        let nonBlack = 0;
+        // Read the whole canvas ONCE, then sample ~40000 points from the buffer. Per-pixel
+        // getImageData/readPixels calls are tens of thousands of round-trips and time the
+        // test out (badly so for WebGL readPixels).
+        const countBuffer = (buf: Uint8Array | Uint8ClampedArray, w: number, h: number) => {
+            let nonBlack = 0;
+            const step = Math.max(1, Math.floor((w * h) / 40000));
+            for (let p = 0; p < w * h; p += step) {
+                const i = p * 4;
+                if (buf[i] + buf[i + 1] + buf[i + 2] > 10) nonBlack++;
+            }
+            return nonBlack;
+        };
 
-        // Try 2D context first
+        // Try 2D context first (butterchurn 3.x output + all 2D scenes)
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            for (let y = 0; y < canvas.height; y += stepY) {
-                for (let x = 0; x < canvas.width; x += stepX) {
-                    const d = ctx.getImageData(x, y, 1, 1).data;
-                    if (d[0] + d[1] + d[2] > 10) nonBlack++;
-                }
-            }
-            return { count: nonBlack, type: '2d' };
+            const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return { count: countBuffer(data, width, height), type: '2d' };
         }
 
-        // Try WebGL
+        // Otherwise WebGL (unreliable under SwiftShader — back buffer isn't preserved)
         const gl = (canvas.getContext('webgl') || canvas.getContext('webgl2')) as WebGLRenderingContext | null;
         if (gl) {
-            const px = new Uint8Array(4);
-            for (let y = 0; y < canvas.height; y += stepY) {
-                for (let x = 0; x < canvas.width; x += stepX) {
-                    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-                    if (px[0] + px[1] + px[2] > 10) nonBlack++;
-                }
-            }
-            return { count: nonBlack, type: 'webgl' };
+            const px = new Uint8Array(canvas.width * canvas.height * 4);
+            gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, px);
+            return { count: countBuffer(px, canvas.width, canvas.height), type: 'webgl' };
         }
 
         return { count: -1, type: 'none' };
@@ -161,6 +178,8 @@ async function countNonBlackPixels(frame: any): Promise<{ count: number; type: s
 
 let context: BrowserContext;
 let extensionId: string;
+// Hoisted so postToSandbox() can broadcast chrome.runtime messages from the SW.
+let serviceWorker: Worker;
 
 test.beforeAll(async () => {
     context = await chromium.launchPersistentContext('', {
@@ -173,7 +192,7 @@ test.beforeAll(async () => {
         ],
     });
 
-    let serviceWorker = context.serviceWorkers()[0];
+    serviceWorker = context.serviceWorkers()[0];
     if (!serviceWorker) {
         serviceWorker = await context.waitForEvent('serviceworker');
     }
@@ -191,23 +210,23 @@ test('extension loads and service worker is active', async () => {
     expect(extensionId).toMatch(/^[a-z]{32}$/);
 });
 
-test('animation window opens with sandbox iframe and dat.gui', async () => {
+test('animation window renders scenes directly (no sandbox iframe) with dat.gui', async () => {
     const page = await context.newPage();
+    await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const iframe = page.locator('#theFrame');
-    await expect(iframe).toBeVisible();
-
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
-
-    // Trigger settings UI
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+    // The sandbox iframe is gone — scenes render directly in this window.
     await page.waitForTimeout(1000);
+    expect(await page.locator('#theFrame').count()).toBe(0);
+    expect(await page.locator('iframe').count()).toBe(0);
 
-    // Verify dat.gui loaded (it creates elements with class 'dg')
-    const guiCount = await frame.locator('.dg').count();
+    // The embedded dat.gui (class 'dg') is built directly on the page on load.
+    const guiCount = await page.locator('.dg').count();
     expect(guiCount).toBeGreaterThan(0);
+
+    // The default scene builds a canvas directly on the page.
+    const canvasCount = await page.locator('canvas').count();
+    expect(canvasCount).toBeGreaterThanOrEqual(1);
 
     await page.close();
 });
@@ -217,11 +236,8 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    let frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    let frame = page;
 
-    // Initialize settings UI
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const results: { scene: string; canvasCount: number; hasContent: boolean; crashed?: boolean }[] = [];
@@ -293,9 +309,7 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
             page = await context.newPage();
             await page.setViewportSize({ width: 1600, height: 900 });
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-            frame = page.frameLocator('#theFrame');
-            await frame.locator('body').waitFor({ state: 'attached' });
-            await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+            frame = page;
             await page.waitForTimeout(1000);
         }
     }
@@ -320,10 +334,8 @@ test('scene settings propagate without errors', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Track errors during settings changes
@@ -388,13 +400,11 @@ test('no WebGL errors across all scenes', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    let frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    let frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
-    // Collect console errors from the sandbox
+    // Collect console errors from the page
     const errors: string[] = [];
     const crashed: string[] = [];
 
@@ -420,7 +430,7 @@ test('no WebGL errors across all scenes', async () => {
                 await page.waitForTimeout(getSceneBuildDelay(sceneName));
                 await pumpAudioFrames(page, 5);
 
-                // Check for WebGL errors inside the sandbox
+                // Check for WebGL errors on the page
                 const glError = await frame
                     .locator('canvas')
                     .first()
@@ -448,9 +458,7 @@ test('no WebGL errors across all scenes', async () => {
             page = await context.newPage();
             await page.setViewportSize({ width: 1600, height: 900 });
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-            frame = page.frameLocator('#theFrame');
-            await frame.locator('body').waitFor({ state: 'attached' });
-            await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+            frame = page;
             await page.waitForTimeout(1000);
             attachErrorListeners(page);
         }
@@ -491,9 +499,7 @@ test('scenes visually react to audio input', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+    const frame = page;
     await page.waitForTimeout(1000);
 
     const results: { scene: string; type: string; silencePixels: number; loudPixels: number; reacted: boolean }[] = [];
@@ -542,19 +548,16 @@ test('scenes visually react to audio input', async () => {
     await page.close();
 });
 
-test('audio data flows through chrome.runtime relay to sandbox', async () => {
-    // This test verifies the real message relay in animationWindow/main.js:
-    //   chrome.runtime.onMessage → iframe.contentWindow.postMessage
-    // We send messages from the service worker (simulating offscreen document)
-    // so they arrive at the animation window's chrome.runtime.onMessage listener,
-    // which relays them to the sandbox iframe via postMessage.
+test('audio data and scene control flow over chrome.runtime to the animation window', async () => {
+    // No sandbox iframe: the offscreen document broadcasts audio over chrome.runtime
+    // and the animation window's onMessage (target 'animation') feeds the scene
+    // directly. We send from the service worker to simulate the offscreen document.
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
     await page.waitForTimeout(1000);
 
     // Get the service worker to send messages FROM (simulates offscreen document)
@@ -607,11 +610,9 @@ test('audio data flows through chrome.runtime relay to sandbox', async () => {
     // and produced more visible pixels with loud audio than silence
     expect(afterLoud.count).toBeGreaterThan(afterSilence.count);
 
-    // Verify the reverse relay: sandbox → window.postMessage → chrome.runtime
-    // When sandbox sets a scene, it sends a startStream message via postMessage.
-    // animationWindow/main.js relays it to chrome.runtime.sendMessage, which
-    // the service worker can observe.
-    // Start listening BEFORE triggering (don't await yet)
+    // When the animation window builds a scene, sceneManager sends start-stream to
+    // offscreen DIRECTLY over chrome.runtime (was sandbox→parent→runtime relay).
+    // The service worker can observe it. Start listening BEFORE triggering.
     const reverseRelayPromise = sw.evaluate(() => {
         return new Promise<boolean>((resolve) => {
             const timeout = setTimeout(() => resolve(false), 5000);
@@ -625,8 +626,7 @@ test('audio data flows through chrome.runtime relay to sandbox', async () => {
         });
     });
 
-    // Trigger the reverse relay by setting a new scene via direct postMessage
-    // (sandbox will respond by sending startStream back through the relay)
+    // Trigger by switching scenes; the window sends start-stream to offscreen.
     await postToSandbox(page, {
         target: 'animation',
         action: 'set-scene',
@@ -645,11 +645,8 @@ test('butterchurn stereo audio path builds and processes without errors', async 
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    // Initialize settings UI
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     // Track errors during the entire test
@@ -662,15 +659,20 @@ test('butterchurn stereo audio path builds and processes without errors', async 
         }
     });
 
+    // Load a real preset so the WASM compile + render path is exercised — an empty
+    // settings object builds the visualizer without loading any preset (nothing renders).
+    const butterchurnPresets = await loadButterchurnPresetNames();
+    const butterchurnPreset = butterchurnPresets[0];
+
     await withTimeout(async () => {
-        // Switch to the Butterchurn scene
+        // Switch to the Butterchurn scene with a concrete preset
         await postToSandbox(page, {
             target: 'animation',
             action: 'set-scene',
             sceneName: 'Butterchurn',
-            sceneSettings: {},
+            sceneSettings: { preset: butterchurnPreset, blendLength: 0, cycleSeconds: 20, cyclePresets: false },
         });
-        await page.waitForTimeout(1000); // Butterchurn needs extra build time for WebGL + presets
+        await page.waitForTimeout(1000); // Butterchurn needs extra build time for WASM compile + presets
 
         // Verify canvas was created
         const canvasCount = await frame.locator('canvas').count();
@@ -719,21 +721,26 @@ test('butterchurn stereo audio path builds and processes without errors', async 
         const canvasAfter = await frame.locator('canvas').count();
         expect(canvasAfter).toBeGreaterThanOrEqual(1);
 
-        // Verify the WebGL context is healthy (not lost)
+        // butterchurn 3.x renders WebGL into an internal OffscreenCanvas and blits to
+        // the scene's output canvas as a 2D context. So the scene canvas is now 2D —
+        // verify a 2D context exists and is painted (non-black) rather than WebGL.
         const contextInfo = await frame
             .locator('canvas')
             .first()
             .evaluate((canvas: HTMLCanvasElement) => {
-                const gl = (canvas.getContext('webgl') || canvas.getContext('webgl2')) as WebGLRenderingContext | null;
-                if (!gl) return { hasWebGL: false, contextLost: false, glError: null };
-                return {
-                    hasWebGL: true,
-                    contextLost: gl.isContextLost(),
-                    glError: gl.getError() !== 0 ? gl.getError() : null,
-                };
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return { has2d: false, nonBlack: 0 };
+                const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let nonBlack = 0;
+                const stepPx = Math.max(1, Math.floor((width * height) / 40000));
+                for (let p = 0; p < width * height; p += stepPx) {
+                    const i = p * 4;
+                    if (data[i] + data[i + 1] + data[i + 2] > 10) nonBlack++;
+                }
+                return { has2d: true, nonBlack };
             });
-        expect(contextInfo.hasWebGL).toBe(true);
-        expect(contextInfo.contextLost).toBe(false);
+        expect(contextInfo.has2d).toBe(true);
+        expect(contextInfo.nonBlack).toBeGreaterThan(0);
 
         // Pump another 30 frames to ensure sustained stereo audio does not cause issues
         for (let f = 30; f < 60; f++) {
@@ -759,11 +766,9 @@ test('butterchurn stereo audio path builds and processes without errors', async 
             .locator('canvas')
             .first()
             .evaluate((canvas: HTMLCanvasElement) => {
-                const gl = (canvas.getContext('webgl') || canvas.getContext('webgl2')) as WebGLRenderingContext | null;
-                if (!gl) return { contextLost: true };
-                return { contextLost: gl.isContextLost() };
+                return { has2d: !!canvas.getContext('2d') };
             });
-        expect(finalContextInfo.contextLost).toBe(false);
+        expect(finalContextInfo.has2d).toBe(true);
 
         // Take a screenshot for visual inspection
         await page.screenshot({
@@ -785,24 +790,121 @@ test('butterchurn stereo audio path builds and processes without errors', async 
     await page.close();
 });
 
-test('dynamic FPS matching - sandbox measures and reports frame rate', async () => {
-    // The sandbox render loop measures actual requestAnimationFrame timing,
-    // calculates FPS from a rolling average (120 samples, updated every 2s),
-    // and emits SetFpsEvent via postMessage → animationWindow → chrome.runtime.
+test('butterchurn: every bundled preset loads under the extension CSP and renders', async () => {
+    // The whole point of butterchurn 3.x: every bundled preset must compile its
+    // Milkdrop equations to WASM under the extension-page CSP ('wasm-unsafe-eval',
+    // NOT 'unsafe-eval') and render — no EvalError, no silent per-preset load failure.
+    test.setTimeout(180_000); // ~100+ presets, each compiled + rendered for a few frames
+
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1600, height: 900 });
+
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+    page.on('console', (m) => {
+        if (m.type() === 'error') errors.push(`console: ${m.text()}`);
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
+    await page.waitForTimeout(800);
+
+    const presetNames = await loadButterchurnPresetNames();
+    expect(presetNames.length).toBeGreaterThan(50);
+
+    // 1024-bin stereo audio so butterchurn has real signal to react to.
+    function bcAudio(frame: number) {
+        const a: number[] = [];
+        const t = frame * 0.05;
+        for (let i = 0; i < 1024; i++) {
+            a.push(Math.max(0, Math.min(255, Math.round(128 + 70 * Math.sin((i / 1024) * Math.PI * 4 + t)))));
+        }
+        return { timeByteArray: a, timeByteArrayLeft: [...a], timeByteArrayRight: [...a], timestamp: Date.now() };
+    }
+
+    // Build butterchurn once, then swap presets via set-scene-settings (loadPreset only).
+    await postToSandbox(page, {
+        target: 'animation',
+        action: 'set-scene',
+        sceneName: 'Butterchurn',
+        sceneSettings: { preset: presetNames[0], blendLength: 0, cycleSeconds: 20, cyclePresets: false },
+    });
+    await page.waitForTimeout(1200);
+
+    let frameNum = 0;
+    const blackPresets: string[] = [];
+
+    for (const preset of presetNames) {
+        await postToSandbox(page, {
+            target: 'animation',
+            action: 'set-scene-settings',
+            sceneSettings: { preset, blendLength: 0, cycleSeconds: 20, cyclePresets: false },
+        });
+        // A couple of audio frames + settle so the preset compiles and paints.
+        for (let f = 0; f < 2; f++) {
+            await postToSandbox(page, {
+                target: 'animation',
+                action: 'update-audio-data',
+                audioData: bcAudio(frameNum++),
+            });
+            await page.waitForTimeout(20);
+        }
+        await page.waitForTimeout(40);
+
+        const nonBlack = await page.evaluate(() => {
+            const canvas = document.body.querySelector('canvas') as HTMLCanvasElement | null;
+            if (!canvas) return -1;
+            const ctx = canvas.getContext('2d'); // butterchurn 3.x output canvas is 2D
+            if (!ctx) return -2;
+            const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let n = 0;
+            const step = Math.max(1, Math.floor((width * height) / 40000));
+            for (let p = 0; p < width * height; p += step) {
+                const i = p * 4;
+                if (data[i] + data[i + 1] + data[i + 2] > 10) n++;
+            }
+            return n;
+        });
+        if (nonBlack <= 5) blackPresets.push(preset);
+    }
+
+    // No CSP/eval/WASM-compile failures, and no per-preset loadPreset rejection
+    // (butterchurn.ts logs "Failed to load butterchurn preset ..." on a .catch()).
+    const cspErrors = errors.filter((e) =>
+        /EvalError|Content Security Policy|unsafe-eval|WebAssembly|Failed to load butterchurn preset/i.test(e),
+    );
+    if (cspErrors.length > 0) console.log('CSP/eval/WASM errors:', cspErrors.slice(0, 10));
+    expect(cspErrors, `CSP/eval/WASM errors: ${cspErrors.slice(0, 5).join(' | ')}`).toHaveLength(0);
+
+    // Presets render visibly. A handful may sample momentarily dark; a broad black
+    // result would mean WASM/render is silently failing.
+    if (blackPresets.length > 0) {
+        console.log(
+            `Presets that sampled black (${blackPresets.length}/${presetNames.length}): ${blackPresets.join(', ')}`,
+        );
+    }
+    expect(blackPresets.length).toBeLessThan(presetNames.length * 0.1);
+
+    await page.close();
+});
+
+test('dynamic FPS matching - animation window measures and reports frame rate', async () => {
+    // The animation window's render loop measures actual requestAnimationFrame timing,
+    // calculates FPS from a rolling average (120 samples, updated every 2s), and emits
+    // SetFpsEvent directly via chrome.runtime.sendMessage (target 'offscreen').
     // The offscreen document uses this to match its audio capture rate to the render rate.
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
-    // Set up FPS event collector in the service worker BEFORE initializing the sandbox.
-    // FPS events flow: sandbox → postMessage → animationWindow → chrome.runtime.sendMessage
+    // Set up an FPS-event collector in the service worker. The animation window emits
+    // SetFpsEvent directly via chrome.runtime.sendMessage (target 'offscreen'), which the
+    // service worker observes.
     // The collector waits for 3 reports (FPS_UPDATE_INTERVAL=2s, so ~6s) or times out at 12s.
     const fpsCollectorPromise = sw.evaluate(() => {
         return new Promise<Array<{ fps: number; target: string; action: string; receivedAt: number }>>((resolve) => {
@@ -826,9 +928,7 @@ test('dynamic FPS matching - sandbox measures and reports frame rate', async () 
         });
     });
 
-    // Initialize sandbox — sets sandboxEventMessageHolder.source,
-    // which enables the render loop to emit FPS events via postMessage
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+    // Let the render loop spin up (it emits FPS over chrome.runtime unconditionally).
     await page.waitForTimeout(300);
 
     // Set a scene so the render loop has active work
@@ -899,21 +999,18 @@ test('dynamic FPS matching - sandbox measures and reports frame rate', async () 
 test('FPS reporting survives scene transitions', async () => {
     // Switching scenes destroys and recreates canvases via clean() → build().
     // The RAF render loop and FPS measurement must continue uninterrupted
-    // across multiple scene transitions, and sandboxEventMessageHolder must
-    // remain valid so FPS events keep flowing.
+    // across multiple scene transitions, and the render loop must keep emitting
+    // FPS events over chrome.runtime.
 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
-    // Initialize sandbox
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(300);
 
     // Cycle through a mix of 2D and WebGL scenes
@@ -961,90 +1058,6 @@ test('FPS reporting survives scene transitions', async () => {
     await page.close();
 });
 
-test('FPS emission requires a valid message source', async () => {
-    // The render loop guards FPS emission with sandboxEventMessageHolder?.source.
-    // This test verifies the guard by: confirming FPS flows normally, nulling out
-    // the holder to stop emission, then restoring it to confirm events resume.
-    // (Note: animationWindow auto-sends animation-ready on load, so
-    // the holder is set before test code runs — we test by removing it at runtime.)
-
-    const page = await context.newPage();
-    await page.setViewportSize({ width: 1600, height: 900 });
-    await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
-
-    let sw = context.serviceWorkers()[0];
-    if (!sw) sw = await context.waitForEvent('serviceworker');
-
-    // Phase 1: Confirm FPS events are flowing (auto-init already happened)
-    const initialFps = await sw.evaluate(() => {
-        return new Promise<number[]>((resolve) => {
-            const collected: number[] = [];
-            const timeout = setTimeout(() => resolve(collected), 6000);
-            chrome.runtime.onMessage.addListener(function listener(msg: any) {
-                if (msg.action === 'set-fps' && typeof msg.fps === 'number') {
-                    collected.push(msg.fps);
-                    if (collected.length >= 1) {
-                        clearTimeout(timeout);
-                        chrome.runtime.onMessage.removeListener(listener);
-                        resolve(collected);
-                    }
-                }
-            });
-        });
-    });
-    expect(initialFps.length).toBeGreaterThanOrEqual(1);
-
-    // Phase 2: Null out the message holder inside the sandbox iframe
-    await frame.locator('body').evaluate(() => {
-        (window as any).sandboxEventMessageHolder = null;
-    });
-    // Let any in-flight postMessage events settle before listening
-    await page.waitForTimeout(200);
-
-    // Collect FPS events for 3 seconds — should get none since the guard blocks
-    const disabledFps = await sw.evaluate(() => {
-        return new Promise<number[]>((resolve) => {
-            const collected: number[] = [];
-            setTimeout(() => resolve(collected), 3000);
-            chrome.runtime.onMessage.addListener(function listener(msg: any) {
-                if (msg.action === 'set-fps' && typeof msg.fps === 'number') {
-                    collected.push(msg.fps);
-                }
-            });
-        });
-    });
-    expect(disabledFps).toHaveLength(0);
-
-    // Phase 3: Restore by sending a message (re-sets sandboxEventMessageHolder)
-    const resumedFpsPromise = sw.evaluate(() => {
-        return new Promise<number[]>((resolve) => {
-            const collected: number[] = [];
-            const timeout = setTimeout(() => resolve(collected), 6000);
-            chrome.runtime.onMessage.addListener(function listener(msg: any) {
-                if (msg.action === 'set-fps' && typeof msg.fps === 'number') {
-                    collected.push(msg.fps);
-                    if (collected.length >= 1) {
-                        clearTimeout(timeout);
-                        chrome.runtime.onMessage.removeListener(listener);
-                        resolve(collected);
-                    }
-                }
-            });
-        });
-    });
-
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
-    const resumedFps = await resumedFpsPromise;
-    expect(resumedFps.length).toBeGreaterThanOrEqual(1);
-    expect(resumedFps[0]).toBeGreaterThanOrEqual(30);
-    expect(resumedFps[0]).toBeLessThanOrEqual(120);
-
-    await page.close();
-});
-
 test('FPS measurement reflects rendering load', async () => {
     // Compare FPS from a lightweight 2D scene vs a heavy WebGL scene with
     // active audio and high settings. Both must stay in the 30-120 range,
@@ -1054,13 +1067,11 @@ test('FPS measurement reflects rendering load', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(300);
 
     // --- Phase 1: Lightweight 2D scene (RoundSpectrum) ---
@@ -1164,10 +1175,8 @@ test('switching scenes does not leak canvas elements', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1207,10 +1216,8 @@ test('scenes handle malformed audio data without crashing', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1328,10 +1335,8 @@ test('non-existent scene name does not crash or change current scene', async () 
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1397,10 +1402,8 @@ test('audio buffered during scene transition reaches the new scene', async () =>
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1468,10 +1471,8 @@ test('settings update during scene build does not crash', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1547,10 +1548,8 @@ test('every registered scene builds canvas within timeout', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    let frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    let frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const failures: { scene: string; reason: string }[] = [];
@@ -1624,9 +1623,7 @@ test('every registered scene builds canvas within timeout', async () => {
             page = await context.newPage();
             await page.setViewportSize({ width: 1600, height: 900 });
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-            frame = page.frameLocator('#theFrame');
-            await frame.locator('body').waitFor({ state: 'attached' });
-            await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
+            frame = page;
             await page.waitForTimeout(1000);
         }
     }
@@ -1645,10 +1642,8 @@ test('non-animation target messages do not trigger scene changes', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1667,8 +1662,8 @@ test('non-animation target messages do not trigger scene changes', async () => {
     const canvasBefore = await frame.locator('canvas').count();
     expect(canvasBefore).toBe(1);
 
-    // Send messages with non-animation targets — sandbox should ignore them
-    // (line 60 in sandbox/main.ts: if target !== messageTarget.animation return)
+    // Send messages with non-animation targets — the animation window should ignore
+    // them (its onMessage early-returns when target !== messageTarget.animation).
     const nonAnimationMessages = [
         { target: 'settings', action: 'set-scene', sceneName: 'SynthBars', sceneSettings: {} },
         { target: 'offscreen', action: 'set-scene', sceneName: 'ChromaWave', sceneSettings: {} },
@@ -1708,10 +1703,8 @@ test('rapid scene switching does not leak canvases or crash', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1795,27 +1788,15 @@ test('scene selection persists across page reload', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
-
-    // Initialize settings UI
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
-    // Save selectedScene through the sandbox proxy (the real code path)
-    await frame.locator('body').evaluate(() => {
-        window.parent.postMessage(
-            { action: 'save-settings', key: 'selectedScene', value: JSON.stringify('ChromaWave') },
-            '*',
-        );
+    // Persist a scene selection the way saveSettings does now — straight to the page's
+    // own localStorage. The sandbox postMessage save-relay is gone; this IS the path.
+    await page.evaluate(() => {
+        localStorage.setItem('audio-visualizer-settings-selectedScene', JSON.stringify('ChromaWave'));
     });
-    await page.waitForTimeout(200);
 
-    // Verify the proxy wrote to localStorage
-    const saved = await page.evaluate(() => {
-        return localStorage.getItem('audio-visualizer-settings-selectedScene');
-    });
+    const saved = await page.evaluate(() => localStorage.getItem('audio-visualizer-settings-selectedScene'));
     expect(saved).toBe(JSON.stringify('ChromaWave'));
 
     // Close and reopen the animation window page
@@ -1826,23 +1807,19 @@ test('scene selection persists across page reload', async () => {
     await page2.setViewportSize({ width: 1600, height: 900 });
     await page2.goto(url);
 
-    const frame2 = page2.frameLocator('#theFrame');
-    await frame2.locator('body').waitFor({ state: 'attached' });
-
-    // Wait for the auto-init from animationWindow/main.js (sends animation-ready on load)
+    // The window reads localStorage directly on load (no animation-ready handshake)
+    // and builds the persisted scene.
     await page2.waitForTimeout(1500);
 
     // Verify localStorage still has ChromaWave after reload
-    const storedScene = await page2.evaluate(() => {
-        return localStorage.getItem('audio-visualizer-settings-selectedScene');
-    });
+    const storedScene = await page2.evaluate(() => localStorage.getItem('audio-visualizer-settings-selectedScene'));
     expect(JSON.parse(storedScene!)).toBe('ChromaWave');
 
     // Pump audio frames and verify canvas exists (scene loaded from persisted selection)
     await pumpAudioFrames(page2, 10);
     await page2.waitForTimeout(200);
 
-    const canvasCount = await frame2.locator('canvas').count();
+    const canvasCount = await page2.locator('canvas').count();
     expect(canvasCount).toBeGreaterThanOrEqual(1);
 
     await page2.close();
@@ -1853,10 +1830,8 @@ test('custom preset round-trip: save, switch, restore', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1970,7 +1945,7 @@ test('stale custom preset falls back to default scene', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    // Write stale preset reference and empty presets map to localStorage BEFORE sandbox init
+    // Write stale preset reference and empty presets map to localStorage before the window loads
     await page.evaluate(() => {
         localStorage.setItem('audio-visualizer-settings-selectedScene', JSON.stringify('custom:DeletedPreset'));
         localStorage.setItem('audio-visualizer-settings-customPresets', JSON.stringify({}));
@@ -1979,13 +1954,12 @@ test('stale custom preset falls back to default scene', async () => {
     // Reload the page so the animation window reads the stale values on init
     await page.reload();
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
-    // Wait for auto-init (animationWindow/main.js sends animation-ready on load)
+    // The window reads localStorage and builds its scene on load (no handshake)
     await page.waitForTimeout(1500);
 
     // Pump audio frames
@@ -2011,77 +1985,65 @@ test('stale custom preset falls back to default scene', async () => {
     await page.close();
 });
 
-test('sandbox settings writes reach localStorage via proxy', async () => {
+test('embedded settings UI writes directly to localStorage (no proxy)', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
-
-    // Initialize sandbox so sandboxEventMessageHolder is set
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
-    // From within the sandbox iframe, post a save-settings message to the parent
-    await frame.locator('body').evaluate(() => {
-        window.parent.postMessage(
-            { action: 'save-settings', key: 'testProxyKey', value: JSON.stringify({ test: true }) },
-            '*',
-        );
-    });
-
-    // Wait for the message to be processed
+    // Toggle "Show FPS" in the embedded dat.gui. Its onChange calls saveSettings(),
+    // which now writes localStorage directly — the sandbox→parent postMessage save
+    // relay is gone. Read the checkbox's current state, flip it, assert it persisted.
+    const checkbox = page
+        .locator('.dg li.cr.boolean')
+        .filter({ hasText: 'Show FPS' })
+        .locator('input[type="checkbox"]');
+    await expect(checkbox).toHaveCount(1);
+    const before = await checkbox.isChecked();
+    await checkbox.click();
     await page.waitForTimeout(200);
 
-    // Read from the animation window's localStorage and verify
-    const storedValue = await page.evaluate(() => {
-        return localStorage.getItem('audio-visualizer-settings-testProxyKey');
-    });
-    expect(storedValue).toBe(JSON.stringify({ test: true }));
+    const stored = await page.evaluate(() => localStorage.getItem('audio-visualizer-settings-showFps'));
+    expect(stored).toBe(JSON.stringify(!before));
 
-    // Clean up the test key
-    await page.evaluate(() => {
-        localStorage.removeItem('audio-visualizer-settings-testProxyKey');
-    });
+    // Clean up
+    await page.evaluate(() => localStorage.removeItem('audio-visualizer-settings-showFps'));
 
     await page.close();
 });
 
-test('butterchurn preset cycle updates settings state', async () => {
+test('butterchurn preset cycle is forwarded to the settings window over chrome.runtime', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
-
-    // Initialize sandbox so sandboxEventMessageHolder is set
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
-    // Set up a message listener on the animation window page BEFORE dispatching
-    // The sandbox forwards butterchurn-preset-cycled events to the parent via postMessage
-    const messagePromise = page.evaluate(() => {
+    // The animation window forwards the in-window 'butterchurn-preset-cycled'
+    // CustomEvent to the settings window over chrome.runtime (was sandbox→parent
+    // postMessage). Observe the runtime message from the service worker.
+    const forwardedPromise = serviceWorker.evaluate(() => {
         return new Promise<{ target: string; action: string; preset: string } | null>((resolve) => {
             const timeout = setTimeout(() => resolve(null), 5000);
-            window.addEventListener('message', function listener(e: MessageEvent) {
-                if (e.data?.action === 'butterchurn-preset-cycled' && e.data?.target === 'settings') {
+            chrome.runtime.onMessage.addListener(function listener(msg: {
+                target?: string;
+                action?: string;
+                preset?: string;
+            }) {
+                if (msg?.action === 'butterchurn-preset-cycled' && msg?.target === 'settings') {
                     clearTimeout(timeout);
-                    window.removeEventListener('message', listener);
-                    resolve({ target: e.data.target, action: e.data.action, preset: e.data.preset });
+                    chrome.runtime.onMessage.removeListener(listener);
+                    resolve({ target: msg.target!, action: msg.action!, preset: msg.preset! });
                 }
             });
         });
     });
 
-    // Dispatch the butterchurn-preset-cycled CustomEvent inside the sandbox iframe
-    await frame.locator('body').evaluate(() => {
+    // Dispatch the CustomEvent on the page, as the cycling butterchurn scene does.
+    await page.evaluate(() => {
         window.dispatchEvent(new CustomEvent('butterchurn-preset-cycled', { detail: 'SomeNewPreset' }));
     });
 
-    // Verify the animation window received the forwarded message
-    const received = await messagePromise;
+    const received = await forwardedPromise;
     expect(received).not.toBeNull();
     expect(received!.target).toBe('settings');
     expect(received!.action).toBe('butterchurn-preset-cycled');
@@ -2094,7 +2056,7 @@ test('malformed settings in localStorage does not crash', async () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    // Seed corruption before the sandbox reads settings
+    // Seed corruption before the window reads settings
     await page.evaluate(() => {
         localStorage.setItem('audio-visualizer-settings-selectedScene', '{not valid json');
         localStorage.setItem('audio-visualizer-settings-customPresets', 'null');
@@ -2102,10 +2064,8 @@ test('malformed settings in localStorage does not crash', async () => {
 
     await page.reload();
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     const canvasCount = await frame.locator('canvas').count();
@@ -2119,10 +2079,8 @@ test('rapid scene switching does not exhaust WebGL context limit', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page.frameLocator('#theFrame');
-    await frame.locator('body').waitFor({ state: 'attached' });
+    const frame = page;
 
-    await postToSandbox(page, { target: 'animation', action: 'animation-ready' });
     await page.waitForTimeout(1000);
 
     for (let pass = 0; pass < 2; pass++) {
@@ -2216,8 +2174,7 @@ test.describe('capture source live switching', () => {
         const animationPage = await animationPagePromise;
         await animationPage.setViewportSize({ width: 1600, height: 900 });
 
-        const frame = animationPage.frameLocator('#theFrame');
-        await frame.locator('body').waitFor({ state: 'attached' });
+        const frame = animationPage;
         // Settings UI build + initial scene (sends startStream, primes offscreen currentStreamType)
         await animationPage.waitForTimeout(1500);
 
@@ -2311,8 +2268,7 @@ test.describe('capture source live switching', () => {
         const page = await captureContext.newPage();
         await page.setViewportSize({ width: 1600, height: 900 });
         await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
-        const frame = page.frameLocator('#theFrame');
-        await frame.locator('body').waitFor({ state: 'attached' });
+        const frame = page;
         await page.waitForTimeout(800);
 
         // Fire two restartCapture messages back-to-back via the runtime bus.
@@ -2373,8 +2329,7 @@ test.describe('capture source live switching', () => {
         });
 
         await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
-        const frame = page.frameLocator('#theFrame');
-        await frame.locator('body').waitFor({ state: 'attached' });
+        const frame = page;
         await page.waitForTimeout(1000);
 
         await page.evaluate(() => {

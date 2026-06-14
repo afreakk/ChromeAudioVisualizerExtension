@@ -24,18 +24,26 @@ See [TESTING.md](TESTING.md) for full details. Tests use Playwright to load the 
 | Entrypoint | File Path | Purpose |
 |------------|-----------|---------|
 | background | `entrypoints/background.ts` | Service worker - tab capture, messaging |
-| sandbox | `entrypoints/sandbox/main.ts` | Sandboxed iframe - runs visualizer scenes |
-| offscreen | `entrypoints/offscreenWindow/main.ts` | Processes audio via Web Audio API |
-| settings | `entrypoints/settingsWindow/main.ts` | Settings UI using dat.gui |
+| animation | `entrypoints/animationWindow/main.ts` | Hosts SceneManager + scenes + embedded dat.gui; renders **all** scenes directly (no sandbox iframe) |
+| offscreen | `entrypoints/offscreenWindow/main.ts` | Captures + analyses audio via Web Audio API |
+| settings | `entrypoints/settingsWindow/main.ts` | External (pop-out) settings UI window using dat.gui |
+
+> butterchurn 3.x compiles its Milkdrop equations to WASM (`'wasm-unsafe-eval'`), so scenes no
+> longer need a sandboxed iframe. The old `entrypoints/sandbox/` entrypoint and its cross-frame
+> relay are gone; scenes render directly in the animation window.
 
 ### Message Flow
 
 ```
-Tab Audio → background.ts → offscreenWindow (audio processing)
-                         → sandbox (scene rendering via postMessage)
+Tab Audio → background.ts → offscreenWindow (audio capture + analysis)
+offscreenWindow → animationWindow (per-frame audio over chrome.runtime, target 'animation')
+                → SceneManager → scene.updateAudioData() → scene.render()
 ```
 
-Audio data sent as `NormalAudioDataDto` or `ButterChurnAudioDataDto` with `timeByteArray` (0-255 values).
+All cross-context messages go directly over `chrome.runtime`; the animation window's
+`chrome.runtime.onMessage` filters `target === 'animation'`. The embedded dat.gui drives the
+in-window scene via `CustomEvent`s. Audio data is sent as `NormalAudioDataDto` or
+`ButterChurnAudioDataDto` with `timeByteArray` (0-255 values).
 
 ### Capture source
 
@@ -47,8 +55,8 @@ and round-trips through the service worker: each dropdown change sends a `restar
 and the responding `restart-capture-ack` carries the authoritative `activeSource` for the UI to
 mirror (success or failure — the mic-denial path auto-restores Tab in background, which the UI
 picks up via the ack). Fresh UI instances receive their initial dropdown value threaded through
-existing setup messages: the sandbox first-build defaults to Tab; sandbox rebuilds after external
-window close receive `source` on the `close-settings-window` message; the external popup reads
+existing setup messages: the animation window's first build defaults to Tab; embedded-UI rebuilds
+after external window close receive `source` on the `close-settings-window` message; the external popup reads
 `?source=<value>` from its URL. Microphone source calls `navigator.mediaDevices.getUserMedia({ audio: true })`
 in the offscreen document — no streamId, no picker. Routing app/system output into Chromium's mic
 input is an OS-mixer concern (e.g., pavucontrol "Monitor of <output>" on Linux). Both sources
@@ -179,7 +187,7 @@ export function mySceneSettings(
 }
 ```
 
-5. **Register in three files**:
+5. **Register in two files**:
 
    `src/scene/sceneNames.ts`:
    ```typescript
@@ -189,21 +197,23 @@ export function mySceneSettings(
    }
    ```
 
-   `entrypoints/sandbox/main.ts`:
+   `src/scene/sceneRegistry.ts` — add a `registerScene({...})` entry (scene class, default
+   settings, and the settings-UI builder are wired here; the animation window builds its
+   `sceneFactoryMap` and the settings UI both from this registry):
    ```typescript
    import { MyScene } from '@/src/scene/scenes/myScene/myScene';
-   scenesMap.set(sceneNames.MyScene.toString(), new MyScene());
+   import { MySceneSetting } from '@/src/scene/scenes/myScene/setting';
+   import { mySceneSettings } from '@/src/userInterface/settings/sceneSettings/mySceneSettings';
+
+   registerScene({
+       sceneName: sceneNames.MyScene,
+       createScene: () => new MyScene(),
+       createDefaultSettings: () => new MySceneSetting(),
+       buildSettingsUI: mySceneSettings,
+   });
    ```
 
-   `src/userInterface/settings/settingsUserInterface.ts`:
-   ```typescript
-   import { MySceneSetting } from '@/src/scene/scenes/myScene/setting';
-   import { mySceneSettings } from './sceneSettings/mySceneSettings';
-   // in buildSettings switch:
-   case sceneNames.MyScene:
-       mySceneSettings(sceneName, settings as MySceneSetting, this.sceneSettingsFolder, this.isExternalUI);
-       break;
-   ```
+   Run `pnpm run check:scenes` to confirm the scene is registered.
 
 ## Audio Data
 
@@ -261,12 +271,15 @@ ctx.fillRect(0, 0, width, height);
 | `src/scene/sceneManager.ts` | Scene lifecycle, render loop |
 | `src/scene/sceneNames.ts` | Scene name enum |
 | `src/utils/eventMessage.ts` | Message types, audio DTOs |
-| `src/utils/settings.ts` | Chrome storage wrapper |
-| `src/userInterface/settings/settingsUserInterface.ts` | Settings UI (register scenes here) |
+| `src/utils/settings.ts` | localStorage-backed settings cache (cross-window sync via `storage` events) |
+| `src/scene/sceneRegistry.ts` | Scene registry — register new scenes here |
+| `src/userInterface/settings/settingsUserInterface.ts` | Settings UI (dat.gui), embedded + external |
+| `entrypoints/animationWindow/main.ts` | Animation window: SceneManager + scenes + embedded dat.gui |
 
 ## Debugging
 
-- Scenes run in sandboxed iframe - inspect the iframe in devtools
+- Scenes run directly in the animation window - inspect it in devtools (no iframe)
+- butterchurn compile/CSP errors surface in the animation window console
 - Audio latency logged every 60 frames
 - `pnpm run compile` for type checking
 - Scene rendering: `src/scene/sceneManager.ts`
