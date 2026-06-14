@@ -10,9 +10,15 @@ declare module 'butterchurn' {
                 mesh_height?: number;
                 pixelRatio?: number;
                 textureRatio?: number;
+                // butterchurn 3.x: only compile Milkdrop equations to WASM (eel-wasm),
+                // never the `new Function` JS fallback. Required under MV3 CSP
+                // ('wasm-unsafe-eval', not 'unsafe-eval'). loadPreset rejects if a
+                // preset lacks WASM support.
+                onlyUseWASM?: boolean;
             },
         ): {
-            loadPreset(preset: unknown, blendTime: number): void;
+            // butterchurn 3.x: loadPreset is async (WASM compile of eel equations).
+            loadPreset(preset: unknown, blendTime: number): Promise<void>;
             setRendererSize(width: number, height: number): void;
             render(opts: {
                 elapsedTime: number;
@@ -29,10 +35,10 @@ declare module 'butterchurn' {
 }
 
 declare module 'butterchurn-presets' {
-    const butterchurnPresets: {
-        getPresets(): Record<string, unknown>;
-    };
-    export default butterchurnPresets;
+    // butterchurn-presets 3.x: the default export IS the preset map
+    // (the 2.x `getPresets()` accessor is gone).
+    const presets: Record<string, unknown>;
+    export default presets;
 }
 
 declare module 'dat.gui' {

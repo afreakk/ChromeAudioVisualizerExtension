@@ -1,10 +1,8 @@
 import butterchurn from 'butterchurn';
-import butterchurnPresets from 'butterchurn-presets';
+import presets from 'butterchurn-presets';
 import type { IScene } from '@/src/scene/scene';
 import { ButterChurnAudioDataDto, streamType } from '@/src/utils/eventMessage';
 import { type ButterchurnSetting, getRandomPreset } from './setting';
-
-const presets = butterchurnPresets.getPresets();
 
 export class Butterchurn implements IScene {
     private canvas: HTMLCanvasElement | null = null;
@@ -37,13 +35,21 @@ export class Butterchurn implements IScene {
             mesh_height: 48,
             pixelRatio: window.devicePixelRatio || 1,
             textureRatio: 1,
+            // Compile Milkdrop equations to WASM only — the `new Function` JS
+            // fallback would need 'unsafe-eval', which MV3 extension pages ban.
+            onlyUseWASM: true,
         });
     }
     updateSettings(settings: ButterchurnSetting): void {
         if (!this.visualizer) return;
         const preset = presets[settings.preset];
         if (!preset) return;
-        this.visualizer.loadPreset(preset, settings.blendLength);
+        // loadPreset is async in butterchurn 3.x (compiles eel → WASM). Swallow
+        // rejections so a bad preset can't surface as an unhandled rejection.
+        this.visualizer.loadPreset(preset, settings.blendLength).catch((error: unknown) => {
+            // biome-ignore lint/suspicious/noConsole: surface preset compile failures (e.g. CSP/WASM) in the visualizer console
+            console.error(`Failed to load butterchurn preset "${settings.preset}":`, error);
+        });
         if (!settings.cyclePresets) {
             if (this.cyclePresetInterval !== null) {
                 clearInterval(this.cyclePresetInterval);

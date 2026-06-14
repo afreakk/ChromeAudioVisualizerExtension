@@ -1,4 +1,4 @@
-import butterchurnPresets from 'butterchurn-presets';
+import presets from 'butterchurn-presets';
 import type { ButterchurnSetting } from '@/src/scene/scenes/butterchurn/setting';
 import { setSceneSettings } from '../settingsManager';
 
@@ -10,7 +10,7 @@ export function buildButterchurnSetting(
     onCleanup?: (cb: () => void) => void,
 ): void {
     settingsFolder
-        .add(butterchurnSettings, 'preset', Object.keys(butterchurnPresets.getPresets()))
+        .add(butterchurnSettings, 'preset', Object.keys(presets))
         .onChange((value: string) => {
             butterchurnSettings.preset = value;
             setSceneSettings(butterchurnSettings, sceneName, isExternalUi);
