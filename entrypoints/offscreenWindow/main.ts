@@ -190,6 +190,15 @@ async function initiateStream(streamId: string, streamSource: captureSource) {
         window.captureIsActive = true;
         streamRetryCount = 0; // Reset on success
         recoveryState = 'idle';
+        // Cancel any recovery re-init still pending from an earlier failed attempt.
+        // On a cold start the animation window's eager `start-stream` can race ahead
+        // of background's `initiate-stream` and arm a recovery timer; once this real
+        // init succeeds that timer is moot and would otherwise fire a redundant
+        // re-capture (~500ms later) and blip the audio.
+        if (retryTimeoutId !== null) {
+            clearTimeout(retryTimeoutId);
+            retryTimeoutId = null;
+        }
     } catch (error) {
         // Clear the invalid stream ID
         initiateStreamId = null;
