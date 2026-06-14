@@ -91,10 +91,10 @@ export class SceneManager {
                 messageAction.startStream,
                 this.scene ? this.scene.streamType : streamType.normal,
             );
-            if (window.sandboxEventMessageHolder?.source) {
-                window.sandboxEventMessageHolder.source.postMessage(animationWindowCreated.toMessage(), {
-                    targetOrigin: window.sandboxEventMessageHolder.origin,
-                });
+            try {
+                chrome.runtime.sendMessage(animationWindowCreated.toMessage());
+            } catch (_e) {
+                // Receiving end (offscreen) may not exist yet
             }
             this.buildingScene = false;
             // Apply buffered audio data so the first render uses fresh data

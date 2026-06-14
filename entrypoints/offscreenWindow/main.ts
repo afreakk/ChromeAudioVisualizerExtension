@@ -2,7 +2,7 @@ import {
     AudioDataEvent,
     ButterChurnAudioDataDto,
     captureSource,
-    GenericEvent,
+    type GenericEvent,
     InitiateStreamEvent,
     messageAction,
     messageTarget,
@@ -107,15 +107,6 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
     }
 
     switch (message.action) {
-        case messageAction.toggleFullScreen: {
-            const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
-            try {
-                chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
-            } catch (_e) {
-                // Receiving end may not exist if animation window is closed
-            }
-            break;
-        }
         case messageAction.startStream: {
             const startStreamMessage = message as StartStreamEvent;
             currentStreamType = startStreamMessage.streamType;

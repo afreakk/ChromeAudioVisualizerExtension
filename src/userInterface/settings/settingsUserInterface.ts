@@ -38,7 +38,6 @@ export class SettingsUserInterface {
     private pendingRestartNonce: string | null = null;
     private initialCaptureSource: captureSource = captureSource.tab;
     private runtimeAckListener: ((message: unknown) => void) | null = null;
-    private windowAckListener: ((event: MessageEvent) => void) | null = null;
 
     constructor(isExternalUI: boolean, initialCaptureSource: captureSource = captureSource.tab) {
         this.isExternalUI = isExternalUI;
@@ -61,13 +60,9 @@ export class SettingsUserInterface {
         const nonce = crypto.randomUUID();
         this.pendingRestartNonce = nonce;
         const event = new RestartCaptureEvent(nonce, source);
-        if (this.isExternalUI) {
-            chrome.runtime.sendMessage(event.toMessage());
-        } else {
-            window.sandboxEventMessageHolder?.source?.postMessage(event.toMessage(), {
-                targetOrigin: window.sandboxEventMessageHolder.origin,
-            });
-        }
+        // Both the embedded (animation-window) UI and the external popup are now
+        // top-level extension pages, so both reach the background via chrome.runtime.
+        chrome.runtime.sendMessage(event.toMessage());
     }
 
     private handleRestartCaptureAck(nonce: unknown, success: unknown, activeSource: unknown): void {
@@ -97,34 +92,25 @@ export class SettingsUserInterface {
     }
 
     private registerRestartCaptureAckListener(): void {
-        if (this.isExternalUI) {
-            this.runtimeAckListener = (message: unknown) => {
-                const m = message as {
-                    action?: string;
-                    nonce?: unknown;
-                    success?: unknown;
-                    activeSource?: unknown;
-                } | null;
-                if (m?.action === messageAction.restartCaptureAck) {
-                    this.handleRestartCaptureAck(m.nonce, m.success, m.activeSource);
-                }
-            };
-            chrome.runtime.onMessage.addListener(this.runtimeAckListener);
-        } else {
-            this.windowAckListener = (event: MessageEvent) => {
-                const data = event.data as {
-                    action?: string;
-                    nonce?: unknown;
-                    success?: unknown;
-                    activeSource?: unknown;
-                } | null;
-                if (data?.action !== messageAction.restartCaptureAck) return;
-                const trustedOrigin = window.sandboxEventMessageHolder?.origin;
-                if (!trustedOrigin || event.origin !== trustedOrigin) return;
-                this.handleRestartCaptureAck(data.nonce, data.success, data.activeSource);
-            };
-            window.addEventListener('message', this.windowAckListener);
-        }
+        // Both UIs (embedded animation window + external popup) receive the ack
+        // over chrome.runtime; nonce-matching in handleRestartCaptureAck ignores
+        // acks for restarts this instance didn't initiate.
+        this.runtimeAckListener = (message: unknown) => {
+            const m = message as {
+                target?: string;
+                action?: string;
+                nonce?: unknown;
+                success?: unknown;
+                activeSource?: unknown;
+            } | null;
+            // Early-return on target so the 60fps audio broadcast (target 'animation')
+            // doesn't run the action check every frame; acks always target 'settings'.
+            if (m?.target !== messageTarget.settings) return;
+            if (m.action === messageAction.restartCaptureAck) {
+                this.handleRestartCaptureAck(m.nonce, m.success, m.activeSource);
+            }
+        };
+        chrome.runtime.onMessage.addListener(this.runtimeAckListener);
     }
     public buildScene() {
         this.gui = new dat.GUI();
@@ -138,10 +124,7 @@ export class SettingsUserInterface {
                                 messageTarget.background,
                                 messageAction.openSettingsWindow,
                             );
-
-                            window.sandboxEventMessageHolder?.source?.postMessage(openSettingsWindowEvent.toMessage(), {
-                                targetOrigin: window.sandboxEventMessageHolder.origin,
-                            });
+                            chrome.runtime.sendMessage(openSettingsWindowEvent.toMessage());
                         },
                     },
                     'openInWindow',
@@ -446,10 +429,6 @@ export class SettingsUserInterface {
         if (this.runtimeAckListener) {
             chrome.runtime.onMessage.removeListener(this.runtimeAckListener);
             this.runtimeAckListener = null;
-        }
-        if (this.windowAckListener) {
-            window.removeEventListener('message', this.windowAckListener);
-            this.windowAckListener = null;
         }
 
         this.captureSourceController = null;

@@ -1,5 +1,3 @@
-import { messageAction } from './eventMessage';
-
 const STORAGE_PREFIX = 'audio-visualizer-settings-';
 
 function keyGenerator(name: string): string {
@@ -8,25 +6,17 @@ function keyGenerator(name: string): string {
 
 export { STORAGE_PREFIX };
 
+// In-memory mirror of persisted settings. All settings consumers are now
+// same-origin extension pages with direct localStorage access; cross-window
+// freshness is kept by `storage`-event listeners that call updateCacheEntry().
 const settingsCache: Record<string, string> = {};
-
-const isSandboxed = window.parent !== window;
-
-/** Bulk-populate the in-memory cache (used by sandbox on init). */
-export function populateSettingsCache(entries: Record<string, string>): void {
-    for (const [key, value] of Object.entries(entries)) {
-        settingsCache[key] = value;
-    }
-}
 
 function parseSettingValue<T>(settingsName: string, raw: string): T | null {
     try {
         return JSON.parse(raw) as T;
     } catch (error) {
         delete settingsCache[settingsName];
-        if (!isSandboxed) {
-            localStorage.removeItem(keyGenerator(settingsName));
-        }
+        localStorage.removeItem(keyGenerator(settingsName));
         console.warn(`Failed to parse stored setting "${settingsName}"; falling back to default`, error);
         return null;
     }
@@ -36,9 +26,6 @@ export function loadSettings<T>(settingsName: string): T | null {
     const cached = settingsCache[settingsName];
     if (cached !== undefined) {
         return parseSettingValue<T>(settingsName, cached);
-    }
-    if (isSandboxed) {
-        return null;
     }
     const stored = localStorage.getItem(keyGenerator(settingsName));
     if (stored !== null) {
@@ -58,10 +45,5 @@ export function updateCacheEntry(key: string, value: string | null): void {
 export function saveSettings<T>(settingsName: string, settings: T): void {
     const json = JSON.stringify(settings);
     settingsCache[settingsName] = json;
-    if (!isSandboxed) {
-        localStorage.setItem(keyGenerator(settingsName), json);
-    } else {
-        // In sandbox: relay save to animation window (parent) which has localStorage
-        window.parent.postMessage({ action: messageAction.saveSettings, key: settingsName, value: json }, '*');
-    }
+    localStorage.setItem(keyGenerator(settingsName), json);
 }
