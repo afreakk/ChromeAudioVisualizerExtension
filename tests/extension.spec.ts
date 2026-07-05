@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type BrowserContext, chromium, expect, test, type Worker } from '@playwright/test';
+import { type BrowserContext, chromium, expect, type Page, test, type Worker } from '@playwright/test';
 import { sceneNames } from '@/src/scene/sceneNames';
 import { RoundSpectrumSetting } from '@/src/scene/scenes/roundSpectrum/setting';
 
@@ -137,8 +137,8 @@ async function pumpLoud(page: any, numFrames: number) {
 
 /** Count non-black pixels on the scene canvas via getImageData (2D) or readPixels (WebGL).
  *  Returns pixel count and detected context type. */
-async function countNonBlackPixels(frame: any): Promise<{ count: number; type: string }> {
-    return frame.locator('body').evaluate((body: HTMLElement) => {
+async function countNonBlackPixels(page: Page): Promise<{ count: number; type: string }> {
+    return page.locator('body').evaluate((body: HTMLElement) => {
         const canvases = Array.from(body.querySelectorAll('canvas'));
         const canvas =
             canvases.find((c) => c.style.position === 'fixed' && c.width > 100 && c.height > 100) || canvases[0];
@@ -236,8 +236,6 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    let frame = page;
-
     await page.waitForTimeout(1000);
 
     const results: { scene: string; canvasCount: number; hasContent: boolean; crashed?: boolean }[] = [];
@@ -259,11 +257,11 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
                 await page.waitForTimeout(50);
 
                 // Check canvas exists
-                const canvasCount = await frame.locator('canvas').count();
+                const canvasCount = await page.locator('canvas').count();
                 expect(canvasCount).toBeGreaterThanOrEqual(1);
 
                 // Verify canvas has proper dimensions and WebGL context is healthy
-                const canvasInfo = await frame
+                const canvasInfo = await page
                     .locator('canvas')
                     .first()
                     .evaluate((canvas: HTMLCanvasElement) => {
@@ -309,7 +307,6 @@ test('cycle through all scenes with synthetic audio and capture', async () => {
             page = await context.newPage();
             await page.setViewportSize({ width: 1600, height: 900 });
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-            frame = page;
             await page.waitForTimeout(1000);
         }
     }
@@ -334,8 +331,6 @@ test('scene settings propagate without errors', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
     // Track errors during settings changes
@@ -353,7 +348,7 @@ test('scene settings propagate without errors', async () => {
     await pumpAudioFrames(page, 30);
 
     // Canvas should exist after scene build
-    const canvasBefore = await frame.locator('canvas').count();
+    const canvasBefore = await page.locator('canvas').count();
     expect(canvasBefore).toBeGreaterThanOrEqual(1);
 
     // Apply modified settings — verify no crash or error
@@ -372,11 +367,11 @@ test('scene settings propagate without errors', async () => {
     await pumpAudioFrames(page, 30, 100);
 
     // Canvas should still exist after settings change (no crash)
-    const canvasAfter = await frame.locator('canvas').count();
+    const canvasAfter = await page.locator('canvas').count();
     expect(canvasAfter).toBeGreaterThanOrEqual(1);
 
     // Verify WebGL context is still valid (not lost)
-    const contextValid = await frame
+    const contextValid = await page
         .locator('canvas')
         .first()
         .evaluate((canvas: HTMLCanvasElement) => {
@@ -399,8 +394,6 @@ test('no WebGL errors across all scenes', async () => {
     let page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    let frame = page;
 
     await page.waitForTimeout(1000);
 
@@ -431,7 +424,7 @@ test('no WebGL errors across all scenes', async () => {
                 await pumpAudioFrames(page, 5);
 
                 // Check for WebGL errors on the page
-                const glError = await frame
+                const glError = await page
                     .locator('canvas')
                     .first()
                     .evaluate((canvas: HTMLCanvasElement) => {
@@ -458,7 +451,6 @@ test('no WebGL errors across all scenes', async () => {
             page = await context.newPage();
             await page.setViewportSize({ width: 1600, height: 900 });
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-            frame = page;
             await page.waitForTimeout(1000);
             attachErrorListeners(page);
         }
@@ -499,7 +491,6 @@ test('scenes visually react to audio input', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
     await page.waitForTimeout(1000);
 
     const results: { scene: string; type: string; silencePixels: number; loudPixels: number; reacted: boolean }[] = [];
@@ -516,11 +507,11 @@ test('scenes visually react to audio input', async () => {
 
         // Phase 1: pump silence, then count non-black pixels
         await pumpSilence(page, 40);
-        const afterSilence = await countNonBlackPixels(frame);
+        const afterSilence = await countNonBlackPixels(page);
 
         // Phase 2: pump loud audio, then count non-black pixels
         await pumpLoud(page, 40);
-        const afterLoud = await countNonBlackPixels(frame);
+        const afterLoud = await countNonBlackPixels(page);
 
         // Scene reacted if loud audio produced more colored pixels than silence
         const reacted = afterLoud.count > afterSilence.count;
@@ -557,7 +548,6 @@ test('audio data and scene control flow over chrome.runtime to the animation win
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
     await page.waitForTimeout(1000);
 
     // Get the service worker to send messages FROM (simulates offscreen document)
@@ -589,7 +579,7 @@ test('audio data and scene control flow over chrome.runtime to the animation win
         });
         await page.waitForTimeout(16);
     }
-    const afterSilence = await countNonBlackPixels(frame);
+    const afterSilence = await countNonBlackPixels(page);
 
     // Pump loud audio through the relay
     for (let f = 0; f < 30; f++) {
@@ -604,7 +594,7 @@ test('audio data and scene control flow over chrome.runtime to the animation win
         });
         await page.waitForTimeout(16);
     }
-    const afterLoud = await countNonBlackPixels(frame);
+    const afterLoud = await countNonBlackPixels(page);
 
     // The scene must have received audio through the chrome.runtime relay
     // and produced more visible pixels with loud audio than silence
@@ -645,8 +635,6 @@ test('butterchurn stereo audio path builds and processes without errors', async 
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
     // Track errors during the entire test
@@ -675,7 +663,7 @@ test('butterchurn stereo audio path builds and processes without errors', async 
         await page.waitForTimeout(1000); // Butterchurn needs extra build time for WASM compile + presets
 
         // Verify canvas was created
-        const canvasCount = await frame.locator('canvas').count();
+        const canvasCount = await page.locator('canvas').count();
         expect(canvasCount).toBeGreaterThanOrEqual(1);
 
         // Generate stereo audio data (1024 bins, 0-255) with distinct L/R channels
@@ -718,13 +706,13 @@ test('butterchurn stereo audio path builds and processes without errors', async 
         }
 
         // Verify canvas still exists after pumping audio
-        const canvasAfter = await frame.locator('canvas').count();
+        const canvasAfter = await page.locator('canvas').count();
         expect(canvasAfter).toBeGreaterThanOrEqual(1);
 
         // butterchurn 3.x renders WebGL into an internal OffscreenCanvas and blits to
         // the scene's output canvas as a 2D context. So the scene canvas is now 2D —
         // verify a 2D context exists and is painted (non-black) rather than WebGL.
-        const contextInfo = await frame
+        const contextInfo = await page
             .locator('canvas')
             .first()
             .evaluate((canvas: HTMLCanvasElement) => {
@@ -759,10 +747,10 @@ test('butterchurn stereo audio path builds and processes without errors', async 
         }
 
         // Final check: canvas still present and WebGL context still healthy
-        const finalCanvasCount = await frame.locator('canvas').count();
+        const finalCanvasCount = await page.locator('canvas').count();
         expect(finalCanvasCount).toBeGreaterThanOrEqual(1);
 
-        const finalContextInfo = await frame
+        const finalContextInfo = await page
             .locator('canvas')
             .first()
             .evaluate((canvas: HTMLCanvasElement) => {
@@ -897,8 +885,6 @@ test('dynamic FPS matching - animation window measures and reports frame rate', 
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
@@ -1006,8 +992,6 @@ test('FPS reporting survives scene transitions', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
 
@@ -1066,8 +1050,6 @@ test('FPS measurement reflects rendering load', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page;
 
     let sw = context.serviceWorkers()[0];
     if (!sw) sw = await context.waitForEvent('serviceworker');
@@ -1175,8 +1157,6 @@ test('switching scenes does not leak canvas elements', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1197,7 +1177,7 @@ test('switching scenes does not leak canvas elements', async () => {
                 await page.waitForTimeout(600);
                 await pumpAudioFrames(page, 10);
 
-                const canvasCount = await frame.locator('canvas').count();
+                const canvasCount = await page.locator('canvas').count();
                 expect(canvasCount).toBe(1);
             }, PER_SCENE_TIMEOUT);
         } catch (_err: any) {}
@@ -1216,8 +1196,6 @@ test('scenes handle malformed audio data without crashing', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1233,7 +1211,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await page.waitForTimeout(600);
     await pumpAudioFrames(page, 10);
 
-    const canvasBefore = await frame.locator('canvas').count();
+    const canvasBefore = await page.locator('canvas').count();
     expect(canvasBefore).toBeGreaterThanOrEqual(1);
 
     // --- Safe inputs: these should produce zero critical errors ---
@@ -1324,7 +1302,7 @@ test('scenes handle malformed audio data without crashing', async () => {
     await pumpAudioFrames(page, 20);
     await page.waitForTimeout(100);
 
-    const canvasAfter = await frame.locator('canvas').count();
+    const canvasAfter = await page.locator('canvas').count();
     expect(canvasAfter).toBeGreaterThanOrEqual(1);
 
     await page.close();
@@ -1334,8 +1312,6 @@ test('non-existent scene name does not crash or change current scene', async () 
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page;
 
     await page.waitForTimeout(1000);
 
@@ -1352,11 +1328,11 @@ test('non-existent scene name does not crash or change current scene', async () 
     await page.waitForTimeout(600);
     await pumpAudioFrames(page, 10);
 
-    const canvasBefore = await frame.locator('canvas').count();
+    const canvasBefore = await page.locator('canvas').count();
     expect(canvasBefore).toBe(1);
 
     // Capture pixel state of the current scene
-    const pixelsBefore = await countNonBlackPixels(frame);
+    const pixelsBefore = await countNonBlackPixels(page);
 
     // Send a set-scene with a completely bogus name
     await postToSandbox(page, {
@@ -1368,7 +1344,7 @@ test('non-existent scene name does not crash or change current scene', async () 
     await page.waitForTimeout(600);
 
     // Canvas count should still be 1 — the current scene must not be destroyed
-    const canvasAfter = await frame.locator('canvas').count();
+    const canvasAfter = await page.locator('canvas').count();
     expect(canvasAfter).toBe(1);
 
     // The scene should still accept audio without crashing
@@ -1382,7 +1358,7 @@ test('non-existent scene name does not crash or change current scene', async () 
     expect(audioErrors).toHaveLength(0);
 
     // Verify the scene still renders (pixels are present)
-    const pixelsAfter = await countNonBlackPixels(frame);
+    const pixelsAfter = await countNonBlackPixels(page);
     // If the original scene was rendering, it should still be rendering
     if (pixelsBefore.count > 0) {
         expect(pixelsAfter.count).toBeGreaterThan(0);
@@ -1401,8 +1377,6 @@ test('audio buffered during scene transition reaches the new scene', async () =>
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page;
 
     await page.waitForTimeout(1000);
 
@@ -1450,10 +1424,10 @@ test('audio buffered during scene transition reaches the new scene', async () =>
     await page.waitForTimeout(100);
 
     // The new scene should have a canvas and be rendering content
-    const canvasCount = await frame.locator('canvas').count();
+    const canvasCount = await page.locator('canvas').count();
     expect(canvasCount).toBe(1);
 
-    const pixels = await countNonBlackPixels(frame);
+    const pixels = await countNonBlackPixels(page);
     // ParticleCircle with loud audio should produce visible output
     expect(pixels.count).toBeGreaterThan(0);
 
@@ -1470,8 +1444,6 @@ test('settings update during scene build does not crash', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page;
 
     await page.waitForTimeout(1000);
 
@@ -1528,7 +1500,7 @@ test('settings update during scene build does not crash', async () => {
     await page.waitForTimeout(100);
 
     // Canvas should exist and scene should be functional
-    const canvasCount = await frame.locator('canvas').count();
+    const canvasCount = await page.locator('canvas').count();
     expect(canvasCount).toBe(1);
 
     // No critical errors from the race condition
@@ -1548,8 +1520,6 @@ test('every registered scene builds canvas within timeout', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    let frame = page;
-
     await page.waitForTimeout(1000);
 
     const failures: { scene: string; reason: string }[] = [];
@@ -1566,7 +1536,7 @@ test('every registered scene builds canvas within timeout', async () => {
                 await page.waitForTimeout(getSceneBuildDelay(sceneName));
 
                 // Canvas must exist
-                const canvasCount = await frame.locator('canvas').count();
+                const canvasCount = await page.locator('canvas').count();
                 if (canvasCount < 1) {
                     failures.push({ scene: sceneName, reason: 'no canvas created' });
                     return;
@@ -1579,7 +1549,7 @@ test('every registered scene builds canvas within timeout', async () => {
                 }
 
                 // Check WebGL context health (if applicable)
-                const contextHealth = await frame
+                const contextHealth = await page
                     .locator('canvas')
                     .first()
                     .evaluate((canvas: HTMLCanvasElement) => {
@@ -1623,7 +1593,6 @@ test('every registered scene builds canvas within timeout', async () => {
             page = await context.newPage();
             await page.setViewportSize({ width: 1600, height: 900 });
             await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-            frame = page;
             await page.waitForTimeout(1000);
         }
     }
@@ -1642,8 +1611,6 @@ test('non-animation target messages do not trigger scene changes', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1659,7 +1626,7 @@ test('non-animation target messages do not trigger scene changes', async () => {
     await page.waitForTimeout(600);
     await pumpAudioFrames(page, 10);
 
-    const canvasBefore = await frame.locator('canvas').count();
+    const canvasBefore = await page.locator('canvas').count();
     expect(canvasBefore).toBe(1);
 
     // Send messages with non-animation targets — the animation window should ignore
@@ -1679,14 +1646,14 @@ test('non-animation target messages do not trigger scene changes', async () => {
     }
 
     // Canvas count should still be 1 — no scene change occurred
-    const canvasAfter = await frame.locator('canvas').count();
+    const canvasAfter = await page.locator('canvas').count();
     expect(canvasAfter).toBe(1);
 
     // The original scene should still work — pump audio and check
     await pumpAudioFrames(page, 10);
     await page.waitForTimeout(100);
 
-    const finalCanvas = await frame.locator('canvas').count();
+    const finalCanvas = await page.locator('canvas').count();
     expect(finalCanvas).toBe(1);
 
     // No critical errors from the ignored messages
@@ -1702,8 +1669,6 @@ test('rapid scene switching does not leak canvases or crash', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page;
 
     await page.waitForTimeout(1000);
 
@@ -1750,7 +1715,7 @@ test('rapid scene switching does not leak canvases or crash', async () => {
     await page.waitForTimeout(2000);
 
     // Assert: exactly 1 canvas
-    const canvasCount = await frame.locator('canvas').count();
+    const canvasCount = await page.locator('canvas').count();
     expect(canvasCount).toBe(1);
 
     // Assert: no critical errors
@@ -1769,7 +1734,7 @@ test('rapid scene switching does not leak canvases or crash', async () => {
     expect(audioErrors).toHaveLength(0);
 
     // Assert: WebGL context not lost (if the final scene uses WebGL)
-    const contextInfo = await frame
+    const contextInfo = await page
         .locator('canvas')
         .first()
         .evaluate((canvas: HTMLCanvasElement) => {
@@ -1830,8 +1795,6 @@ test('custom preset round-trip: save, switch, restore', async () => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
     const errors: string[] = [];
@@ -1863,7 +1826,7 @@ test('custom preset round-trip: save, switch, restore', async () => {
     await pumpAudioFrames(page, 30);
     await page.waitForTimeout(100);
 
-    const defaultPixels = await countNonBlackPixels(frame);
+    const defaultPixels = await countNonBlackPixels(page);
 
     // Save the custom preset to localStorage
     await page.evaluate((settings) => {
@@ -1889,7 +1852,7 @@ test('custom preset round-trip: save, switch, restore', async () => {
     await pumpAudioFrames(page, 30);
     await page.waitForTimeout(100);
 
-    const customPixels = await countNonBlackPixels(frame);
+    const customPixels = await countNonBlackPixels(page);
 
     // Both readbacks should return real counts (2D ctx is reliable, unlike WebGL readPixels)
     expect(defaultPixels.type).toBe('2d');
@@ -1919,10 +1882,10 @@ test('custom preset round-trip: save, switch, restore', async () => {
     await page.waitForTimeout(100);
 
     // Verify canvas exists and scene renders after round-trip
-    const canvasAfterRestore = await frame.locator('canvas').count();
+    const canvasAfterRestore = await page.locator('canvas').count();
     expect(canvasAfterRestore).toBeGreaterThanOrEqual(1);
 
-    const restoredPixels = await countNonBlackPixels(frame);
+    const restoredPixels = await countNonBlackPixels(page);
     expect(restoredPixels.type).toBe('2d');
     expect(restoredPixels.count).toBeGreaterThan(0);
 
@@ -1954,8 +1917,6 @@ test('stale custom preset falls back to default scene', async () => {
     // Reload the page so the animation window reads the stale values on init
     await page.reload();
 
-    const frame = page;
-
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -1967,7 +1928,7 @@ test('stale custom preset falls back to default scene', async () => {
     await page.waitForTimeout(200);
 
     // A scene should have loaded despite the stale preset
-    const canvasCount = await frame.locator('canvas').count();
+    const canvasCount = await page.locator('canvas').count();
     expect(canvasCount).toBeGreaterThanOrEqual(1);
 
     // No critical TypeError/ReferenceError
@@ -2064,11 +2025,9 @@ test('malformed settings in localStorage does not crash', async () => {
 
     await page.reload();
 
-    const frame = page;
-
     await page.waitForTimeout(1000);
 
-    const canvasCount = await frame.locator('canvas').count();
+    const canvasCount = await page.locator('canvas').count();
     expect(canvasCount).toBeGreaterThanOrEqual(1);
 
     await page.close();
@@ -2078,8 +2037,6 @@ test('rapid scene switching does not exhaust WebGL context limit', async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/animationWindow.html`);
-
-    const frame = page;
 
     await page.waitForTimeout(1000);
 
@@ -2095,7 +2052,7 @@ test('rapid scene switching does not exhaust WebGL context limit', async () => {
         }
     }
 
-    const contextOk = await frame
+    const contextOk = await page
         .locator('canvas')
         .first()
         .evaluate((c: HTMLCanvasElement) => {
@@ -2174,7 +2131,6 @@ test.describe('capture source live switching', () => {
         const animationPage = await animationPagePromise;
         await animationPage.setViewportSize({ width: 1600, height: 900 });
 
-        const frame = animationPage;
         // Settings UI build + initial scene (sends startStream, primes offscreen currentStreamType)
         await animationPage.waitForTimeout(1500);
 
@@ -2202,7 +2158,7 @@ test.describe('capture source live switching', () => {
         });
 
         // Flip the dropdown from Tab to Microphone
-        const flip = await frame.locator('body').evaluate(() => {
+        const flip = await animationPage.locator('body').evaluate(() => {
             const rows = Array.from(document.querySelectorAll('.cr'));
             const row = rows.find((r) => r.textContent?.includes('Capture source'));
             const select = (row?.querySelector('select') as HTMLSelectElement | null) ?? null;
@@ -2239,7 +2195,7 @@ test.describe('capture source live switching', () => {
         await expect
             .poll(
                 async () =>
-                    frame.locator('body').evaluate(() => {
+                    animationPage.locator('body').evaluate(() => {
                         const rows = Array.from(document.querySelectorAll('.cr'));
                         const row = rows.find((r) => r.textContent?.includes('Capture source'));
                         return (row?.querySelector('select') as HTMLSelectElement | null)?.disabled ?? true;
@@ -2268,7 +2224,6 @@ test.describe('capture source live switching', () => {
         const page = await captureContext.newPage();
         await page.setViewportSize({ width: 1600, height: 900 });
         await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
-        const frame = page;
         await page.waitForTimeout(800);
 
         // Fire two restartCapture messages back-to-back via the runtime bus.
@@ -2329,7 +2284,6 @@ test.describe('capture source live switching', () => {
         });
 
         await page.goto(`chrome-extension://${captureExtensionId}/animationWindow.html`);
-        const frame = page;
         await page.waitForTimeout(1000);
 
         await page.evaluate(() => {
@@ -2344,7 +2298,7 @@ test.describe('capture source live switching', () => {
             });
         });
 
-        await frame.locator('body').evaluate(() => {
+        await page.locator('body').evaluate(() => {
             const rows = Array.from(document.querySelectorAll('.cr'));
             const row = rows.find((r) => r.textContent?.includes('Capture source'));
             const select = (row?.querySelector('select') as HTMLSelectElement | null) ?? null;
@@ -2365,7 +2319,7 @@ test.describe('capture source live switching', () => {
         await expect
             .poll(
                 async () =>
-                    frame.locator('body').evaluate(() => {
+                    page.locator('body').evaluate(() => {
                         const rows = Array.from(document.querySelectorAll('.cr'));
                         const row = rows.find((r) => r.textContent?.includes('Capture source'));
                         return (row?.querySelector('select') as HTMLSelectElement | null)?.disabled ?? true;
@@ -2377,7 +2331,7 @@ test.describe('capture source live switching', () => {
         // The mic-prime failure path logs a permission warning — proves we hit the denial branch, not the animationWindowId-null branch
         expect(consoleErrors.some((e) => e.toLowerCase().includes('microphone permission denied'))).toBe(true);
 
-        const droppedBackToTab = await frame.locator('body').evaluate(() => {
+        const droppedBackToTab = await page.locator('body').evaluate(() => {
             const rows = Array.from(document.querySelectorAll('.cr'));
             const row = rows.find((r) => r.textContent?.includes('Capture source'));
             return (row?.querySelector('select') as HTMLSelectElement | null)?.value ?? '';
