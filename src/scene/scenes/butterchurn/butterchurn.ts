@@ -42,8 +42,14 @@ export class Butterchurn implements IScene {
     }
     updateSettings(settings: ButterchurnSetting): void {
         if (!this.visualizer) return;
+        if (!presets[settings.preset]) {
+            // A persisted preset name may no longer exist in the bundled pack
+            // (9 presets were dropped between butterchurn-presets 2.x and 3.x).
+            // Fall back to a random one instead of silently rendering nothing.
+            settings.preset = getRandomPreset();
+            window.dispatchEvent(new CustomEvent('butterchurn-preset-cycled', { detail: settings.preset }));
+        }
         const preset = presets[settings.preset];
-        if (!preset) return;
         // loadPreset is async in butterchurn 3.x (compiles eel → WASM). Swallow
         // rejections so a bad preset can't surface as an unhandled rejection.
         this.visualizer.loadPreset(preset, settings.blendLength).catch((error: unknown) => {
