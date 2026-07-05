@@ -280,7 +280,6 @@ ctx.fillRect(0, 0, width, height);
 
 - Scenes run directly in the animation window - inspect it in devtools (no iframe)
 - butterchurn compile/CSP errors surface in the animation window console
-- Audio latency logged every 60 frames
 - `pnpm run compile` for type checking
 - Scene rendering: `src/scene/sceneManager.ts`
 - Audio processing: `entrypoints/offscreenWindow/main.ts`

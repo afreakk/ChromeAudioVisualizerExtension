@@ -172,6 +172,7 @@ window.addEventListener('storage', (e) => {
     }
 });
 
+let lastRenderedFps = -1;
 function updateFpsOverlay() {
     if (showFpsOverlay) {
         if (!cachedFpsOverlay) {
@@ -180,8 +181,13 @@ function updateFpsOverlay() {
             cachedFpsOverlay.style.cssText =
                 'position:fixed;top:8px;left:8px;z-index:999999;color:#00ff00;font-family:monospace;font-size:14px;background:rgba(0,0,0,0.5);padding:4px 8px;border-radius:4px;pointer-events:none;';
             document.body.appendChild(cachedFpsOverlay);
+            lastRenderedFps = -1;
         }
-        cachedFpsOverlay.textContent = `${currentFps} FPS`;
+        // currentFps only changes every 2s; skip the per-frame text-node replacement
+        if (currentFps !== lastRenderedFps) {
+            cachedFpsOverlay.textContent = `${currentFps} FPS`;
+            lastRenderedFps = currentFps;
+        }
     } else if (cachedFpsOverlay) {
         cachedFpsOverlay.remove();
         cachedFpsOverlay = null;
