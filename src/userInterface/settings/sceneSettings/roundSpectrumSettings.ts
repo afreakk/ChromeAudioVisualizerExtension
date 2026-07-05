@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { RoundSpectrumSetting } from '@/src/scene/scenes/roundSpectrum/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function roundSpectrumSettings(
     sceneName: string,
     settings: RoundSpectrumSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Color Settings

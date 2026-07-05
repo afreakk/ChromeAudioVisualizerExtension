@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { AudioTerrainSetting } from '@/src/scene/scenes/audioTerrain/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function audioTerrainSettings(
     sceneName: string,
     settings: AudioTerrainSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Grid & Movement

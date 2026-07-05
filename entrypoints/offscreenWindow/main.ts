@@ -77,11 +77,13 @@ function scheduleRecovery(): void {
 
     if (streamRetryCount > MAX_STREAM_RETRIES) {
         recoveryState = 'idle';
+        // biome-ignore lint/suspicious/noConsole: permanent capture loss must be visible in the offscreen console
         console.error(`Stream recovery failed after ${MAX_STREAM_RETRIES} attempts, giving up`);
         return;
     }
 
     const delay = BASE_RETRY_DELAY_MS * 2 ** (streamRetryCount - 1);
+    // biome-ignore lint/suspicious/noConsole: recovery attempts should be traceable when debugging capture drops
     console.warn(`Stream recovery attempt ${streamRetryCount}/${MAX_STREAM_RETRIES}, retrying in ${delay}ms`);
 
     retryTimeoutId = setTimeout(() => {

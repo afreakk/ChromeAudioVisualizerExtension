@@ -63,8 +63,8 @@ declare module 'dat.gui' {
     export type GUIFolder = GUI;
 
     export class GUIController {
-        onChange(fn: (value: unknown) => void): GUIController;
-        onFinishChange(fn: (value: unknown) => void): GUIController;
+        onChange<T = unknown>(fn: (value: T) => void): GUIController;
+        onFinishChange<T = unknown>(fn: (value: T) => void): GUIController;
         setValue(value: unknown): GUIController;
         getValue(): unknown;
         name(name: string): GUIController;

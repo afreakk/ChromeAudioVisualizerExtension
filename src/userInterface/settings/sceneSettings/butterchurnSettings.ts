@@ -1,11 +1,12 @@
 import presets from 'butterchurn-presets';
+import type { GUIFolder } from 'dat.gui';
 import type { ButterchurnSetting } from '@/src/scene/scenes/butterchurn/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function buildButterchurnSetting(
     sceneName: string,
     butterchurnSettings: ButterchurnSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
     onCleanup?: (cb: () => void) => void,
 ): void {

@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { NeuralWebSetting } from '@/src/scene/scenes/neuralWeb/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function neuralWebSettings(
     sceneName: string,
     settings: NeuralWebSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Nodes

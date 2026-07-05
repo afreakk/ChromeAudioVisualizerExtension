@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { OrbitalRingSetting } from '@/src/scene/scenes/orbitalRing/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function orbitalRingSettings(
     sceneName: string,
     settings: OrbitalRingSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Ring configuration

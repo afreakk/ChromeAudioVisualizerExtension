@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { WormSceneSetting } from '@/src/scene/scenes/wormScene/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function wormSceneSettings(
     sceneName: string,
     settings: WormSceneSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder.add(settings, 'moveLength', 0.0, 0.1).onChange((value: number) => {

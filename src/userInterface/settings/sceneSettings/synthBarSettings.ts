@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { SynthBarsSetting } from '@/src/scene/scenes/synthBars/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function synthBarSettings(
     sceneName: string,
     synthbarSettings: SynthBarsSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder.addColor(synthbarSettings, 'bottomColor').onChange((value: string) => {

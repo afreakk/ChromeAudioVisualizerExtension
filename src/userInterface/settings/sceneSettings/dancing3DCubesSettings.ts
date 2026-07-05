@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { Dancing3DCubesSetting } from '@/src/scene/scenes/dancing3DCubes/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function dancing3DCubesSettings(
     sceneName: string,
     settings: Dancing3DCubesSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Movement & Animation

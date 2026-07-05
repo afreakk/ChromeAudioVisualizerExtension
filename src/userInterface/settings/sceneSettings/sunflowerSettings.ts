@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { SunFlowerSetting } from '@/src/scene/scenes/sunflower/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function sunFlowerSettings(
     sceneName: string,
     sunFlowerSettings: SunFlowerSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder.addColor(sunFlowerSettings, 'innerColor').onChange((value: string) => {

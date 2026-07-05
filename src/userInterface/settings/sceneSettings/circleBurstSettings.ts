@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { CircleBurstSetting } from '@/src/scene/scenes/circleBurst/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function circleBurstSettings(
     sceneName: string,
     settings: CircleBurstSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Circle dimensions

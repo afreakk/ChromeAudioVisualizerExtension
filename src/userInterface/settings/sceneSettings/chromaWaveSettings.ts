@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { ChromaWaveSetting } from '@/src/scene/scenes/chromaWave/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function chromaWaveSettings(
     sceneName: string,
     settings: ChromaWaveSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Audio reactivity - most important setting!

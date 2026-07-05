@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { PsychedelicCubeSetting } from '@/src/scene/scenes/psychedelicCube/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function psychedelicCubeSettings(
     sceneName: string,
     settings: PsychedelicCubeSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder

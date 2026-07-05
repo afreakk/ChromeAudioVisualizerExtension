@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { DancingCubes3DSinusSetting } from '@/src/scene/scenes/dancingCubes3DSinus/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function dancingCubes3DSinusSettings(
     sceneName: string,
     settings: DancingCubes3DSinusSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder.add(settings, 'danceSpeed', 0.0, 0.001).onChange((value: number) => {

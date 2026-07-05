@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { DancingHorizonSetting } from '@/src/scene/scenes/dancingHorizon/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function dancingHorizonSettings(
     sceneName: string,
     dancingHorizonSettings: DancingHorizonSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder.addColor(dancingHorizonSettings, 'horizonColorNight').onChange((value: string) => {

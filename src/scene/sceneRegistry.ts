@@ -1,3 +1,4 @@
+import type { GUIFolder } from 'dat.gui';
 import type { IScene } from '@/src/scene/scene';
 import { sceneNames } from '@/src/scene/sceneNames';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
@@ -75,7 +76,7 @@ export interface SceneRegistryEntry {
     buildSettingsUI: (
         sceneName: string,
         settings: any,
-        settingsFolder: any,
+        settingsFolder: GUIFolder,
         isExternalUi: boolean,
         onCleanup?: (cb: () => void) => void,
     ) => void;

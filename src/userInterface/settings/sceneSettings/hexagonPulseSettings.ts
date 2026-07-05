@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { HexagonPulseSetting } from '@/src/scene/scenes/hexagonPulse/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function hexagonPulseSettings(
     sceneName: string,
     settings: HexagonPulseSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Hexagon grid

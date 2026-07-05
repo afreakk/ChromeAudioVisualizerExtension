@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { FloatingCubesSetting } from '@/src/scene/scenes/floatingCubes/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function floatingCubesSettings(
     sceneName: string,
     settings: FloatingCubesSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Cubes

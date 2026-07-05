@@ -49,6 +49,7 @@ export class SceneManager {
                 this.scene.updateSettings(settings);
             }
         } catch (_error) {
+            // biome-ignore lint/suspicious/noConsole: scene build failures should be visible in the animation window console
             console.error('Failed to build scene:', _error);
         } finally {
             // Tell offscreen which analyser set (normal vs butterchurn stereo) to feed

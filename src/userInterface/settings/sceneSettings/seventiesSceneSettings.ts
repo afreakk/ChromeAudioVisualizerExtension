@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { SeventiesSceneSetting } from '@/src/scene/scenes/seventiesScene/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function seventiesSceneSettings(
     sceneName: string,
     settings: SeventiesSceneSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Circle Spawning

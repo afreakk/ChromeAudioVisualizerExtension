@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { ParticleCircleSetting } from '@/src/scene/scenes/particleCircle/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function particleCircleSettings(
     sceneName: string,
     settings: ParticleCircleSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Color Settings

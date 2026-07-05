@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { FrostFireSetting } from '@/src/scene/scenes/frostfire/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function frostFireSettings(
     sceneName: string,
     frostFireSettings: FrostFireSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     settingsFolder.addColor(frostFireSettings, 'frostColor').onChange((value: string) => {

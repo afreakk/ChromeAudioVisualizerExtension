@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { CosmicAuroraSetting } from '@/src/scene/scenes/cosmicAurora/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function cosmicAuroraSettings(
     sceneName: string,
     settings: CosmicAuroraSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Aurora folder

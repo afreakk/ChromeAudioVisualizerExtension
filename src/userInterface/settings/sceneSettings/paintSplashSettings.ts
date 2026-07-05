@@ -1,10 +1,11 @@
+import type { GUIFolder } from 'dat.gui';
 import type { PaintSplashSetting } from '@/src/scene/scenes/paintSplash/setting';
 import { setSceneSettings } from '../settingsManager';
 
 export function paintSplashSettings(
     sceneName: string,
     settings: PaintSplashSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean,
 ): void {
     // Splash configuration
