@@ -1,12 +1,6 @@
 import type { IScene } from '@/src/scene/scene';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
-import {
-    type IAudioDataDto,
-    messageAction,
-    messageTarget,
-    StartStreamEvent,
-    streamType,
-} from '@/src/utils/eventMessage';
+import { type IAudioDataDto, startStreamMessage, streamType } from '@/src/utils/eventMessage';
 
 export class SceneManager {
     private scene: IScene | null = null;
@@ -57,13 +51,9 @@ export class SceneManager {
         } catch (_error) {
             console.error('Failed to build scene:', _error);
         } finally {
-            const animationWindowCreated = new StartStreamEvent(
-                messageTarget.offscreen,
-                messageAction.startStream,
-                this.scene ? this.scene.streamType : streamType.normal,
-            );
+            // Tell offscreen which analyser set (normal vs butterchurn stereo) to feed
             try {
-                chrome.runtime.sendMessage(animationWindowCreated.toMessage());
+                chrome.runtime.sendMessage(startStreamMessage(this.scene ? this.scene.streamType : streamType.normal));
             } catch (_e) {
                 // Receiving end (offscreen) may not exist yet
             }

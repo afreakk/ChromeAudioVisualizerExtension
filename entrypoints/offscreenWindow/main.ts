@@ -1,14 +1,15 @@
 import {
-    AudioDataEvent,
+    type AppMessage,
+    audioDataMessage,
     ButterChurnAudioDataDto,
     captureSource,
-    type GenericEvent,
-    InitiateStreamEvent,
+    type InitiateStreamMessage,
+    initiateStreamMessage,
     messageAction,
     messageTarget,
     NormalAudioDataDto,
-    type SetFpsEvent,
-    type StartStreamEvent,
+    type SetFpsMessage,
+    type StartStreamMessage,
     streamType,
 } from '@/src/utils/eventMessage';
 
@@ -86,21 +87,15 @@ function scheduleRecovery(): void {
     retryTimeoutId = setTimeout(() => {
         recoveryState = 'idle';
         retryTimeoutId = null;
-        const requestNewStream = new InitiateStreamEvent(
-            messageTarget.background,
-            messageAction.initiateStream,
-            '',
-            lastCaptureSource,
-        );
         try {
-            chrome.runtime.sendMessage(requestNewStream.toMessage());
+            chrome.runtime.sendMessage(initiateStreamMessage(messageTarget.background, '', lastCaptureSource));
         } catch (_e) {
             // Receiving end may not exist
         }
     }, delay);
 }
 
-chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent | InitiateStreamEvent | SetFpsEvent) => {
+chrome.runtime.onMessage.addListener((message: AppMessage) => {
     // Only process messages targeted at offscreen
     if (message.target !== messageTarget.offscreen) {
         return;
@@ -108,15 +103,14 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
 
     switch (message.action) {
         case messageAction.startStream: {
-            const startStreamMessage = message as StartStreamEvent;
-            currentStreamType = startStreamMessage.streamType;
+            currentStreamType = (message as StartStreamMessage).streamType;
             startStream();
             break;
         }
         case messageAction.initiateStream: {
-            const initiateStreamMessage = message as InitiateStreamEvent;
-            initiateStreamId = initiateStreamMessage.streamId;
-            lastCaptureSource = initiateStreamMessage.source ?? captureSource.tab;
+            const initiate = message as InitiateStreamMessage;
+            initiateStreamId = initiate.streamId;
+            lastCaptureSource = initiate.source ?? captureSource.tab;
             initiateStream(initiateStreamId, lastCaptureSource).then(() => {
                 // After successfully initiating stream, start the capture loop if we have a stream type
                 if (currentStreamType !== null) {
@@ -130,8 +124,7 @@ chrome.runtime.onMessage.addListener((message: GenericEvent | StartStreamEvent |
             break;
         }
         case messageAction.setFps: {
-            const fpsMessage = message as SetFpsEvent;
-            targetFps = fpsMessage.fps;
+            targetFps = (message as SetFpsMessage).fps;
             // Calculate capture interval from FPS (with small buffer to ensure fresh data)
             captureInterval = Math.round(1000 / targetFps);
             // Clamp to reasonable range (8ms = 120fps max, 33ms = 30fps min)
@@ -239,13 +232,8 @@ async function startStream() {
 
             copyToPlainArray(normalDataArray, normalPlainArray);
             const audioData = new NormalAudioDataDto(normalPlainArray, captureTimestamp);
-            const audioDataMessage = new AudioDataEvent(
-                messageTarget.animation,
-                messageAction.updateAudioData,
-                audioData,
-            );
             try {
-                chrome.runtime.sendMessage(audioDataMessage.toMessage());
+                chrome.runtime.sendMessage(audioDataMessage(audioData));
             } catch (_e) {
                 // Receiving end may not exist if animation window is closed
             }
@@ -268,13 +256,8 @@ async function startStream() {
                 butterChurnPlainArrayR,
                 captureTimestamp,
             );
-            const audioDataMessage = new AudioDataEvent(
-                messageTarget.animation,
-                messageAction.updateAudioData,
-                audioData,
-            );
             try {
-                chrome.runtime.sendMessage(audioDataMessage.toMessage());
+                chrome.runtime.sendMessage(audioDataMessage(audioData));
             } catch (_e) {
                 // Receiving end may not exist if animation window is closed
             }

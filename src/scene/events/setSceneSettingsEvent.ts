@@ -1,19 +1,12 @@
-import { GenericEvent, type messageAction, type messageTarget } from '@/src/utils/eventMessage';
+import { type AppMessage, messageAction, messageTarget } from '@/src/utils/eventMessage';
 import type { ISceneSetting } from '../sceneSetting';
 
-export class SetSceneSettingsEvent extends GenericEvent {
+export interface SetSceneSettingsMessage extends AppMessage {
     sceneSettings: ISceneSetting;
-
-    constructor(target: messageTarget, action: messageAction, sceneSettings: ISceneSetting) {
-        super(target, action);
-        this.sceneSettings = sceneSettings;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            sceneSettings: this.sceneSettings,
-        };
-    }
 }
+
+export const setSceneSettingsMessage = (sceneSettings: ISceneSetting): SetSceneSettingsMessage => ({
+    target: messageTarget.animation,
+    action: messageAction.setSceneSettings,
+    sceneSettings,
+});

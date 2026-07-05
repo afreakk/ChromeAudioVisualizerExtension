@@ -1,6 +1,5 @@
-import { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
+import { setSceneSettingsMessage } from '@/src/scene/events/setSceneSettingsEvent';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
-import { messageAction, messageTarget } from '@/src/utils/eventMessage';
 
 /**
  * Direct hooks into the animation window's scene state. The embedded dat.gui and
@@ -30,10 +29,5 @@ export function setSceneSettings(sceneSettings: ISceneSetting, _sceneName: strin
         getEmbeddedUiHost()?.setSceneSettings(sceneSettings);
         return;
     }
-    const sceneSettingEventMessage = new SetSceneSettingsEvent(
-        messageTarget.animation,
-        messageAction.setSceneSettings,
-        sceneSettings,
-    );
-    chrome.runtime.sendMessage(sceneSettingEventMessage.toMessage());
+    chrome.runtime.sendMessage(setSceneSettingsMessage(sceneSettings));
 }

@@ -1,14 +1,16 @@
 import * as dat from 'dat.gui';
-import { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
+import { setSceneMessage } from '@/src/scene/events/setSceneEvent';
 import { sceneNames } from '@/src/scene/sceneNames';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import {
+    appMessage,
     captureSource,
-    GenericEvent,
     messageAction,
     messageTarget,
-    RestartCaptureEvent,
+    restartCaptureMessage,
+    settingsWindowMessage,
+    showFpsOverlayMessage,
 } from '@/src/utils/eventMessage';
 import {
     customPresetKey,
@@ -19,7 +21,6 @@ import {
     savePreset,
 } from '@/src/utils/presetManager';
 import { loadSettings, saveSettings } from '@/src/utils/settings';
-import { SettingsWindowEvent } from './events/SettingsWindowEvent';
 import { getEmbeddedUiHost, setSceneSettings } from './settingsManager';
 
 export class SettingsUserInterface {
@@ -59,10 +60,9 @@ export class SettingsUserInterface {
     private sendRestartCapture(source: captureSource): void {
         const nonce = crypto.randomUUID();
         this.pendingRestartNonce = nonce;
-        const event = new RestartCaptureEvent(nonce, source);
-        // Both the embedded (animation-window) UI and the external popup are now
+        // Both the embedded (animation-window) UI and the external popup are
         // top-level extension pages, so both reach the background via chrome.runtime.
-        chrome.runtime.sendMessage(event.toMessage());
+        chrome.runtime.sendMessage(restartCaptureMessage(nonce, source));
     }
 
     private handleRestartCaptureAck(nonce: unknown, success: unknown, activeSource: unknown): void {
@@ -120,11 +120,9 @@ export class SettingsUserInterface {
                 .add(
                     {
                         openInWindow: () => {
-                            const openSettingsWindowEvent = new SettingsWindowEvent(
-                                messageTarget.background,
-                                messageAction.openSettingsWindow,
+                            chrome.runtime.sendMessage(
+                                settingsWindowMessage(messageTarget.background, messageAction.openSettingsWindow),
                             );
-                            chrome.runtime.sendMessage(openSettingsWindowEvent.toMessage());
                         },
                     },
                     'openInWindow',
@@ -151,8 +149,7 @@ export class SettingsUserInterface {
                 if (!this.isExternalUI) {
                     getEmbeddedUiHost()?.setShowFpsOverlay(enabled);
                 } else {
-                    const showFpsEventMessage = new GenericEvent(messageTarget.animation, messageAction.showFpsOverlay);
-                    chrome.runtime.sendMessage({ ...showFpsEventMessage.toMessage(), value: enabled });
+                    chrome.runtime.sendMessage(showFpsOverlayMessage(enabled));
                 }
             });
 
@@ -207,8 +204,7 @@ export class SettingsUserInterface {
             getEmbeddedUiHost()?.toggleFullScreen();
             return;
         }
-        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
-        chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
+        chrome.runtime.sendMessage(appMessage(messageTarget.animation, messageAction.toggleFullScreen));
     }
     private buildSceneOptions(): Record<string, string> {
         const options: Record<string, string> = {};
@@ -250,13 +246,7 @@ export class SettingsUserInterface {
             getEmbeddedUiHost()?.setScene(baseScene, settings);
             return;
         }
-        const sceneEventMessage = new SetSceneEvent(
-            messageTarget.animation,
-            messageAction.setScene,
-            baseScene,
-            settings,
-        );
-        chrome.runtime.sendMessage(sceneEventMessage.toMessage());
+        chrome.runtime.sendMessage(setSceneMessage(baseScene, settings));
     }
 
     private buildSettings(sceneKey: string): ISceneSetting {

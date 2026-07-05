@@ -60,134 +60,107 @@ export class ButterChurnAudioDataDto implements IAudioDataDto {
         this.timestamp = timestamp;
     }
 }
-export class GenericEvent {
+/**
+ * Message shapes sent over chrome.runtime. Every message carries `target` (which
+ * context should handle it) and `action`. The factory functions below are the only
+ * producers; receivers filter on `target`, then narrow on `action`.
+ *
+ * chrome.runtime messages are JSON-serialized in transport, so optional fields left
+ * `undefined` are simply omitted — no manual omit logic is needed.
+ */
+export interface AppMessage {
     target: messageTarget;
     action: messageAction;
-
-    constructor(target: messageTarget, action: messageAction) {
-        this.target = target;
-        this.action = action;
-    }
-
-    toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-        };
-    }
 }
-export class AudioDataEvent extends GenericEvent {
+export interface AudioDataMessage extends AppMessage {
     audioData: IAudioDataDto;
-
-    constructor(target: messageTarget, action: messageAction, audioData: IAudioDataDto) {
-        super(target, action);
-        this.audioData = audioData;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            audioData: this.audioData,
-        };
-    }
 }
-export class InitiateStreamEvent extends GenericEvent {
+export interface InitiateStreamMessage extends AppMessage {
     streamId: string;
     source?: captureSource;
-
-    constructor(target: messageTarget, action: messageAction, streamId: string, source?: captureSource) {
-        super(target, action);
-        this.streamId = streamId;
-        this.source = source;
-    }
-
-    override toMessage() {
-        const message: {
-            target: messageTarget;
-            action: messageAction;
-            streamId: string;
-            source?: captureSource;
-        } = {
-            target: this.target,
-            action: this.action,
-            streamId: this.streamId,
-        };
-        if (this.source !== undefined) {
-            message.source = this.source;
-        }
-        return message;
-    }
 }
-export class StartStreamEvent extends GenericEvent {
+export interface StartStreamMessage extends AppMessage {
     streamType: streamType;
-
-    constructor(target: messageTarget, action: messageAction, streamType: streamType) {
-        super(target, action);
-        this.streamType = streamType;
-    }
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            streamType: this.streamType,
-        };
-    }
 }
-export class SetFpsEvent extends GenericEvent {
+export interface SetFpsMessage extends AppMessage {
     fps: number;
-
-    constructor(target: messageTarget, action: messageAction, fps: number) {
-        super(target, action);
-        this.fps = fps;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            fps: this.fps,
-        };
-    }
 }
-export class RestartCaptureEvent extends GenericEvent {
+export interface ShowFpsOverlayMessage extends AppMessage {
+    value: boolean;
+}
+export interface RestartCaptureMessage extends AppMessage {
     nonce: string;
     source: captureSource;
-
-    constructor(nonce: string, source: captureSource) {
-        super(messageTarget.background, messageAction.restartCapture);
-        this.nonce = nonce;
-        this.source = source;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            nonce: this.nonce,
-            source: this.source,
-        };
-    }
 }
-export class RestartCaptureAckEvent extends GenericEvent {
+export interface RestartCaptureAckMessage extends AppMessage {
     nonce: string;
     success: boolean;
     activeSource: captureSource;
-
-    constructor(nonce: string, success: boolean, activeSource: captureSource) {
-        super(messageTarget.settings, messageAction.restartCaptureAck);
-        this.nonce = nonce;
-        this.success = success;
-        this.activeSource = activeSource;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            nonce: this.nonce,
-            success: this.success,
-            activeSource: this.activeSource,
-        };
-    }
 }
+/** Open/close notifications for the external settings window; `source` threads the
+ * current capture source to a freshly (re)built embedded UI. */
+export interface SettingsWindowMessage extends AppMessage {
+    source?: captureSource;
+}
+
+export const appMessage = (target: messageTarget, action: messageAction): AppMessage => ({ target, action });
+
+export const audioDataMessage = (audioData: IAudioDataDto): AudioDataMessage => ({
+    target: messageTarget.animation,
+    action: messageAction.updateAudioData,
+    audioData,
+});
+
+export const initiateStreamMessage = (
+    target: messageTarget,
+    streamId: string,
+    source?: captureSource,
+): InitiateStreamMessage => ({
+    target,
+    action: messageAction.initiateStream,
+    streamId,
+    source,
+});
+
+export const startStreamMessage = (type: streamType): StartStreamMessage => ({
+    target: messageTarget.offscreen,
+    action: messageAction.startStream,
+    streamType: type,
+});
+
+export const setFpsMessage = (fps: number): SetFpsMessage => ({
+    target: messageTarget.offscreen,
+    action: messageAction.setFps,
+    fps,
+});
+
+export const showFpsOverlayMessage = (value: boolean): ShowFpsOverlayMessage => ({
+    target: messageTarget.animation,
+    action: messageAction.showFpsOverlay,
+    value,
+});
+
+export const restartCaptureMessage = (nonce: string, source: captureSource): RestartCaptureMessage => ({
+    target: messageTarget.background,
+    action: messageAction.restartCapture,
+    nonce,
+    source,
+});
+
+export const restartCaptureAckMessage = (
+    nonce: string,
+    success: boolean,
+    activeSource: captureSource,
+): RestartCaptureAckMessage => ({
+    target: messageTarget.settings,
+    action: messageAction.restartCaptureAck,
+    nonce,
+    success,
+    activeSource,
+});
+
+export const settingsWindowMessage = (
+    target: messageTarget,
+    action: messageAction,
+    source?: captureSource,
+): SettingsWindowMessage => ({ target, action, source });

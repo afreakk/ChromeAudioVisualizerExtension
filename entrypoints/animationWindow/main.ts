@@ -4,7 +4,13 @@ import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
 import { registerEmbeddedUiHost } from '@/src/userInterface/settings/settingsManager';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
-import { captureSource, type IAudioDataDto, messageAction, messageTarget, SetFpsEvent } from '@/src/utils/eventMessage';
+import {
+    captureSource,
+    type IAudioDataDto,
+    messageAction,
+    messageTarget,
+    setFpsMessage,
+} from '@/src/utils/eventMessage';
 import { loadSettings, STORAGE_PREFIX, updateCacheEntry } from '@/src/utils/settings';
 
 // Scenes (incl. butterchurn) now render directly in this window. butterchurn 3.x
@@ -230,8 +236,7 @@ function render() {
             // Clamp FPS to reasonable range (30-120fps)
             const clampedFps = Math.max(30, Math.min(120, fps));
 
-            const fpsUpdate = new SetFpsEvent(messageTarget.offscreen, messageAction.setFps, clampedFps);
-            chrome.runtime.sendMessage(fpsUpdate.toMessage());
+            chrome.runtime.sendMessage(setFpsMessage(clampedFps));
 
             lastFpsUpdate = now;
         } catch (_error) {

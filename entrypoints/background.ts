@@ -1,12 +1,14 @@
-import { SettingsWindowEvent } from '@/src/userInterface/settings/events/SettingsWindowEvent';
 import {
+    type AppMessage,
+    appMessage,
     captureSource,
-    GenericEvent,
-    InitiateStreamEvent,
+    type InitiateStreamMessage,
+    initiateStreamMessage,
     messageAction,
     messageTarget,
-    RestartCaptureAckEvent,
-    type RestartCaptureEvent,
+    type RestartCaptureMessage,
+    restartCaptureAckMessage,
+    settingsWindowMessage,
 } from '@/src/utils/eventMessage';
 
 function toCaptureSource(value: unknown): captureSource {
@@ -26,9 +28,8 @@ export default defineBackground(() => {
 
     function sendRestartAck(success: boolean): void {
         if (pendingRestartNonce === null) return;
-        const ack = new RestartCaptureAckEvent(pendingRestartNonce, success, activeCaptureSource);
         try {
-            chrome.runtime.sendMessage(ack.toMessage());
+            chrome.runtime.sendMessage(restartCaptureAckMessage(pendingRestartNonce, success, activeCaptureSource));
         } catch (_e) {
             // Receiving end may not exist
         }
@@ -42,24 +43,14 @@ export default defineBackground(() => {
             targetTabId: targetTabId,
         });
 
-        const startStreamMessage = new InitiateStreamEvent(
-            messageTarget.offscreen,
-            messageAction.initiateStream,
-            streamId as string,
-            captureSource.tab,
+        chrome.runtime.sendMessage(
+            initiateStreamMessage(messageTarget.offscreen, streamId as string, captureSource.tab),
         );
-        chrome.runtime.sendMessage(startStreamMessage.toMessage());
         streaming = true;
     }
 
     function initiateMicrophoneStream() {
-        const initiate = new InitiateStreamEvent(
-            messageTarget.offscreen,
-            messageAction.initiateStream,
-            '',
-            captureSource.microphone,
-        );
-        chrome.runtime.sendMessage(initiate.toMessage());
+        chrome.runtime.sendMessage(initiateStreamMessage(messageTarget.offscreen, '', captureSource.microphone));
         streaming = true;
     }
 
@@ -80,8 +71,7 @@ export default defineBackground(() => {
     }
 
     function stopStream() {
-        const stopStreamMessage = new GenericEvent(messageTarget.offscreen, messageAction.stopStream);
-        chrome.runtime.sendMessage(stopStreamMessage.toMessage());
+        chrome.runtime.sendMessage(appMessage(messageTarget.offscreen, messageAction.stopStream));
         streaming = false;
     }
 
@@ -124,7 +114,7 @@ export default defineBackground(() => {
         }
     });
 
-    chrome.runtime.onMessage.addListener((message: SettingsWindowEvent | GenericEvent | RestartCaptureEvent) => {
+    chrome.runtime.onMessage.addListener((message: AppMessage | RestartCaptureMessage) => {
         // Only handle messages targeted at background
         if (message.target !== messageTarget.background) {
             return;
@@ -137,7 +127,7 @@ export default defineBackground(() => {
                 // are owned by the mic-prime-succeeded path.
                 return;
             }
-            const recoverySource = toCaptureSource((message as InitiateStreamEvent).source);
+            const recoverySource = toCaptureSource((message as InitiateStreamMessage).source);
             (async () => {
                 try {
                     await reinitiateStream(recoverySource);
@@ -189,13 +179,12 @@ export default defineBackground(() => {
         }
 
         if (message.action === messageAction.restartCapture) {
-            const restartMessage = message as RestartCaptureEvent;
+            const restartMessage = message as RestartCaptureMessage;
             const nonce = restartMessage.nonce;
             if (restartInFlight) {
                 // Already processing a restart; reject this one so the UI re-enables.
                 try {
-                    const rejectAck = new RestartCaptureAckEvent(nonce, false, activeCaptureSource);
-                    chrome.runtime.sendMessage(rejectAck.toMessage());
+                    chrome.runtime.sendMessage(restartCaptureAckMessage(nonce, false, activeCaptureSource));
                 } catch (_e) {
                     // Receiving end may not exist
                 }
@@ -214,9 +203,10 @@ export default defineBackground(() => {
                         // primeMicrophoneFailed handler (failure).
                         streaming = true;
                         awaitingMicPrime = true;
-                        const primeMessage = new GenericEvent(messageTarget.animation, messageAction.primeMicrophone);
                         try {
-                            chrome.runtime.sendMessage(primeMessage.toMessage());
+                            chrome.runtime.sendMessage(
+                                appMessage(messageTarget.animation, messageAction.primeMicrophone),
+                            );
                         } catch (_e) {
                             sendRestartAck(false);
                         }
@@ -251,11 +241,11 @@ export default defineBackground(() => {
                 }
                 settingsWindowId = win.id as number;
 
-                const closeSettingsInAnimation = new SettingsWindowEvent(
-                    messageTarget.animation,
-                    messageAction.openSettingsWindow,
+                // Tell the animation window to tear down its embedded dat.gui while
+                // the external settings window is open.
+                chrome.runtime.sendMessage(
+                    settingsWindowMessage(messageTarget.animation, messageAction.openSettingsWindow),
                 );
-                chrome.runtime.sendMessage(closeSettingsInAnimation.toMessage());
             })();
             return;
         }
@@ -265,12 +255,9 @@ export default defineBackground(() => {
         if (windowId === settingsWindowId) {
             settingsWindowId = null;
             const sourceForEmbeddedUi = restartInFlight ? priorCaptureSource : activeCaptureSource;
-            const closeSettingsWindow = new SettingsWindowEvent(
-                messageTarget.animation,
-                messageAction.closeSettingsWindow,
-                sourceForEmbeddedUi,
+            chrome.runtime.sendMessage(
+                settingsWindowMessage(messageTarget.animation, messageAction.closeSettingsWindow, sourceForEmbeddedUi),
             );
-            chrome.runtime.sendMessage(closeSettingsWindow.toMessage());
         }
 
         if (windowId === animationWindowId) {
