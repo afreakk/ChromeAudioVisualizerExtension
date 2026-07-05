@@ -90,7 +90,7 @@ export default defineBackground(() => {
             return;
         }
         tabId = tab.id as number;
-        // captureSource is session-only and always starts on Tab. The sandbox dropdown
+        // captureSource is session-only and always starts on Tab. The settings-UI dropdown
         // drives later switches via restart-capture messages that carry the new source.
         activeCaptureSource = captureSource.tab;
 
@@ -264,11 +264,11 @@ export default defineBackground(() => {
     chrome.windows.onRemoved.addListener((windowId) => {
         if (windowId === settingsWindowId) {
             settingsWindowId = null;
-            const sourceForSandbox = restartInFlight ? priorCaptureSource : activeCaptureSource;
+            const sourceForEmbeddedUi = restartInFlight ? priorCaptureSource : activeCaptureSource;
             const closeSettingsWindow = new SettingsWindowEvent(
                 messageTarget.animation,
                 messageAction.closeSettingsWindow,
-                sourceForSandbox,
+                sourceForEmbeddedUi,
             );
             chrome.runtime.sendMessage(closeSettingsWindow.toMessage());
         }

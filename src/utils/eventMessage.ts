@@ -16,9 +16,6 @@ export enum messageAction {
     toggleFullScreen = 'toggle-full-screen',
     setFps = 'set-fps',
     showFpsOverlay = 'show-fps-overlay',
-    saveSettings = 'save-settings',
-    updateSettingsCache = 'update-settings-cache',
-    animationReady = 'animation-ready',
     restartCapture = 'restart-capture',
     restartCaptureAck = 'restart-capture-ack',
     primeMicrophone = 'prime-microphone',
@@ -153,41 +150,6 @@ export class SetFpsEvent extends GenericEvent {
         };
     }
 }
-export class UpdateSettingsCacheEvent extends GenericEvent {
-    key: string;
-    value: string | null;
-
-    constructor(target: messageTarget, key: string, value: string | null) {
-        super(target, messageAction.updateSettingsCache);
-        this.key = key;
-        this.value = value;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            key: this.key,
-            value: this.value,
-        };
-    }
-}
-export class ShowFpsOverlayEvent extends GenericEvent {
-    value: boolean;
-
-    constructor(target: messageTarget, value: boolean) {
-        super(target, messageAction.showFpsOverlay);
-        this.value = value;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            value: this.value,
-        };
-    }
-}
 export class RestartCaptureEvent extends GenericEvent {
     nonce: string;
     source: captureSource;
@@ -226,22 +188,6 @@ export class RestartCaptureAckEvent extends GenericEvent {
             nonce: this.nonce,
             success: this.success,
             activeSource: this.activeSource,
-        };
-    }
-}
-export class AnimationReadyEvent extends GenericEvent {
-    storedSettings?: Record<string, string>;
-
-    constructor(storedSettings?: Record<string, string>) {
-        super(messageTarget.animation, messageAction.animationReady);
-        this.storedSettings = storedSettings;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            storedSettings: this.storedSettings,
         };
     }
 }
