@@ -88,7 +88,8 @@ function bindEvents(): void {
     });
 
     document.getElementById('btn-add')?.addEventListener('click', () => {
-        const container = document.getElementById('add-form-container')!;
+        const container = document.getElementById('add-form-container');
+        if (!container) return;
         if (container.children.length > 0) {
             container.innerHTML = '';
             return;
@@ -112,7 +113,8 @@ function bindEvents(): void {
 
     for (const btn of document.querySelectorAll<HTMLButtonElement>('.btn-save')) {
         btn.addEventListener('click', () => {
-            const key = btn.dataset.key!;
+            const key = btn.dataset.key;
+            if (!key) return;
             // biome-ignore lint/style/noNonNullAssertion: textarea rendered above
             const textarea = document.querySelector<HTMLTextAreaElement>(`textarea[data-key="${key}"]`)!;
             const value = textarea.value;
@@ -132,7 +134,8 @@ function bindEvents(): void {
 
     for (const btn of document.querySelectorAll<HTMLButtonElement>('.btn-delete')) {
         btn.addEventListener('click', () => {
-            const key = btn.dataset.key!;
+            const key = btn.dataset.key;
+            if (!key) return;
             if (!confirm(`Delete "${key}"?`)) return;
             localStorage.removeItem(key);
             render();

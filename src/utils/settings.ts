@@ -17,6 +17,7 @@ function parseSettingValue<T>(settingsName: string, raw: string): T | null {
     } catch (error) {
         delete settingsCache[settingsName];
         localStorage.removeItem(keyGenerator(settingsName));
+        // biome-ignore lint/suspicious/noConsole: corrupt stored settings are cleared silently otherwise — leave a trace
         console.warn(`Failed to parse stored setting "${settingsName}"; falling back to default`, error);
         return null;
     }

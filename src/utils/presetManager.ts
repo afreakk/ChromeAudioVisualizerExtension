@@ -32,6 +32,7 @@ export function loadAllPresets(): PresetMap {
         }
 
         if (!validScenes.has(preset.baseScene)) {
+            // biome-ignore lint/suspicious/noConsole: dropping a user's saved preset should leave a trace
             console.warn(`Preset "${name}" references missing scene "${preset.baseScene}"; dropping`);
             dropped++;
             continue;

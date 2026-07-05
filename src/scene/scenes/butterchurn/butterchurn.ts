@@ -1,4 +1,4 @@
-import butterchurn from 'butterchurn';
+import butterchurn, { type ButterchurnVisualizer } from 'butterchurn';
 import presets from 'butterchurn-presets';
 import type { IScene } from '@/src/scene/scene';
 import { ButterChurnAudioDataDto, streamType } from '@/src/utils/eventMessage';
@@ -7,7 +7,7 @@ import { type ButterchurnSetting, getRandomPreset } from './setting';
 export class Butterchurn implements IScene {
     private canvas: HTMLCanvasElement | null = null;
     private audioData: ButterChurnAudioDataDto;
-    private visualizer: any = null;
+    private visualizer: ButterchurnVisualizer | null = null;
     private lastTime: number = 0;
     private lastCycleSeconds: number = 0;
     private cyclePresetInterval: ReturnType<typeof setInterval> | null = null;
@@ -76,7 +76,7 @@ export class Butterchurn implements IScene {
         this.audioData = data;
     }
     render(): void {
-        if (this.canvas === null) {
+        if (this.canvas === null || this.visualizer === null) {
             return;
         }
 

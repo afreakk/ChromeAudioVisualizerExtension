@@ -75,6 +75,7 @@ export interface SceneRegistryEntry {
     createDefaultSettings: () => ISceneSetting;
     buildSettingsUI: (
         sceneName: string,
+        // biome-ignore lint/suspicious/noExplicitAny: ISceneSetting is intentionally empty — concrete builder signatures are contravariant against it and only assign to any
         settings: any,
         settingsFolder: GUIFolder,
         isExternalUi: boolean,

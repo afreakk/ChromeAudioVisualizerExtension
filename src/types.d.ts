@@ -1,4 +1,19 @@
 declare module 'butterchurn' {
+    export interface ButterchurnVisualizer {
+        // butterchurn 3.x: loadPreset is async (WASM compile of eel equations).
+        loadPreset(preset: unknown, blendTime: number): Promise<void>;
+        setRendererSize(width: number, height: number): void;
+        render(opts: {
+            elapsedTime: number;
+            audioLevels: {
+                timeByteArray: Uint8Array;
+                timeByteArrayL: Uint8Array;
+                timeByteArrayR: Uint8Array;
+            };
+            width: number;
+        }): void;
+    }
+
     const butterchurn: {
         createVisualizer(
             audioContext: AudioContext | null,
@@ -16,20 +31,7 @@ declare module 'butterchurn' {
                 // preset lacks WASM support.
                 onlyUseWASM?: boolean;
             },
-        ): {
-            // butterchurn 3.x: loadPreset is async (WASM compile of eel equations).
-            loadPreset(preset: unknown, blendTime: number): Promise<void>;
-            setRendererSize(width: number, height: number): void;
-            render(opts: {
-                elapsedTime: number;
-                audioLevels: {
-                    timeByteArray: Uint8Array;
-                    timeByteArrayL: Uint8Array;
-                    timeByteArrayR: Uint8Array;
-                };
-                width: number;
-            }): void;
-        };
+        ): ButterchurnVisualizer;
     };
     export default butterchurn;
 }

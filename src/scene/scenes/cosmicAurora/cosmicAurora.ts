@@ -263,12 +263,7 @@ export class CosmicAurora implements IScene {
         };
     }
 
-    private renderStars(
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-        audio: ReturnType<typeof this.getAudioBands>,
-    ): void {
+    private renderStars(ctx: CanvasRenderingContext2D, width: number): void {
         if (!this.starSprite) return;
 
         const audioBoost = 1 + this.smoothedBass * this.settings.audioSensitivity * 1.5;
@@ -646,7 +641,7 @@ export class CosmicAurora implements IScene {
         // Default composite renders
         this.renderCentralGlow(ctx, width, height);
         this.renderNebulaClouds(ctx, width, height);
-        this.renderStars(ctx, width, height, audio);
+        this.renderStars(ctx, width);
         this.renderPulseRings(ctx);
         this.renderShootingStars(ctx, width, height, audio);
 

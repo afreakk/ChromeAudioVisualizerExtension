@@ -135,7 +135,8 @@ export class AudioTerrain implements IScene {
     // returning a fresh object — this runs once per grid point per frame.
     private projectPoint(x: number, y: number, z: number, out: TerrainPoint): boolean {
         const s = this.settings;
-        const canvas = this.canvas!;
+        const canvas = this.canvas;
+        if (!canvas) return false;
 
         // Camera position
         const camY = s.cameraHeight;

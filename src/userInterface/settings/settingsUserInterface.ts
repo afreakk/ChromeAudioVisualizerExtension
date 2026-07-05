@@ -87,6 +87,7 @@ export class SettingsUserInterface {
         }
 
         if (success === false) {
+            // biome-ignore lint/suspicious/noConsole: restart failures should be visible without opening background logs
             console.warn('Capture source restart failed; dropdown mirrors background state');
         }
     }
@@ -177,6 +178,7 @@ export class SettingsUserInterface {
         const validSceneNames = new Set(sceneRegistry.map((entry) => entry.sceneName.toString()));
         let selectedScene = storedSelectedScene ?? defaultScene;
         if (storedSelectedScene && !isCustomPreset(storedSelectedScene) && !validSceneNames.has(storedSelectedScene)) {
+            // biome-ignore lint/suspicious/noConsole: surface silently-discarded stale scene selections
             console.warn(`Stored scene "${storedSelectedScene}" no longer exists; falling back to default`);
             selectedScene = defaultScene;
             saveSettings('selectedScene', selectedScene);
@@ -219,13 +221,14 @@ export class SettingsUserInterface {
     }
 
     private buildSceneSelector(selection: { selectedSceneName: string }): void {
+        if (!this.sceneFolder) return;
         if (this.sceneSelectorController) {
             this.sceneSelectorController.remove();
         }
         const options = this.buildSceneOptions();
-        this.sceneSelectorController = this.sceneFolder!.add(selection, 'selectedSceneName', options).name(
-            'Select Scene',
-        );
+        this.sceneSelectorController = this.sceneFolder
+            .add(selection, 'selectedSceneName', options)
+            .name('Select Scene');
         this.sceneSelectorController.onChange((selectedSceneName) => {
             saveSettings('selectedScene', selectedSceneName as string);
             this.setScene(selectedSceneName as string);
@@ -257,7 +260,8 @@ export class SettingsUserInterface {
             this.sceneFolder.removeFolder(this.sceneSettingsFolder);
         }
 
-        this.sceneSettingsFolder = this.sceneFolder!.addFolder('Scene Settings');
+        if (!this.sceneFolder) return {};
+        this.sceneSettingsFolder = this.sceneFolder.addFolder('Scene Settings');
         this.sceneSettingsFolder.open();
 
         this.currentSceneKey = sceneKey;

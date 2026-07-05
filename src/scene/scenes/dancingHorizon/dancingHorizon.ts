@@ -243,6 +243,7 @@ export class DancingHorizon implements IScene {
 
         this.shaderProgram = initShaderProgram(this.gl, vs, fs);
         if (!this.shaderProgram) {
+            // biome-ignore lint/suspicious/noConsole: shader compile failure should be visible in the animation window console
             console.error('DancingHorizon: Unable to initialize the shader program');
             return;
         }
