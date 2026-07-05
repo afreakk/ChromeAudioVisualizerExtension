@@ -64,6 +64,8 @@ export class AudioTerrain implements IScene {
     private allocatedGridW: number = 0;
     private allocatedGridH: number = 0;
     private scanLinePattern: CanvasPattern | null = null;
+    private heightColorLut: string[] = [];
+    private static readonly HEIGHT_COLOR_STEPS = 64;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -91,10 +93,31 @@ export class AudioTerrain implements IScene {
             stripeCtx.fillRect(0, 0, 1, 1);
             this.scanLinePattern = this.ctx.createPattern(stripe, 'repeat');
         }
+
+        this.rebuildHeightColorLut();
     }
 
     updateSettings(settings: AudioTerrainSetting): void {
         this.settings = settings;
+        this.rebuildHeightColorLut();
+    }
+
+    // getHeightColor builds an rgb() string per call; the filled-polygon mode calls
+    // it twice per quad (~1,500 strings/frame). The gradient only depends on the
+    // terrain color settings, so quantize it to a lookup table instead.
+    private rebuildHeightColorLut(): void {
+        const steps = AudioTerrain.HEIGHT_COLOR_STEPS;
+        this.heightColorLut = [];
+        for (let i = 0; i < steps; i++) {
+            this.heightColorLut.push(this.getHeightColor(i / (steps - 1)));
+        }
+    }
+
+    private heightColorAt(heightRatio: number): string {
+        const lut = this.heightColorLut;
+        if (lut.length === 0) return this.getHeightColor(heightRatio);
+        const index = Math.min(lut.length - 1, Math.max(0, Math.round(heightRatio * (lut.length - 1))));
+        return lut[index];
     }
 
     updateAudioData(data: NormalAudioDataDto): void {
@@ -354,7 +377,7 @@ export class AudioTerrain implements IScene {
                     }
                 }
                 if (started) {
-                    ctx.strokeStyle = this.getHeightColor(lastHeightRatio);
+                    ctx.strokeStyle = this.heightColorAt(lastHeightRatio);
                     ctx.globalAlpha = Math.min(1, lastScale * 0.5) * (0.5 + s.glowIntensity * 0.5);
                     ctx.stroke();
                 }
@@ -382,7 +405,7 @@ export class AudioTerrain implements IScene {
                     }
                 }
                 if (started) {
-                    ctx.strokeStyle = this.getHeightColor(lastHeightRatio);
+                    ctx.strokeStyle = this.heightColorAt(lastHeightRatio);
                     ctx.globalAlpha = Math.min(1, lastScale * 0.5) * (0.5 + s.glowIntensity * 0.5);
                     ctx.stroke();
                 }
@@ -402,7 +425,7 @@ export class AudioTerrain implements IScene {
                         const alpha = Math.min(1, p1.scale * 0.3) * 0.8;
 
                         ctx.globalAlpha = alpha;
-                        ctx.fillStyle = this.getHeightColor(heightRatio);
+                        ctx.fillStyle = this.heightColorAt(heightRatio);
 
                         ctx.beginPath();
                         ctx.moveTo(p1.x, p1.y);
@@ -414,7 +437,7 @@ export class AudioTerrain implements IScene {
 
                         // Draw edges with brighter color
                         ctx.globalAlpha = alpha * 0.7;
-                        ctx.strokeStyle = this.getHeightColor(Math.min(heightRatio + 0.2, 1));
+                        ctx.strokeStyle = this.heightColorAt(Math.min(heightRatio + 0.2, 1));
                         ctx.lineWidth = 0.5;
                         ctx.stroke();
                     }

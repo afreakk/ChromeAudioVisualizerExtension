@@ -42,7 +42,10 @@ offscreenWindow → animationWindow (per-frame audio over chrome.runtime, target
 
 All cross-context messages go directly over `chrome.runtime`; the animation window's
 `chrome.runtime.onMessage` filters `target === 'animation'`. The embedded dat.gui drives the
-in-window scene via `CustomEvent`s. Audio data is sent as `NormalAudioDataDto` or
+in-window scene through a registered `EmbeddedUiHost` (direct calls via
+`src/userInterface/settings/settingsManager.ts`), not `CustomEvent`s; only the external settings
+popup goes over `chrome.runtime`. (A `butterchurn-preset-cycled` `CustomEvent` is still used as a
+narrow preset-cycle sync notification.) Audio data is sent as `NormalAudioDataDto` or
 `ButterChurnAudioDataDto` with `timeByteArray` (0-255 values).
 
 ### Capture source
@@ -165,13 +168,14 @@ export class MyScene implements IScene {
 
 4. **Create settings UI** in `src/userInterface/settings/sceneSettings/mySceneSettings.ts`:
 ```typescript
+import type { GUIFolder } from "dat.gui";
 import { setSceneSettings } from "../settingsManager";
 import { MySceneSetting } from "@/src/scene/scenes/myScene/setting";
 
 export function mySceneSettings(
     sceneName: string,
     settings: MySceneSetting,
-    settingsFolder: any,
+    settingsFolder: GUIFolder,
     isExternalUi: boolean
 ): void {
     settingsFolder.add(settings, 'someValue', 0, 2).name('Some Value')
