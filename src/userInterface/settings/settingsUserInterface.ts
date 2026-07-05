@@ -20,7 +20,7 @@ import {
 } from '@/src/utils/presetManager';
 import { loadSettings, saveSettings } from '@/src/utils/settings';
 import { SettingsWindowEvent } from './events/SettingsWindowEvent';
-import { setSceneSettings } from './settingsManager';
+import { getEmbeddedUiHost, setSceneSettings } from './settingsManager';
 
 export class SettingsUserInterface {
     private gui: dat.GUI | null = null;
@@ -148,13 +148,10 @@ export class SettingsUserInterface {
             .onChange((value: unknown) => {
                 const enabled = value as boolean;
                 saveSettings('showFps', enabled);
-                const showFpsEventMessage = new GenericEvent(messageTarget.animation, messageAction.showFpsOverlay);
                 if (!this.isExternalUI) {
-                    const showFpsEvent = new CustomEvent(messageAction.showFpsOverlay, {
-                        detail: { event: showFpsEventMessage.toMessage(), value: enabled },
-                    });
-                    window.dispatchEvent(showFpsEvent);
+                    getEmbeddedUiHost()?.setShowFpsOverlay(enabled);
                 } else {
+                    const showFpsEventMessage = new GenericEvent(messageTarget.animation, messageAction.showFpsOverlay);
                     chrome.runtime.sendMessage({ ...showFpsEventMessage.toMessage(), value: enabled });
                 }
             });
@@ -206,15 +203,12 @@ export class SettingsUserInterface {
         this.setScene(selection.selectedSceneName);
     }
     private toggleFullScreen() {
-        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
         if (!this.isExternalUI) {
-            const fullScreenEvent = new CustomEvent(messageAction.toggleFullScreen, {
-                detail: { event: fullScreenEventMessage.toMessage() },
-            });
-            window.dispatchEvent(fullScreenEvent);
-        } else {
-            chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
+            getEmbeddedUiHost()?.toggleFullScreen();
+            return;
         }
+        const fullScreenEventMessage = new GenericEvent(messageTarget.animation, messageAction.toggleFullScreen);
+        chrome.runtime.sendMessage(fullScreenEventMessage.toMessage());
     }
     private buildSceneOptions(): Record<string, string> {
         const options: Record<string, string> = {};
@@ -252,20 +246,17 @@ export class SettingsUserInterface {
     private setScene(sceneKey: string) {
         const settings = this.buildSettings(sceneKey);
         const baseScene = this.currentBaseScene ?? sceneKey;
+        if (!this.isExternalUI) {
+            getEmbeddedUiHost()?.setScene(baseScene, settings);
+            return;
+        }
         const sceneEventMessage = new SetSceneEvent(
             messageTarget.animation,
             messageAction.setScene,
             baseScene,
             settings,
         );
-        if (!this.isExternalUI) {
-            const changeSceneEvent = new CustomEvent(messageAction.setScene, {
-                detail: { event: sceneEventMessage.toMessage() },
-            });
-            window.dispatchEvent(changeSceneEvent);
-        } else {
-            chrome.runtime.sendMessage(sceneEventMessage.toMessage());
-        }
+        chrome.runtime.sendMessage(sceneEventMessage.toMessage());
     }
 
     private buildSettings(sceneKey: string): ISceneSetting {

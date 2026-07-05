@@ -1,9 +1,8 @@
-import type { SetSceneEvent } from '@/src/scene/events/setSceneEvent';
-import type { SetSceneSettingsEvent } from '@/src/scene/events/setSceneSettingsEvent';
 import type { IScene } from '@/src/scene/scene';
 import { SceneManager } from '@/src/scene/sceneManager';
 import { sceneRegistry } from '@/src/scene/sceneRegistry';
 import type { ISceneSetting } from '@/src/scene/sceneSetting';
+import { registerEmbeddedUiHost } from '@/src/userInterface/settings/settingsManager';
 import { SettingsUserInterface } from '@/src/userInterface/settings/settingsUserInterface';
 import { captureSource, type IAudioDataDto, messageAction, messageTarget, SetFpsEvent } from '@/src/utils/eventMessage';
 import { loadSettings, STORAGE_PREFIX, updateCacheEntry } from '@/src/utils/settings';
@@ -78,6 +77,24 @@ let showFpsOverlay = false;
 let currentFps = 0;
 let cachedFpsOverlay: HTMLElement | null = null;
 
+// The embedded dat.gui lives in this window, so it drives the scene through these
+// direct calls. Only the external settings popup goes through chrome.runtime.
+registerEmbeddedUiHost({
+    setScene(sceneName, sceneSettings) {
+        const createScene = sceneFactoryMap.get(sceneName);
+        if (createScene) {
+            sceneManager.setScene(createScene(), sceneSettings);
+        }
+    },
+    setSceneSettings(sceneSettings) {
+        sceneManager.updateSettings(sceneSettings);
+    },
+    setShowFpsOverlay(value) {
+        showFpsOverlay = value;
+    },
+    toggleFullScreen,
+});
+
 // Incoming cross-context messages (audio from offscreen, scene/settings/control
 // from background + the external settings window). Filter to this window's target;
 // the runtime bus also carries background/offscreen/settings traffic.
@@ -126,29 +143,6 @@ chrome.runtime.onMessage.addListener((message: AnimationMessage) => {
             break;
         }
     }
-});
-
-// In-window CustomEvents from the embedded dat.gui (SettingsUserInterface(false)).
-// Scene/settings changes stay in-window; cross-context replies go via chrome.runtime.
-window.addEventListener(messageAction.setScene, (event) => {
-    const sceneEvent = (event as CustomEvent<{ event: SetSceneEvent }>).detail.event;
-    const createScene = sceneFactoryMap.get(sceneEvent.sceneName);
-    if (createScene) {
-        sceneManager.setScene(createScene(), sceneEvent.sceneSettings as ISceneSetting);
-    }
-});
-
-window.addEventListener(messageAction.setSceneSettings, (event) => {
-    const sceneSettingsEvent = (event as CustomEvent<{ event: SetSceneSettingsEvent }>).detail.event;
-    sceneManager.updateSettings(sceneSettingsEvent.sceneSettings);
-});
-
-window.addEventListener(messageAction.showFpsOverlay, (event) => {
-    showFpsOverlay = (event as CustomEvent<{ value: boolean }>).detail.value;
-});
-
-window.addEventListener(messageAction.toggleFullScreen, () => {
-    toggleFullScreen();
 });
 
 // Notify the external settings window when butterchurn auto-cycles its preset so
