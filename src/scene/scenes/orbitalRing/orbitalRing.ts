@@ -10,6 +10,9 @@ export class OrbitalRing implements IScene {
     private settings: OrbitalRingSetting = new OrbitalRingSetting();
     private colorOffset: number = 0;
     private rotationOffset: number = 0;
+    private glowSprites: HTMLCanvasElement[] = [];
+    private static readonly GLOW_HUE_BUCKETS = 36;
+    private static readonly GLOW_SPRITE_SIZE = 64;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -23,6 +26,7 @@ export class OrbitalRing implements IScene {
         if (!this.ctx) {
             return;
         }
+        this.rebuildGlowSprites();
     }
 
     private hslToString(h: number, s: number, l: number, a: number = 1): string {
@@ -30,8 +34,35 @@ export class OrbitalRing implements IScene {
         return `hsla(${h * 360}, ${s * 100}%, ${l * 100}%, ${a})`;
     }
 
+    // Creating a radial gradient per dot per frame is one of the most expensive
+    // 2D-canvas operations. Pre-render one glow sprite per quantized hue instead;
+    // saturation/brightness only change via updateSettings, which rebuilds the set.
+    private rebuildGlowSprites(): void {
+        const size = OrbitalRing.GLOW_SPRITE_SIZE;
+        const half = size / 2;
+        this.glowSprites = [];
+        for (let bucket = 0; bucket < OrbitalRing.GLOW_HUE_BUCKETS; bucket++) {
+            const sprite = document.createElement('canvas');
+            sprite.width = size;
+            sprite.height = size;
+            const sCtx = sprite.getContext('2d');
+            if (!sCtx) return;
+            const hue = bucket / OrbitalRing.GLOW_HUE_BUCKETS;
+            const gradient = sCtx.createRadialGradient(half, half, 0, half, half, half);
+            gradient.addColorStop(
+                0,
+                this.hslToString(hue, this.settings.colorSaturation, this.settings.colorBrightness, 0.5),
+            );
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            sCtx.fillStyle = gradient;
+            sCtx.fillRect(0, 0, size, size);
+            this.glowSprites.push(sprite);
+        }
+    }
+
     updateSettings(settings: OrbitalRingSetting): void {
         this.settings = settings;
+        this.rebuildGlowSprites();
     }
 
     updateAudioData(data: NormalAudioDataDto): void {
@@ -61,10 +92,13 @@ export class OrbitalRing implements IScene {
 
         this.ctx.lineWidth = this.settings.lineWidth;
 
-        const positions: { x: number; y: number; hue: number; audioValue: number }[] = [];
         let totalAudio = 0;
         let lastX: number | null = null;
         let lastY: number | null = null;
+        // Only the first dot's position/hue are needed after the loop (to close the ring)
+        let firstX = 0;
+        let firstY = 0;
+        let firstHue = 0;
 
         for (let i = 0; i < this.settings.dotCount; i++) {
             // Get audio value for this dot
@@ -92,7 +126,11 @@ export class OrbitalRing implements IScene {
                 this.settings.colorBrightness * (0.5 + audioValue * 0.5),
             );
 
-            positions.push({ x, y, hue, audioValue });
+            if (i === 0) {
+                firstX = x;
+                firstY = y;
+                firstHue = hue;
+            }
 
             // Draw connection line
             if (this.settings.showConnections && lastX !== null && lastY !== null) {
@@ -106,18 +144,18 @@ export class OrbitalRing implements IScene {
             // Draw dot with glow
             const dotRadius = (this.settings.dotSize + audioValue * this.settings.dotSizeAudioScale) * minDim;
 
-            if (this.settings.glowIntensity > 0) {
-                const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, dotRadius * 3);
-                gradient.addColorStop(
-                    0,
-                    this.hslToString(hue, this.settings.colorSaturation, this.settings.colorBrightness, 0.5),
-                );
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                this.ctx.fillStyle = gradient;
+            if (this.settings.glowIntensity > 0 && this.glowSprites.length > 0) {
+                const normHue = ((hue % 1) + 1) % 1;
+                const bucket = Math.floor(normHue * OrbitalRing.GLOW_HUE_BUCKETS) % OrbitalRing.GLOW_HUE_BUCKETS;
+                const glowRadius = dotRadius * 3;
                 this.ctx.globalAlpha = this.settings.glowIntensity * audioValue;
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, dotRadius * 3, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.ctx.drawImage(
+                    this.glowSprites[bucket],
+                    x - glowRadius,
+                    y - glowRadius,
+                    glowRadius * 2,
+                    glowRadius * 2,
+                );
                 this.ctx.globalAlpha = 1;
             }
 
@@ -131,17 +169,15 @@ export class OrbitalRing implements IScene {
         }
 
         // Close the ring with a line
-        if (this.settings.showConnections && positions.length > 1) {
-            const first = positions[0];
-            const lastPos = positions[positions.length - 1];
+        if (this.settings.showConnections && this.settings.dotCount > 1 && lastX !== null && lastY !== null) {
             this.ctx.strokeStyle = this.hslToString(
-                first.hue,
+                firstHue,
                 this.settings.colorSaturation,
                 this.settings.colorBrightness * 0.5,
             );
             this.ctx.beginPath();
-            this.ctx.moveTo(lastPos.x, lastPos.y);
-            this.ctx.lineTo(first.x, first.y);
+            this.ctx.moveTo(lastX, lastY);
+            this.ctx.lineTo(firstX, firstY);
             this.ctx.stroke();
         }
 
@@ -157,5 +193,6 @@ export class OrbitalRing implements IScene {
             this.canvas = null;
         }
         this.ctx = null;
+        this.glowSprites = [];
     }
 }

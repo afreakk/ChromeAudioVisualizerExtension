@@ -19,6 +19,9 @@ export class FloatingCubes implements IScene {
     private cubes: Cube[] = [];
     private cachedBgColor = { r: 0, g: 0, b: 0 };
     private cachedBorderColor = { r: 0, g: 0, b: 0 };
+    private glowSprites: HTMLCanvasElement[] = [];
+    private static readonly GLOW_HUE_BUCKETS = 36;
+    private static readonly GLOW_SPRITE_SIZE = 64;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -39,7 +42,31 @@ export class FloatingCubes implements IScene {
             return;
         }
 
+        this.initGlowSprites();
         this.initCubes();
+    }
+
+    // A radial gradient per cube per frame (up to cubeCount of them) is expensive;
+    // the glow's saturation/lightness/alpha are fixed, so one sprite per quantized
+    // hue covers every cube. Built once — no settings dependency.
+    private initGlowSprites(): void {
+        const size = FloatingCubes.GLOW_SPRITE_SIZE;
+        const half = size / 2;
+        this.glowSprites = [];
+        for (let bucket = 0; bucket < FloatingCubes.GLOW_HUE_BUCKETS; bucket++) {
+            const sprite = document.createElement('canvas');
+            sprite.width = size;
+            sprite.height = size;
+            const sCtx = sprite.getContext('2d');
+            if (!sCtx) return;
+            const hue = (bucket / FloatingCubes.GLOW_HUE_BUCKETS) * 360;
+            const gradient = sCtx.createRadialGradient(half, half, 0, half, half, half);
+            gradient.addColorStop(0, this.hslToString(hue, 80, 50, 0.4));
+            gradient.addColorStop(1, 'transparent');
+            sCtx.fillStyle = gradient;
+            sCtx.fillRect(0, 0, size, size);
+            this.glowSprites.push(sprite);
+        }
     }
 
     private initCubes(): void {
@@ -140,21 +167,13 @@ export class FloatingCubes implements IScene {
             const color = this.hslToString(cube.hue, 80, brightness);
 
             // Draw glow
-            if (this.settings.glowIntensity > 0 && audioValue > 0.1) {
+            if (this.settings.glowIntensity > 0 && audioValue > 0.1 && this.glowSprites.length > 0) {
                 const glowSize = size * 2 * this.settings.glowIntensity;
-                const gradient = this.ctx.createRadialGradient(
-                    cube.x + halfSize,
-                    cube.y + halfSize,
-                    0,
-                    cube.x + halfSize,
-                    cube.y + halfSize,
-                    glowSize,
-                );
-                // '40' was likely meant as 40% opacity for glow effect
-                gradient.addColorStop(0, this.hslToString(cube.hue, 80, 50, 0.4));
-                gradient.addColorStop(1, 'transparent');
-                this.ctx.fillStyle = gradient;
-                this.ctx.fillRect(
+                const bucket =
+                    Math.floor(((cube.hue % 360) / 360) * FloatingCubes.GLOW_HUE_BUCKETS) %
+                    FloatingCubes.GLOW_HUE_BUCKETS;
+                this.ctx.drawImage(
+                    this.glowSprites[bucket],
                     cube.x + halfSize - glowSize,
                     cube.y + halfSize - glowSize,
                     glowSize * 2,
@@ -188,5 +207,6 @@ export class FloatingCubes implements IScene {
         this.canvas = null;
         this.ctx = null;
         this.cubes = [];
+        this.glowSprites = [];
     }
 }

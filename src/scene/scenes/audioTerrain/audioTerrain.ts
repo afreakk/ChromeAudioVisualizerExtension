@@ -63,6 +63,7 @@ export class AudioTerrain implements IScene {
     private grid: TerrainPoint[][] = [];
     private allocatedGridW: number = 0;
     private allocatedGridH: number = 0;
+    private scanLinePattern: CanvasPattern | null = null;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -77,6 +78,18 @@ export class AudioTerrain implements IScene {
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
             return;
+        }
+
+        // One dark row every 3px, tiled over the frame in a single fill instead of
+        // ~height/3 individual fillRect calls per frame.
+        const stripe = document.createElement('canvas');
+        stripe.width = 1;
+        stripe.height = 3;
+        const stripeCtx = stripe.getContext('2d');
+        if (stripeCtx) {
+            stripeCtx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+            stripeCtx.fillRect(0, 0, 1, 1);
+            this.scanLinePattern = this.ctx.createPattern(stripe, 'repeat');
         }
     }
 
@@ -118,7 +131,9 @@ export class AudioTerrain implements IScene {
         return (data[i] || 0) / 255;
     }
 
-    private projectPoint(x: number, y: number, z: number): { x: number; y: number; scale: number } | null {
+    // Writes the projection into `out` (the preallocated grid point) instead of
+    // returning a fresh object — this runs once per grid point per frame.
+    private projectPoint(x: number, y: number, z: number, out: TerrainPoint): boolean {
         const s = this.settings;
         const canvas = this.canvas!;
 
@@ -130,15 +145,15 @@ export class AudioTerrain implements IScene {
         const relZ = z - camZ;
 
         // Don't render points behind camera
-        if (relZ >= -1) return null;
+        if (relZ >= -1) return false;
 
         // Perspective projection
         const fov = 400;
         const scale = fov / -relZ;
-        const screenX = canvas.width / 2 + x * scale;
-        const screenY = canvas.height / 2 - (y - camY) * scale + s.horizonOffset;
-
-        return { x: screenX, y: screenY, scale };
+        out.x = canvas.width / 2 + x * scale;
+        out.y = canvas.height / 2 - (y - camY) * scale + s.horizonOffset;
+        out.scale = scale;
+        return true;
     }
 
     private getTerrainHeight(x: number, z: number, audioBoost: number): number {
@@ -292,13 +307,9 @@ export class AudioTerrain implements IScene {
             for (let x = 0; x < gridW; x++) {
                 const worldX = (x - halfW) * s.tileSize;
                 const terrainY = this.getTerrainHeight(worldX, worldZ, normalizedAudio * 3 + 0.5);
-                const projected = this.projectPoint(worldX, terrainY, worldZ);
                 const point = points[z][x];
 
-                if (projected) {
-                    point.x = projected.x;
-                    point.y = projected.y;
-                    point.scale = projected.scale;
+                if (this.projectPoint(worldX, terrainY, worldZ, point)) {
                     point.worldY = terrainY;
                     point.valid = true;
                 } else {
@@ -315,19 +326,23 @@ export class AudioTerrain implements IScene {
             // Wireframe mode - draw grid lines
             ctx.lineWidth = s.lineWidth;
 
+            // Canvas applies only the strokeStyle/globalAlpha in effect at stroke()
+            // time, so a single polyline can only ever render with one color — the
+            // old per-point assignments built ~1,500 discarded color strings per
+            // frame. Track the last valid point's values and set them once.
+
             // Draw horizontal lines (rows)
             for (let z = 0; z < gridH; z++) {
                 ctx.beginPath();
                 let started = false;
+                let lastHeightRatio = 0;
+                let lastScale = 0;
 
                 for (let x = 0; x < gridW; x++) {
                     const p = points[z][x];
                     if (p.valid) {
-                        const heightRatio = Math.min(Math.max(p.worldY / s.mountainHeight, 0), 1);
-                        const alpha = Math.min(1, p.scale * 0.5) * (0.5 + s.glowIntensity * 0.5);
-
-                        ctx.strokeStyle = this.getHeightColor(heightRatio);
-                        ctx.globalAlpha = alpha;
+                        lastHeightRatio = Math.min(Math.max(p.worldY / s.mountainHeight, 0), 1);
+                        lastScale = p.scale;
 
                         if (!started) {
                             ctx.moveTo(p.x, p.y);
@@ -337,22 +352,25 @@ export class AudioTerrain implements IScene {
                         }
                     }
                 }
-                ctx.stroke();
+                if (started) {
+                    ctx.strokeStyle = this.getHeightColor(lastHeightRatio);
+                    ctx.globalAlpha = Math.min(1, lastScale * 0.5) * (0.5 + s.glowIntensity * 0.5);
+                    ctx.stroke();
+                }
             }
 
             // Draw vertical lines (columns)
             for (let x = 0; x < gridW; x++) {
                 ctx.beginPath();
                 let started = false;
+                let lastHeightRatio = 0;
+                let lastScale = 0;
 
                 for (let z = 0; z < gridH; z++) {
                     const p = points[z][x];
                     if (p.valid) {
-                        const heightRatio = Math.min(Math.max(p.worldY / s.mountainHeight, 0), 1);
-                        const alpha = Math.min(1, p.scale * 0.5) * (0.5 + s.glowIntensity * 0.5);
-
-                        ctx.strokeStyle = this.getHeightColor(heightRatio);
-                        ctx.globalAlpha = alpha;
+                        lastHeightRatio = Math.min(Math.max(p.worldY / s.mountainHeight, 0), 1);
+                        lastScale = p.scale;
 
                         if (!started) {
                             ctx.moveTo(p.x, p.y);
@@ -362,7 +380,11 @@ export class AudioTerrain implements IScene {
                         }
                     }
                 }
-                ctx.stroke();
+                if (started) {
+                    ctx.strokeStyle = this.getHeightColor(lastHeightRatio);
+                    ctx.globalAlpha = Math.min(1, lastScale * 0.5) * (0.5 + s.glowIntensity * 0.5);
+                    ctx.stroke();
+                }
             }
         } else {
             // Filled polygon mode
@@ -402,9 +424,9 @@ export class AudioTerrain implements IScene {
         ctx.globalAlpha = 1;
 
         // Add scan line effect for extra retro feel
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
-        for (let y = 0; y < height; y += 3) {
-            ctx.fillRect(0, y, width, 1);
+        if (this.scanLinePattern) {
+            ctx.fillStyle = this.scanLinePattern;
+            ctx.fillRect(0, 0, width, height);
         }
     }
 
@@ -418,5 +440,6 @@ export class AudioTerrain implements IScene {
         this.canvas.remove();
         this.canvas = null;
         this.ctx = null;
+        this.scanLinePattern = null;
     }
 }
