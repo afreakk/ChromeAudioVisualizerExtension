@@ -37,7 +37,6 @@ export class PsychedelicCube implements IScene {
     private cubeGeometry: CubeGeometry;
     private settings: PsychedelicCubeSetting;
     private soundValue: number = 0;
-    private startTime: number;
     private scratchRotationAxis: vec3;
     private scratchScaleVec: vec3;
     private scratchScaleMatrix: mat4;
@@ -48,7 +47,6 @@ export class PsychedelicCube implements IScene {
         this.cubeGeometry = this.getCube();
         this.settings = new PsychedelicCubeSetting();
         this.modelMatrix = mat4.create();
-        this.startTime = Date.now();
         this.scratchRotationAxis = vec3.fromValues(0.5, 0.5, 0.5);
         this.scratchScaleVec = vec3.create();
         this.scratchScaleMatrix = mat4.create();

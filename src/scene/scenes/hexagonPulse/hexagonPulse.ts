@@ -106,12 +106,6 @@ export class HexagonPulse implements IScene {
         }
     }
 
-    private rotatePoint(x: number, y: number, angle: number): [number, number] {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        return [x * cos - y * sin, x * sin + y * cos];
-    }
-
     private rotateVerticesInPlace(hex: Hexagon, angle: number): void {
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);

@@ -21,7 +21,6 @@ export class NeuralWeb implements IScene {
     private cachedNodeColor = { r: 0, g: 0, b: 0 };
     private cachedLineColor = { r: 0, g: 0, b: 0 };
     private glowSprite: HTMLCanvasElement | null = null;
-    private glowSpriteSize = 0;
 
     constructor() {
         this.audioData = new NormalAudioDataDto([]);
@@ -38,7 +37,6 @@ export class NeuralWeb implements IScene {
         const baseSize = (this.settings.nodeSize + this.settings.nodeSizeAudioScale) * 4;
         const spriteSize = Math.ceil(baseSize * 2);
         if (!Number.isFinite(spriteSize) || spriteSize < 1) return;
-        this.glowSpriteSize = spriteSize;
         const sprite = document.createElement('canvas');
         sprite.width = spriteSize * 2;
         sprite.height = spriteSize * 2;

@@ -60,7 +60,6 @@ export class AudioTerrain implements IScene {
     private settings: AudioTerrainSetting;
     private noise: SimplexNoise;
     private scrollOffset: number = 0;
-    private time: number = 0;
     private grid: TerrainPoint[][] = [];
     private allocatedGridW: number = 0;
     private allocatedGridH: number = 0;
@@ -227,7 +226,6 @@ export class AudioTerrain implements IScene {
 
         // Update scroll
         this.scrollOffset += s.scrollSpeed + normalizedAudio * s.audioScrollMultiplier * s.scrollSpeed * 10;
-        this.time += 0.016;
 
         // Draw gradient sky
         const skyGradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
