@@ -72,11 +72,10 @@ export class GenericEvent {
         this.action = action;
     }
 
+    // Spread copies all own enumerable fields, so subclasses inherit this as-is.
+    // (Methods live on the prototype and are not copied.)
     toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-        };
+        return { ...this };
     }
 }
 export class AudioDataEvent extends GenericEvent {
@@ -85,14 +84,6 @@ export class AudioDataEvent extends GenericEvent {
     constructor(target: messageTarget, action: messageAction, audioData: IAudioDataDto) {
         super(target, action);
         this.audioData = audioData;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            audioData: this.audioData,
-        };
     }
 }
 export class InitiateStreamEvent extends GenericEvent {
@@ -104,23 +95,6 @@ export class InitiateStreamEvent extends GenericEvent {
         this.streamId = streamId;
         this.source = source;
     }
-
-    override toMessage() {
-        const message: {
-            target: messageTarget;
-            action: messageAction;
-            streamId: string;
-            source?: captureSource;
-        } = {
-            target: this.target,
-            action: this.action,
-            streamId: this.streamId,
-        };
-        if (this.source !== undefined) {
-            message.source = this.source;
-        }
-        return message;
-    }
 }
 export class StartStreamEvent extends GenericEvent {
     streamType: streamType;
@@ -129,13 +103,6 @@ export class StartStreamEvent extends GenericEvent {
         super(target, action);
         this.streamType = streamType;
     }
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            streamType: this.streamType,
-        };
-    }
 }
 export class SetFpsEvent extends GenericEvent {
     fps: number;
@@ -143,14 +110,6 @@ export class SetFpsEvent extends GenericEvent {
     constructor(target: messageTarget, action: messageAction, fps: number) {
         super(target, action);
         this.fps = fps;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            fps: this.fps,
-        };
     }
 }
 export class UpdateSettingsCacheEvent extends GenericEvent {
@@ -162,15 +121,6 @@ export class UpdateSettingsCacheEvent extends GenericEvent {
         this.key = key;
         this.value = value;
     }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            key: this.key,
-            value: this.value,
-        };
-    }
 }
 export class ShowFpsOverlayEvent extends GenericEvent {
     value: boolean;
@@ -178,14 +128,6 @@ export class ShowFpsOverlayEvent extends GenericEvent {
     constructor(target: messageTarget, value: boolean) {
         super(target, messageAction.showFpsOverlay);
         this.value = value;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            value: this.value,
-        };
     }
 }
 export class RestartCaptureEvent extends GenericEvent {
@@ -196,15 +138,6 @@ export class RestartCaptureEvent extends GenericEvent {
         super(messageTarget.background, messageAction.restartCapture);
         this.nonce = nonce;
         this.source = source;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            nonce: this.nonce,
-            source: this.source,
-        };
     }
 }
 export class RestartCaptureAckEvent extends GenericEvent {
@@ -218,16 +151,6 @@ export class RestartCaptureAckEvent extends GenericEvent {
         this.success = success;
         this.activeSource = activeSource;
     }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            nonce: this.nonce,
-            success: this.success,
-            activeSource: this.activeSource,
-        };
-    }
 }
 export class AnimationReadyEvent extends GenericEvent {
     storedSettings?: Record<string, string>;
@@ -235,13 +158,5 @@ export class AnimationReadyEvent extends GenericEvent {
     constructor(storedSettings?: Record<string, string>) {
         super(messageTarget.animation, messageAction.animationReady);
         this.storedSettings = storedSettings;
-    }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            storedSettings: this.storedSettings,
-        };
     }
 }

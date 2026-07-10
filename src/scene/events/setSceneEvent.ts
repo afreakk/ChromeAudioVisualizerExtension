@@ -10,13 +10,4 @@ export class SetSceneEvent extends GenericEvent {
         this.sceneName = sceneName;
         this.sceneSettings = sceneSettings;
     }
-
-    override toMessage() {
-        return {
-            target: this.target,
-            action: this.action,
-            sceneName: this.sceneName,
-            sceneSettings: this.sceneSettings,
-        };
-    }
 }
