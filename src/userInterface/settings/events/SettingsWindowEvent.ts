@@ -7,19 +7,4 @@ export class SettingsWindowEvent extends GenericEvent {
         super(target, action);
         this.source = source;
     }
-
-    override toMessage() {
-        const message: {
-            target: messageTarget;
-            action: messageAction;
-            source?: captureSource;
-        } = {
-            target: this.target,
-            action: this.action,
-        };
-        if (this.source !== undefined) {
-            message.source = this.source;
-        }
-        return message;
-    }
 }
